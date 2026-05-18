@@ -50,7 +50,7 @@ variations*, not new runtimes to learn.
   <https://console.anthropic.com/settings/keys>.
 - This repo cloned and `bun install` run once.
 
-If you haven't read [Getting Started](../GETTING-STARTED.md) yet, do
+If you haven't read [Getting Started](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md) yet, do
 that first — it sets up the mental model this recipe builds on.
 
 ## Step 1 — The smallest possible spec
@@ -76,7 +76,7 @@ Three top-level fields:
 | `target` | The runtime shape. `cli` produces a streaming chat REPL.               |
 | `agent`  | The model and the system prompt.                                       |
 
-`agent.model` follows the [model id grammar](../GETTING-STARTED.md#other-model-providers):
+`agent.model` follows the [model id grammar](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md#other-model-providers):
 bare `claude-...` for Anthropic, `openai/...`, `gemini/...`,
 `bedrock/...`, or `local/<model>@<url>` for an OpenAI-compatible local
 endpoint.
