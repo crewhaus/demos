@@ -1,0 +1,7 @@
+{
+  "name": "@crewhaus-examples/section-18-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Section 18 production-safety-floor smoke test bundle (Python + Shell + Read)"
+}

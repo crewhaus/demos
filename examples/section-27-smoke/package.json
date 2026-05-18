@@ -1,0 +1,7 @@
+{
+  "name": "@crewhaus-examples/section-27-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Section 27 production-hardening end-to-end smoke"
+}

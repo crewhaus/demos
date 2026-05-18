@@ -1,0 +1,7 @@
+{
+  "name": "@crewhaus-examples/section-28-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Section 28 deployment + canary smoke"
+}

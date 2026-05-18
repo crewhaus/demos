@@ -1,0 +1,7 @@
+{
+  "name": "@crewhaus-examples/mcp-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP host smoke test against the reference everything-server"
+}

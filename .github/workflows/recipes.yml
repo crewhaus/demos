@@ -1,0 +1,75 @@
+name: Recipes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "recipes/**"
+      - "GETTING-STARTED.md"
+      - "scripts/test-recipes.ts"
+      - "scripts/smoke-recipes.ts"
+      - "*/crewhaus.yaml"
+      - ".github/workflows/recipes.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "recipes/**"
+      - "GETTING-STARTED.md"
+      - "scripts/test-recipes.ts"
+      - "scripts/smoke-recipes.ts"
+      - "*/crewhaus.yaml"
+      - ".github/workflows/recipes.yml"
+
+jobs:
+  static:
+    name: Static recipe validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout demos
+        uses: actions/checkout@v4
+        with:
+          path: demos
+      - name: Checkout factory (sibling — required for the compiler CLI)
+        uses: actions/checkout@v4
+        with:
+          repository: crewhaus/factory
+          path: factory
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ">=1.2.0"
+      - name: Install factory deps (workspace setup)
+        working-directory: factory
+        run: bun install --frozen-lockfile
+      - name: Install demos deps
+        working-directory: demos
+        run: bun install --frozen-lockfile
+      - name: Run static recipe tests
+        working-directory: demos
+        run: bun run recipes:test
+
+  smoke:
+    name: Recipe compile smoke (no model calls)
+    runs-on: ubuntu-latest
+    needs: static
+    steps:
+      - name: Checkout demos
+        uses: actions/checkout@v4
+        with:
+          path: demos
+      - name: Checkout factory (sibling — required for the compiler CLI)
+        uses: actions/checkout@v4
+        with:
+          repository: crewhaus/factory
+          path: factory
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ">=1.2.0"
+      - name: Install factory deps (workspace setup)
+        working-directory: factory
+        run: bun install --frozen-lockfile
+      - name: Install demos deps
+        working-directory: demos
+        run: bun install --frozen-lockfile
+      - name: Run compile-only smoke for recipes with bun_scripts
+        working-directory: demos
+        run: bun run recipes:smoke
