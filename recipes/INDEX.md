@@ -6,7 +6,7 @@
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run recipes:smoke`.
 
-If you're new here, start with [`GETTING-STARTED.md`](../GETTING-STARTED.md)
+If you're new here, start with [`GETTING-STARTED.md`](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md)
 first. Each recipe assumes you've read it.
 
 Every recipe is statically validated by `bun run recipes:test`

@@ -1,6 +1,6 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 19 `hello-*` example specs covering every target shape, 48 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](./GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 19 `hello-*` example specs covering every target shape, 48 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## How it relates to factory
 
@@ -55,7 +55,6 @@ demos/
     vscode-extension/          spec authoring + run-from-editor for VS Code
     jetbrains-plugin/          IntelliJ / WebStorm / PyCharm parity for the VS Code extension
     crewhaus-playground/       browser REPL for the compiler — Monaco editor + live trace
-  GETTING-STARTED.md           60-second tour of compile → run
   scripts/
     test-recipes.ts            validates every recipe spec compiles
     smoke-recipes.ts
