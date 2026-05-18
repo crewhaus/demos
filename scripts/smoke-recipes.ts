@@ -29,12 +29,33 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
 const RECIPES_DIR = join(REPO_ROOT, "recipes");
+const PACKAGE_JSON = join(REPO_ROOT, "package.json");
+const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const LIVE = process.env["RECIPE_SMOKE_LIVE"] === "1";
+
+// Scripts present in either repo's package.json. The smoke runner skips
+// recipes referencing scripts that aren't actually defined — those are
+// aspirational gaps (caught with an inline-documented allowlist by the
+// static gate `recipes:test`) and the live invocation here would just
+// fail with "Script not found" if we didn't filter first.
+let definedScriptsCache: Set<string> | undefined;
+function loadDefinedScripts(): Set<string> {
+  if (definedScriptsCache) return definedScriptsCache;
+  const set = new Set<string>();
+  for (const pkgPath of [PACKAGE_JSON, join(FACTORY_ROOT, "package.json")]) {
+    if (!existsSync(pkgPath)) continue;
+    const raw = readFileSync(pkgPath, "utf-8");
+    const parsed = JSON.parse(raw) as { scripts?: Record<string, string> };
+    for (const name of Object.keys(parsed.scripts ?? {})) set.add(name);
+  }
+  definedScriptsCache = set;
+  return set;
+}
 
 const SAFE_PREFIXES = ["compile:"];
 const LIVE_PREFIXES = ["run:", "smoke:"];
@@ -157,6 +178,16 @@ function main(): void {
       if (c === "unknown") {
         process.stdout.write(`  ⚠ ${script}  (unknown prefix; skipping)\n`);
         results.push({ recipe: rel, script, status: "skipped", reason: "unknown prefix" });
+        continue;
+      }
+      if (!loadDefinedScripts().has(script)) {
+        process.stdout.write(`  · ${script}  (aspirational; not yet implemented; skipping)\n`);
+        results.push({
+          recipe: rel,
+          script,
+          status: "skipped",
+          reason: "aspirational — not in package.json (gated by recipes:test allowlist)",
+        });
         continue;
       }
       if (c === "live" && !LIVE) {
