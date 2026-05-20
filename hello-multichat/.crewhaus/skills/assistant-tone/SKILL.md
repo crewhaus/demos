@@ -9,7 +9,7 @@ triggers:
 
 # assistant-tone — how 🦞 talks
 
-This skill always loads for hello-openclaw. It defines the voice.
+This skill always loads for hello-multichat. It defines the voice.
 
 ## Register
 

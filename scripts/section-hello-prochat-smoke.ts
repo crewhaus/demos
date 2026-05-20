@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 /**
- * Runtime smoke test for the hello-chat showcase demo.
+ * Runtime smoke test for the hello-prochat showcase demo.
  *
  * Compile-smoke is handled by `bun run recipes:smoke` via the recipe's
- * frontmatter (recipes/50-chatgpt-clone.md). This script adds a LIVE
+ * frontmatter (recipes/50-prochat.md). This script adds a LIVE
  * runtime check: actually spawn the compiled bundle, send one prompt to
  * stdin, and assert the agent produces non-empty output within 60s.
  *
- * Run: `bun scripts/section-hello-chat-smoke.ts`
+ * Run: `bun scripts/section-hello-prochat-smoke.ts`
  * Requires: `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` in env.
  *
  * Exits 0 on success, 1 on any failure.
@@ -18,7 +18,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const DEMO_DIR = join(REPO_ROOT, "hello-chat");
+const DEMO_DIR = join(REPO_ROOT, "hello-prochat");
 const BUNDLE = join(DEMO_DIR, "dist", "agent.ts");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps/cli/src/index.ts");
@@ -32,7 +32,7 @@ function die(msg: string): never {
   process.exit(1);
 }
 
-console.log("section-hello-chat-smoke starting…");
+console.log("section-hello-prochat-smoke starting…");
 
 if (!hasCreds()) {
   console.log("  skip: no ANTHROPIC_* credential in env");
@@ -40,7 +40,7 @@ if (!hasCreds()) {
 }
 
 if (!existsSync(BUNDLE)) {
-  console.log("  compiling hello-chat…");
+  console.log("  compiling hello-prochat…");
   const compile = spawnSync("bun", [CLI_ENTRY, "compile", join(DEMO_DIR, "crewhaus.yaml"), "-o", join(DEMO_DIR, "dist")], {
     cwd: REPO_ROOT,
     stdio: "inherit",
@@ -101,5 +101,5 @@ if (!result.ok) {
   die(`runtime smoke failed: ${result.reason}`);
 }
 
-console.log(`✓ section-hello-chat-smoke: ${result.reason}`);
+console.log(`✓ section-hello-prochat-smoke: ${result.reason}`);
 process.exit(0);

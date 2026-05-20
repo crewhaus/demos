@@ -1,4 +1,4 @@
-# hello-openclaw — a multi-channel always-on personal assistant in one YAML
+# hello-multichat — a multi-channel always-on personal assistant in one YAML
 
 A local-first, always-on AI assistant in the spirit of
 [OpenClaw](https://docs.openclaw.ai) — compiled from a single
@@ -14,42 +14,49 @@ From the repo root:
 
 ```bash
 bun install
-bun run compile:hello-openclaw                    # writes dist/{daemon,gateway,session-router,agent}.ts
+bun run compile:hello-multichat                    # writes dist/{daemon,gateway,session-router,agent}.ts
 
 # Minimum: one channel's creds. Provide all three to listen on all.
 ANTHROPIC_API_KEY=sk-ant-... \
   SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \
   DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_PUBLIC_KEY=... \
-  bun run run:hello-openclaw
+  bun run run:hello-multichat
 ```
 
 The daemon listens on `PORT` (default `3000`). Point each platform's
 webhook there (Slack Event Subscriptions, Telegram setWebhook, Discord
 Interactions endpoint). Use ngrok or similar for local dev.
 
+Operators also get a separate control-UI gateway on `19001` — visit
+`http://localhost:19001/` for a dashboard or `/status` for JSON.
+
 ## Try this
 
 From any connected chat:
 
 ```
-@openclaw what's the weather in Tokyo right now?
+@multichat what's the weather in Tokyo right now?
 ```
 A `lookup` intent → WebSearch + cite.
 
 ```
-@openclaw summarise this article: https://en.wikipedia.org/wiki/Lobster
+@multichat summarise this article: https://en.wikipedia.org/wiki/Lobster
 ```
 A `task` intent → dispatches the `planner` sub-agent, then executes.
 
 ```
-@openclaw what's a good 4-step lifting workout?
+@multichat what's a good 4-step lifting workout?
 ```
 A `chat` intent → answers directly, no tool theater.
 
 Try the same prompts via Slack AND Telegram from the same user — each
 thread runs in its own isolated session (`routing.sessionKey: thread`),
 so the two conversations don't cross-contaminate.
+
+The agent also fires a **heartbeat** every 2h (configurable). It reads
+HEARTBEAT.md, decides if there's anything worth surfacing, and acts
+only if the answer is yes — most ticks should be silent.
 
 ## Swap the model
 
@@ -65,13 +72,13 @@ provider — edit [`crewhaus.yaml`](crewhaus.yaml) at `agent.model:`:
 | Google | `gemini-2.0-flash` | `GOOGLE_API_KEY` |
 | AWS Bedrock | `bedrock/anthropic.claude-sonnet-4-20250514-v1:0` | `AWS_*` |
 
-## How it relates to OpenClaw
+## What makes it feel pro-grade (OpenClaw-style)
 
 OpenClaw is a multi-channel always-on assistant with a JSON config,
 plugin SDK, ClawHub registry, and 20+ channel adapters. This demo
-replicates the **single most distinctive surface feature** — one
-daemon listening on multiple channels with per-thread session
-isolation — in ~130 lines of YAML, using existing CrewHaus
+replicates its surface — one daemon, multiple channels, per-thread
+sessions, planner sub-agent, heartbeats, emoji acks, control-UI
+gateway — in ~140 lines of YAML, using only existing CrewHaus
 infrastructure.
 
 ### What's covered out of the box
@@ -87,23 +94,17 @@ infrastructure.
 | Tool planner | `sub_agents.planner` (called via `Task` tool) |
 | Compaction (memory window) | `compaction: { model: claude-haiku-* }` |
 | Skills / slash commands | `.crewhaus/skills/`, `.crewhaus/commands/` (auto-discovered) |
+| Heartbeat scheduled wake | `heartbeat: { every, instructions }` (Phase 3 §3.1) |
+| Per-channel emoji reactions (👀 / ✅ / ⚠️) | Slack adapter ships full; Telegram/Discord/WhatsApp/iMessage pending (Phase 3 §3.2) |
+| Control-UI gateway | `gateway: { port, ui }` — `/status` JSON + minimal HTML dashboard (Phase 3 §3.4) |
 
-### What's deferred (factory changes needed)
+### What's still out of scope
 
-These OpenClaw features require new spec fields + runtime support and
-are tracked in the plan at
-[`/Users/bots/.claude/plans/add-a-couple-heavy-cozy-popcorn.md`](../../) under "Phase 3":
-
-| OpenClaw feature | Status | Tracked as |
-|---|---|---|
-| Heartbeat / scheduled wake (`every: 2h`) | Deferred | Phase 3 §3.1 (~2-3 days) |
-| Per-channel emoji status reactions (👀 / ✅ / ⚠️) | Deferred | Phase 3 §3.2 (~1 day per channel) |
-| CLI banner with tagline rotation | Deferred | Phase 3 §3.3 (~1 day) |
-| Gateway / control-UI web dashboard | Deferred | Phase 3 §3.4 (~1-3 days; reuses existing `gateway-server` package) |
-| Additional channel adapters (Matrix, Signal, IRC, Nostr, WeChat, …) | Out of scope | each ~1 week |
-
-When those land, the corresponding YAML blocks (commented out at the
-top of [`crewhaus.yaml`](crewhaus.yaml)) get enabled.
+| OpenClaw feature | Why |
+|---|---|
+| Additional channel adapters (Matrix, Signal, IRC, Nostr, WeChat, …) | Each is a separate adapter — ~1 week per platform |
+| ClawHub plugin registry | CrewHaus's Forge registry lands separately |
+| Native mobile / desktop companion apps | OpenClaw ships iOS/Android/macOS/Windows; CrewHaus is web/CLI-first |
 
 ## What this slice exercises
 
@@ -111,7 +112,8 @@ Catalog modules touched (per factory's
 [docs/MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md)):
 
 - F1 `spec-schema`, `spec-parser`, `spec-validator`, `ir-model` —
-  channel target with `IrSecretRef` env interpolation
+  channel target with `IrSecretRef` env interpolation, plus the new
+  `heartbeat` and `gateway` IR fields
 - F2 `compiler-core`, `target-channel-bot` (multi-file codegen),
   `codegen-templates`
 - R1 `runtime-orchestrator` — `runChatLoop({ singleTurn: true, resume })`
@@ -122,17 +124,16 @@ Catalog modules touched (per factory's
   this non-interactive shape; destructive patterns explicitly denied
 - R9 `hooks-engine`, `slash-commands`, `skills-registry` — all
   auto-discovered from `.crewhaus/`
-- R13 `channel-adapter-base`, `channel-adapter-slack`,
-  `channel-adapter-telegram`, `channel-adapter-discord` — webhook
-  verify, event parse, threaded reply
+- R13 `channel-adapter-base`, `channel-adapter-slack` (incl. the new
+  `react()` method), `channel-adapter-telegram`, `channel-adapter-discord`
 - R13 `sub-agent-spawner` — `planner` sub-agent with scoped read-only
   permissions
 - R17 `compaction-autocompact` — Haiku summarises older turns per
   session to keep the context window cheap
 
-## What makes it feel like OpenClaw
+## How the feature flags fit together
 
-- **Always-on daemon** — once you `bun run run:hello-openclaw`, the
+- **Always-on daemon** — once you `bun run run:hello-multichat`, the
   process listens forever. No "open a terminal" / "start a chat"
   ceremony.
 - **Multi-channel presence** — same agent answers on whichever surface
@@ -144,10 +145,15 @@ Catalog modules touched (per factory's
 - **Warm, brief tone** — the instructions block bakes in OpenClaw's
   "competent teammate" register. No fluff, no preambles.
 - **Tool planner pattern** — multi-step tasks dispatch the `planner`
-  sub-agent first, then execute. Mirrors OpenClaw's plan-then-act
-  philosophy.
-- **🦞 branding** — the agent identifies as 🦞 in its first reply on
-  any thread. (CLI banner + tagline rotation lands in Phase 3 §3.3.)
+  sub-agent first, then execute.
+- **Heartbeat** — every 2h, the agent wakes itself, reads HEARTBEAT.md,
+  and decides whether to surface anything. The default verdict is
+  silence.
+- **Emoji status acks** — 👀 on inbound, ✅ on success, ⚠️ on
+  need-approval. Slack ships full; other channels' adapter
+  implementations are tracked.
+- **Control-UI gateway** — `http://localhost:19001/` shows daemon
+  health (channels, turn count, heartbeat ticks). 🦞 branding.
 
 ## Fork and extend
 
@@ -163,12 +169,15 @@ Catalog modules touched (per factory's
 3. **Add custom skills** — drop a `SKILL.md` into
    `.crewhaus/skills/<name>/` and the model can self-load it when
    relevant. The shipped skills are starter templates.
-4. **Optimize the prompt against your real channel traffic** —
+4. **Tune the heartbeat** — edit HEARTBEAT.md to refine the
+   "what's actually useful right now" decision logic. Shorter
+   `every:` intervals (e.g. `5m`) help test the loop.
+5. **Optimize the prompt against your real channel traffic** —
    collect a `dataset.jsonl` of (inbound, expected-reply) pairs and
    run
    `bunx crewhaus optimize crewhaus.yaml --dataset dataset.jsonl
    --graders graders.yaml --write-back` to let the eval-driven
    optimizer mutate the instructions for measurable accuracy gains.
 
-See [`hello-code`](../hello-code/) and [`hello-chat`](../hello-chat/)
-for the sibling heavy-hitter demos.
+See [`hello-procode`](../hello-procode/) and
+[`hello-prochat`](../hello-prochat/) for the sibling heavy-hitter demos.

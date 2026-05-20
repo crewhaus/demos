@@ -1,14 +1,14 @@
 ---
 test:
-  spec: hello-openclaw/crewhaus.yaml
+  spec: hello-multichat/crewhaus.yaml
   bun_scripts:
-    - compile:hello-openclaw
+    - compile:hello-multichat
 ---
 
-# Recipe 51 — OpenClaw Clone
+# Recipe 51 — Multi-channel Personal Assistant (à la OpenClaw)
 
-Build a local-first, always-on, multi-channel personal AI assistant in
-the spirit of [OpenClaw](https://docs.openclaw.ai) — compiled from a
+Build a local-first, always-on, multi-channel personal AI assistant
+— the kind of always-on agent OpenClaw popularised — compiled from a
 single YAML file. One daemon listens on Slack, Telegram, AND Discord
 simultaneously. The same user reaches the agent through whichever chat
 surface is convenient at the moment.
@@ -48,7 +48,7 @@ control UI, additional channel adapters (Matrix, Signal, IRC, Nostr,
 WeChat) — is **out of scope for this recipe** and tracked in the
 heavy-hitter plan as Phase 3 §3.1–§3.4. The deferred items are
 explicit in the spec via commented-out blocks at the top of
-[`hello-openclaw/crewhaus.yaml`](../hello-openclaw/crewhaus.yaml).
+[`hello-multichat/crewhaus.yaml`](../hello-multichat/crewhaus.yaml).
 
 </details>
 
@@ -68,13 +68,13 @@ The minimum viable run is with just Slack:
 
 ```bash
 bun install
-bun run compile:hello-openclaw
+bun run compile:hello-multichat
 ANTHROPIC_API_KEY=sk-ant-... \
   SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
-  bun run run:hello-openclaw
+  bun run run:hello-multichat
 ```
 
-The compiler emits four files into `hello-openclaw/dist/`:
+The compiler emits four files into `hello-multichat/dist/`:
 `agent.ts` (the chat loop), `session-router.ts` (thread → session
 keying), `gateway.ts` (HTTP listener + adapter dispatch), and
 `daemon.ts` (the entry point that wires it all together).
@@ -90,10 +90,10 @@ Set additional env vars; the daemon picks them up:
 SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \
   DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_PUBLIC_KEY=... \
-  bun run run:hello-openclaw
+  bun run run:hello-multichat
 ```
 
-In `hello-openclaw/crewhaus.yaml`:
+In `hello-multichat/crewhaus.yaml`:
 
 ```yaml
 channels:
@@ -226,12 +226,12 @@ features, all tracked in the heavy-hitter plan's Phase 3:
 | Additional channel adapters (Matrix, Signal, IRC, Nostr, WeChat, …) | Out of scope; ~1 week per platform. |
 
 When those land, the corresponding YAML blocks (commented out at the
-top of [`crewhaus.yaml`](../hello-openclaw/crewhaus.yaml)) get
+top of [`crewhaus.yaml`](../hello-multichat/crewhaus.yaml)) get
 enabled.
 
-## What makes it feel like OpenClaw
+## What makes it feel pro-grade (OpenClaw-style)
 
-1. **Always-on daemon** — once you `bun run run:hello-openclaw`, the
+1. **Always-on daemon** — once you `bun run run:hello-multichat`, the
    process listens forever. No "open a terminal" ceremony.
 2. **Multi-channel presence** — same agent answers wherever the user
    pings. Slack at work, Telegram on the train, Discord with friends.

@@ -1,17 +1,19 @@
 ---
 test:
-  spec: hello-chat/crewhaus.yaml
+  spec: hello-prochat/crewhaus.yaml
   bun_scripts:
-    - compile:hello-chat
+    - compile:hello-prochat
 ---
 
-# Recipe 50 — ChatGPT Clone
+# Recipe 50 — Pro-grade Chat (à la ChatGPT)
 
-Build a multi-modal conversational assistant that feels like ChatGPT
-from a single YAML file: streaming chat, web browsing (search +
-fetch), vision (image reading), a sandboxed Python/JavaScript/shell
+Build a multi-modal conversational assistant — the kind of chat app
+ChatGPT and Claude.ai have set the bar for — from a single YAML file:
+streaming chat, web browsing (search + fetch), vision (image reading),
+image generation, document ingest, a sandboxed Python/JavaScript/shell
 code interpreter, a parallel web-research sub-agent, and slash
-commands (`/browse`, `/code`, `/analyze`, `/summarize`).
+commands (`/browse`, `/code`, `/analyze`, `/summarize`, `/imagine`,
+`/ingest`).
 
 By the end you'll have an agent that can:
 
@@ -56,8 +58,8 @@ runtime; the capabilities are what we're showcasing.
 
 ```bash
 bun install
-bun run compile:hello-chat
-ANTHROPIC_API_KEY=sk-ant-... bun run run:hello-chat
+bun run compile:hello-prochat
+ANTHROPIC_API_KEY=sk-ant-... bun run run:hello-prochat
 ```
 
 Five prompts to try, in order:
@@ -198,7 +200,7 @@ Same recipe as 49 (Claude / OpenAI / Gemini / Bedrock / local). For
 this demo `claude-sonnet-4-6` is a good default — cheaper than Opus
 without sacrificing the conversation quality.
 
-## What makes it feel like ChatGPT
+## What makes it feel pro-grade (ChatGPT-style)
 
 1. **Web browsing as a first-class tool** — not a plugin, not an
    afterthought. WebSearch / WebFetch / Fetch are all in the catalog.

@@ -30,13 +30,15 @@ problem they brought. Walk this tree from the top:
    pick the shape yourself.
 0.5. **Want to imitate a top-tier production harness end-to-end?** →
    pick the closest match and fork from there:
-     - "Like Claude Code" → [Recipe 49 — Claude Code Clone](49-claude-code-clone.md)
+     - "Like Claude Code / Cursor" → [Recipe 49 — Pro-grade Coder](49-procode.md)
        (sub-agents, allow-listed bash, slash commands, project memory)
-     - "Like ChatGPT" → [Recipe 50 — ChatGPT Clone](50-chatgpt-clone.md)
-       (web browsing, vision, sandboxed code interpreter)
-     - "Like OpenClaw" → [Recipe 51 — OpenClaw Clone](51-openclaw-clone.md)
+     - "Like ChatGPT / Claude.ai" → [Recipe 50 — Pro-grade Chat](50-prochat.md)
+       (web browsing, vision, image generation, sandboxed code
+       interpreter, document ingest)
+     - "Like OpenClaw" → [Recipe 51 — Multi-channel Personal Assistant](51-multichat.md)
        (one daemon listening on Slack + Telegram + Discord with
-       per-thread session isolation)
+       per-thread session isolation, heartbeat, emoji acks, control-UI
+       gateway)
    Each forks the canonical shape from recipes 1, 3, etc., but with
    every primitive wired up — they're the "full power" examples.
 1. **Are you just trying the system for the first time?** → start at

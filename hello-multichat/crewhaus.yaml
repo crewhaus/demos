@@ -1,18 +1,19 @@
-# hello-openclaw — a local-first, always-on, multi-channel personal AI
-# assistant in the spirit of OpenClaw (https://docs.openclaw.ai). One
-# YAML compiles to a long-running daemon that listens on Slack,
-# Telegram, AND Discord simultaneously, runs one model turn per inbound
-# message, and replies in the same thread.
+# hello-multichat — a local-first, always-on, multi-channel personal AI
+# assistant. One YAML compiles to a long-running daemon that listens on
+# Slack, Telegram, AND Discord simultaneously, runs one model turn per
+# inbound message, and replies in the same thread. Designed to feel
+# like a tier-one always-on personal-AI daemon (think OpenClaw — the
+# AI that meets you where you already are).
 #
 # 🦞 EXFOLIATE! EXFOLIATE!
 #
 # Usage:
-#   bun run compile:hello-openclaw
+#   bun run compile:hello-multichat
 #   ANTHROPIC_API_KEY=... \
 #     SLACK_BOT_TOKEN=... SLACK_SIGNING_SECRET=... \
 #     TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \
 #     DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_PUBLIC_KEY=... \
-#     bun run run:hello-openclaw
+#     bun run run:hello-multichat
 #
 # At minimum one channel's creds must be set; the others can be
 # commented out below if you only care about one or two surfaces.
@@ -29,13 +30,13 @@
 #
 # ALL OPENCLAW PARITY CHECKPOINTS REACHED.
 
-name: hello-openclaw
+name: hello-multichat
 target: channel
 
 agent:
   model: claude-sonnet-4-6
   instructions: |
-    You are 🦞 — a personal AI assistant in the spirit of OpenClaw.
+    You are 🦞 — an always-on personal AI assistant.
     EXFOLIATE! EXFOLIATE!
 
     You listen on multiple chat surfaces (Slack, Telegram, Discord)
@@ -83,7 +84,8 @@ agent:
     - If you cannot answer something, say so. Don't fabricate.
     - You are NOT a coding companion. If the user asks you to edit
       source files or run shell commands on their host, redirect:
-      "I'm 🦞, not Claude Code — try the `hello-code` demo for that."
+      "I'm 🦞, not a coding agent — try the `hello-procode` demo for
+      that."
     - Multi-channel means the SAME user might reach you via Slack
       AND Telegram on different topics. Per-thread session isolation
       (routing.sessionKey: thread) keeps each conversation distinct;

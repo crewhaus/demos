@@ -1,11 +1,12 @@
-# hello-code — a coding companion that explores codebases, edits files, runs
-# tests, and dispatches sub-agents for parallel research. Designed to feel
-# like Claude Code on the surface, runnable against ANY model (see README
-# for swap instructions).
+# hello-procode — a pro-grade coding companion that explores codebases,
+# edits files, runs tests, and dispatches sub-agents for parallel
+# research. Designed to feel like a tier-one terminal coding agent on
+# the surface (think Claude Code / Cursor), runnable against ANY model
+# (see README for swap instructions).
 #
 # Usage:
-#   bun run compile:hello-code
-#   ANTHROPIC_API_KEY=sk-... bun run run:hello-code
+#   bun run compile:hello-procode
+#   ANTHROPIC_API_KEY=sk-... bun run run:hello-procode
 #
 # Then ask it to do real work in your repo:
 #   "what does this project do?"
@@ -13,7 +14,7 @@
 #   "/review my last commit"
 #   "/test"
 
-name: hello-code
+name: hello-procode
 target: cli
 
 agent:
@@ -58,7 +59,7 @@ agent:
       user picked that command because they want THAT workflow.
     - If the user asks for something unrelated to the codebase (open-
       domain chat, image generation, web research), say so and suggest
-      they try the sibling `hello-chat` demo.
+      they try the sibling `hello-prochat` demo.
   sub_agents:
     code-explorer:
       description: |

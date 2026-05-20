@@ -1,10 +1,11 @@
-# hello-code — a Claude-Code-shaped coding companion in one YAML
+# hello-procode — a pro-grade terminal coding companion in one YAML
 
-A full coding agent — codebase exploration, file editing, test execution,
-sub-agent dispatch, safety-gated bash, web research — compiled from a
-single [`crewhaus.yaml`](crewhaus.yaml). It feels like Claude Code on the
-surface and runs against **any model** (Claude, GPT-4o, Gemini, Bedrock,
-local) — see [Swap the model](#swap-the-model) below.
+A full coding agent — codebase exploration, file editing, test
+execution, sub-agent dispatch, safety-gated bash, web research —
+compiled from a single [`crewhaus.yaml`](crewhaus.yaml). It feels
+tier-one (think Claude Code / Cursor) on the surface and runs against
+**any model** (Claude, GPT-4o, Gemini, Bedrock, local) — see
+[Swap the model](#swap-the-model) below.
 
 ## Run it
 
@@ -12,8 +13,8 @@ From the repo root:
 
 ```bash
 bun install
-bun run compile:hello-code                          # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-ant-... bun run run:hello-code # opens REPL in cwd
+bun run compile:hello-procode                          # writes dist/agent.ts
+ANTHROPIC_API_KEY=sk-ant-... bun run run:hello-procode # opens REPL in cwd
 ```
 
 Or, to point it at a specific project, `cd` there first and run the
@@ -21,12 +22,12 @@ compiled bundle directly:
 
 ```bash
 cd ~/my-project
-ANTHROPIC_API_KEY=sk-ant-... bun /path/to/demos/hello-code/dist/agent.ts
+ANTHROPIC_API_KEY=sk-ant-... bun /path/to/demos/hello-procode/dist/agent.ts
 ```
 
-The agent's CWD is the project under analysis. `.crewhaus/commands/` and
-`.crewhaus/skills/` ship inside this demo — drop your own there to add
-custom slash commands and skills.
+The agent's CWD is the project under analysis. `.crewhaus/commands/`
+and `.crewhaus/skills/` ship inside this demo — drop your own there to
+add custom slash commands and skills.
 
 ## Try this
 
@@ -72,7 +73,7 @@ The `model:` field is a provider-prefixed string. Edit
 | AWS Bedrock | `bedrock/anthropic.claude-sonnet-4-20250514-v1:0` | `AWS_*` |
 | Local (OpenAI-compatible) | `local/llama-3.3-70b@http://localhost:8080/v1` | — |
 
-Recompile (`bun run compile:hello-code`) after any change to the spec.
+Recompile (`bun run compile:hello-procode`) after any change to the spec.
 
 ## What this slice exercises
 
@@ -92,13 +93,14 @@ Catalog modules touched (per factory's
 - R17 `compaction-autocompact` — Haiku summarises older turns to keep the
   window cheap
 
-## What makes it feel like Claude Code
+## What makes it feel pro-grade (Claude-Code-style)
 
 - **Sub-agent parallelism** — exploration runs in a sandboxed read-only
   agent rather than blocking the main turn. Verification runs in a
   bash-allow-listed agent that can ONLY invoke the project's test command.
 - **Project memory bootstrap** — `/init` writes a `CODE-COMPANION.md` at
-  the repo root the same way `claude /init` writes `CLAUDE.md`.
+  the repo root the same way `claude /init` writes `CLAUDE.md`. The
+  runtime auto-loads it at every future session start (M3.1).
 - **Defense-in-depth permissions** — common dev commands flow without
   prompts (`git status`, `bun test`, `cargo build`), arbitrary shell
   asks once per pattern, destructive patterns (`rm -rf`, `git push -f`,

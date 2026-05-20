@@ -1,11 +1,12 @@
-# hello-chat — a general-purpose conversational assistant with vision,
-# web browsing, and a sandboxed code interpreter. Designed to feel like
-# ChatGPT in a terminal, runnable against ANY model (see README for swap
-# instructions).
+# hello-prochat — a pro-grade general-purpose conversational assistant
+# with vision, web browsing, a sandboxed code interpreter, and image
+# generation. Designed to feel like a tier-one chat app in a terminal
+# (think ChatGPT / Claude.ai), runnable against ANY model (see README
+# for swap instructions).
 #
 # Usage:
-#   bun run compile:hello-chat
-#   ANTHROPIC_API_KEY=sk-... bun run run:hello-chat
+#   bun run compile:hello-prochat
+#   ANTHROPIC_API_KEY=sk-... bun run run:hello-prochat
 #
 # Then chat:
 #   "what's the capital of Burkina Faso?"
@@ -13,7 +14,7 @@
 #   "/code plot the first 30 Fibonacci numbers"
 #   "/analyze /tmp/screenshot.png"
 
-name: hello-chat
+name: hello-prochat
 target: cli
 
 agent:
@@ -67,8 +68,8 @@ agent:
       gave a URL, use `WebFetch` — the model has native vision and the
       page-fetched content will include the image where supported.
     - If the user asks to edit their host files or run host shell
-      commands, say "I'm hello-chat, not hello-code — try that demo
-      for filesystem and bash access on your host."
+      commands, say "I'm hello-prochat, not hello-procode — try that
+      demo for filesystem and bash access on your host."
     - For controversial / political / legal / medical questions: be
       even-handed, surface uncertainty, and cite sources. Never
       fabricate a citation.

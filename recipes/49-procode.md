@@ -1,18 +1,19 @@
 ---
 test:
-  spec: hello-code/crewhaus.yaml
+  spec: hello-procode/crewhaus.yaml
   bun_scripts:
-    - compile:hello-code
+    - compile:hello-procode
 ---
 
-# Recipe 49 — Claude Code Clone
+# Recipe 49 — Pro-grade Coder (à la Claude Code)
 
-Build a coding companion that feels like Claude Code from a single YAML
-file: sub-agents for parallel codebase exploration, a `test-runner`
-that detects your test command, allow-listed bash for common dev
-loops, hard-denied destructive patterns, slash commands (`/init`,
-`/review`, `/test`, `/plan`), skills (`debug`, `code-review`,
-`refactor`), and a project-memory bootstrap.
+Build a pro-grade coding companion — the kind of agent Claude Code and
+Cursor have set the bar for — from a single YAML file: sub-agents for
+parallel codebase exploration, a `test-runner` that detects your test
+command, allow-listed bash for common dev loops, hard-denied
+destructive patterns, slash commands (`/init`, `/review`, `/test`,
+`/plan`), skills (`debug`, `code-review`, `refactor`), and a
+project-memory bootstrap.
 
 By the end you'll have an agent that can:
 
@@ -38,11 +39,11 @@ runtime, same compiler, same security model — but every primitive
 commands from 16, permission tiers from 29) wired into a single
 coherent spec that mirrors a tier-one production harness.
 
-The empirical claim: the gap between "hello-cli" and "Claude Code" is
-~190 lines of YAML, not a separate runtime. If your spec is missing
-something that Claude Code has, the answer is almost always "add a
-permission rule" or "add a sub-agent" or "add a skill" — not "fork
-the compiler."
+The empirical claim: the gap between "hello-cli" and a Claude-Code-
+style pro coding agent is ~190 lines of YAML, not a separate runtime.
+If your spec is missing something a tier-one harness has, the answer
+is almost always "add a permission rule" or "add a sub-agent" or "add
+a skill" — not "fork the compiler."
 
 </details>
 
@@ -61,8 +62,8 @@ the compiler."
 
 ```bash
 bun install
-bun run compile:hello-code
-ANTHROPIC_API_KEY=sk-ant-... bun run run:hello-code
+bun run compile:hello-procode
+ANTHROPIC_API_KEY=sk-ant-... bun run run:hello-procode
 ```
 
 Drop into a project you care about (`cd ~/my-project` first, or pass
@@ -78,7 +79,7 @@ in parallel. That's the recipe's flagship move.
 
 ## Step 2 — The sub-agents
 
-Open [`hello-code/crewhaus.yaml`](../hello-code/crewhaus.yaml) and
+Open [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml) and
 look at the `agent.sub_agents:` map. Two roles:
 
 ```yaml
@@ -188,7 +189,7 @@ without losing context.
 ## Step 6 — Swap the model
 
 The `model:` field is provider-agnostic. Edit
-[`crewhaus.yaml`](../hello-code/crewhaus.yaml) at `agent.model:`:
+[`crewhaus.yaml`](../hello-procode/crewhaus.yaml) at `agent.model:`:
 
 | Provider | `model:` | Env |
 |---|---|---|
@@ -200,7 +201,7 @@ The `model:` field is provider-agnostic. Edit
 
 Recompile after every spec edit.
 
-## What makes it feel like Claude Code
+## What makes it feel pro-grade (Claude-Code-style)
 
 1. **Sub-agent parallelism** — exploration in a sandboxed read-only
    agent; verification in a bash-allow-listed agent. The main loop
