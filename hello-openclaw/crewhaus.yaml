@@ -17,14 +17,17 @@
 # At minimum one channel's creds must be set; the others can be
 # commented out below if you only care about one or two surfaces.
 #
-# DEFERRED to future commits (require factory changes per the
-# plan file /Users/bots/.claude/plans/add-a-couple-heavy-cozy-popcorn.md):
-#   - heartbeat: { every: 2h, instructions: ... }       (§3.1)
-#   - cli: { banner: { taglineMode: random, ... } }     (§3.3)
+# NOW ENABLED (per Phase 3 milestones §3.1 and §3.3 of the plan):
+#   - heartbeat: scheduled proactive wakes (§3.1)
+#   - cli.banner: tagline rotation on cold start (§3.3 — only meaningful
+#     for `target: cli` so this demo doesn't use it; the field is shown
+#     in hello-code/hello-chat once those demos opt in)
+#
+# STILL DEFERRED (require factory changes per the plan):
 #   - gateway: { port: 19001, ui: true }                (§3.4)
 #   - per-channel status emoji reactions (👀 / ✅ / ⚠️)  (§3.2)
-# Until those land, this demo runs as a reactive multi-channel daemon
-# without proactive heartbeats. Everything else is fully supported.
+# Until those land, this demo runs as a reactive + heartbeat-driven
+# multi-channel daemon. Everything else is fully supported.
 
 name: hello-openclaw
 target: channel
@@ -128,6 +131,18 @@ channels:
 
 routing:
   sessionKey: thread
+
+# Phase 3 §3.1 — heartbeat scheduled wake. Every 2h, a fresh synthetic
+# session fires with these instructions. Use a short interval (e.g.
+# `every: 5m`) for testing; bump back to `2h` for production.
+heartbeat:
+  every: 2h
+  instructions: |
+    🦞 Heartbeat tick. Read HEARTBEAT.md if present, decide what's
+    actually useful right now, and take AT MOST one small action.
+    The default verdict is silence — most ticks should log
+    `heartbeat_tick: silent` and exit. Use the `heartbeat-decide` skill
+    for the decision framework.
 
 # Showcase: connect to your real tools via MCP. Uncomment any block
 # below to enable. Tools appear in the model's catalog as
