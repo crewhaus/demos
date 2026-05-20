@@ -6,5 +6,12 @@ dist/
 *.log
 .env
 .env.local
-.crewhaus/
+# .crewhaus/ — only runtime artifacts are ignored. User-authored
+# slash commands, skills, hooks, and settings under .crewhaus/ ARE
+# source code and committed (drives the showcase demos).
+.crewhaus/sessions/
+.crewhaus/tool-results/
+.crewhaus/events.jsonl
+.crewhaus/*.jsonl
+.crewhaus/cache/
 .claude/

@@ -1,6 +1,16 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 19 `hello-*` example specs covering every target shape, 48 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 51 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+
+## Showcase demos
+
+Three demos go beyond minimal vertical slices and show what CrewHaus looks like at full power:
+
+- **[hello-code](./hello-code/)** — a Claude-Code-shaped coding companion (`target: cli`): sub-agents for parallel codebase exploration, allow-listed bash, slash commands (`/init`, `/review`, `/test`, `/plan`), skills for debug / code-review / refactor, and project-memory bootstrap. ~190 lines of YAML.
+- **[hello-chat](./hello-chat/)** — a ChatGPT-shaped conversational assistant (`target: cli`): web browsing, vision (image reading), a sandboxed Python/JS/shell code interpreter, parallel web-research sub-agent, and slash commands (`/browse`, `/code`, `/analyze`, `/summarize`). ~110 lines of YAML.
+- **[hello-openclaw](./hello-openclaw/)** — an [OpenClaw](https://docs.openclaw.ai)-shaped always-on personal assistant (`target: channel`): one daemon listening on Slack + Telegram + Discord simultaneously, per-thread session isolation, planner sub-agent for multi-step tasks, skills for tone / approvals / (future) heartbeat. ~130 lines of YAML. 🦞
+
+All three default to Claude but the `model:` field accepts any provider (GPT-4o, Gemini, Bedrock, local OpenAI-compatible servers) — each demo's README documents the swap.
 
 ## How it relates to factory
 
