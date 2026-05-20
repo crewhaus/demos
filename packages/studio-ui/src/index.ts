@@ -240,6 +240,134 @@ export type DashboardRow = {
   readonly runCount: number;
 };
 
+/**
+ * Phase 2 M5.2 — MCP connector picker. Curated catalog of well-known
+ * MCP servers operators may want to wire into a spec. The picker is a
+ * pure renderer (returns HTML); the studio-server's
+ * `addMcpServer(specPath, name, config)` endpoint handles the YAML
+ * write-back via spec-patch (preserves comments + key order).
+ *
+ * Catalog entries match the @modelcontextprotocol/server-* reference
+ * set as of 2026-Q2. New entries should cite their npm package + a
+ * one-line description.
+ */
+export type McpConnectorOption = {
+  readonly id: string;
+  readonly displayName: string;
+  readonly description: string;
+  readonly transport: "stdio" | "sse";
+  readonly stdio?: { readonly command: string; readonly args?: readonly string[] };
+  readonly sse?: { readonly url: string };
+  /** Env var names the operator must set. Shown as a hint in the UI. */
+  readonly envRefs?: readonly string[];
+};
+
+export const CURATED_MCP_SERVERS: ReadonlyArray<McpConnectorOption> = [
+  {
+    id: "github",
+    displayName: "GitHub",
+    description: "Read repos, issues, PRs; manage labels and comments.",
+    transport: "stdio",
+    stdio: {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-github"],
+    },
+    envRefs: ["GITHUB_PERSONAL_ACCESS_TOKEN"],
+  },
+  {
+    id: "filesystem",
+    displayName: "Filesystem",
+    description: "Scoped filesystem read/write for a configured root.",
+    transport: "stdio",
+    stdio: {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/Users/you/Documents"],
+    },
+  },
+  {
+    id: "postgres",
+    displayName: "Postgres",
+    description: "Read-only SQL queries against a PostgreSQL database.",
+    transport: "stdio",
+    stdio: {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-postgres", "postgres://localhost/mydb"],
+    },
+  },
+  {
+    id: "fetch",
+    displayName: "Fetch",
+    description: "HTTP fetch with content-type aware parsing.",
+    transport: "stdio",
+    stdio: {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-fetch"],
+    },
+  },
+  {
+    id: "memory",
+    displayName: "Memory (MCP reference)",
+    description: "Persistent key-value memory; reference impl from MCP team.",
+    transport: "stdio",
+    stdio: {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-memory"],
+    },
+  },
+  {
+    id: "slack",
+    displayName: "Slack",
+    description: "Channel reads, message posts, reactions (MCP reference).",
+    transport: "stdio",
+    stdio: {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-slack"],
+    },
+    envRefs: ["SLACK_BOT_TOKEN", "SLACK_TEAM_ID"],
+  },
+];
+
+/**
+ * Render the MCP connectors picker panel — an HTML fragment listing
+ * curated MCP servers with one-click "Add to spec" buttons. The wired
+ * `data-connector` attribute lets the calling page handle clicks via
+ * delegation and POST to /api/specs/<name>/mcp.
+ */
+export function renderMcpConnectorsPanel(args: {
+  readonly currentSpecName?: string;
+  readonly catalog?: ReadonlyArray<McpConnectorOption>;
+}): string {
+  const escapeHtml = (s: string): string =>
+    s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  const catalog = args.catalog ?? CURATED_MCP_SERVERS;
+  const specSuffix = args.currentSpecName ? ` to <code>${escapeHtml(args.currentSpecName)}</code>` : "";
+  const rows = catalog
+    .map((c) => {
+      const envHint =
+        c.envRefs && c.envRefs.length > 0
+          ? `<div class="connector-env">Requires env: ${c.envRefs.map((e) => `<code>${escapeHtml(e)}</code>`).join(", ")}</div>`
+          : "";
+      const cmdLine =
+        c.transport === "stdio"
+          ? `<code>${escapeHtml((c.stdio?.command ?? "") + (c.stdio?.args ? ` ${c.stdio.args.join(" ")}` : ""))}</code>`
+          : `<code>${escapeHtml(c.sse?.url ?? "")}</code>`;
+      return `<div class="pane connector-card" data-connector="${escapeHtml(c.id)}">
+        <strong>${escapeHtml(c.displayName)}</strong>
+        <span class="connector-transport">[${escapeHtml(c.transport)}]</span>
+        <p>${escapeHtml(c.description)}</p>
+        ${cmdLine}
+        ${envHint}
+        <button class="connector-add" data-id="${escapeHtml(c.id)}">+ Add${specSuffix}</button>
+      </div>`;
+    })
+    .join("\n");
+  return `<section class="connectors-panel">
+    <h2>MCP Connectors</h2>
+    <p class="dashboard-empty">Pick a server to wire into your spec's <code>mcp_servers:</code> block. The Add button posts to <code>/api/specs/&lt;name&gt;/mcp</code>; the studio-server uses <code>spec-patch</code> to preserve comments + key order on write-back.</p>
+    ${rows}
+  </section>`;
+}
+
 export function renderMultiSpecDashboard(rows: ReadonlyArray<DashboardRow>): string {
   const escapeHtml = (s: string): string =>
     s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");

@@ -32,6 +32,7 @@
     "onLanguage:yaml",
     "onLanguage:crewhaus-spec",
     "onCommand:crewhaus.runSpec",
+    "onCommand:crewhaus.continueSpec",
     "onCommand:crewhaus.openTrace"
   ],
   "contributes": {
@@ -56,10 +57,35 @@
         "title": "CrewHaus: Run Spec"
       },
       {
+        "command": "crewhaus.continueSpec",
+        "title": "CrewHaus: Continue Spec (resume latest session)"
+      },
+      {
         "command": "crewhaus.openTrace",
         "title": "CrewHaus: Open Trace Viewer"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceFilename == crewhaus.yaml || resourceExtname == .crewhaus.yaml",
+          "command": "crewhaus.runSpec",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceFilename == crewhaus.yaml || resourceExtname == .crewhaus.yaml",
+          "command": "crewhaus.continueSpec",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceFilename == crewhaus.yaml || resourceExtname == .crewhaus.yaml",
+          "command": "crewhaus.runSpec",
+          "group": "crewhaus"
+        }
+      ]
+    },
     "configuration": {
       "title": "CrewHaus",
       "properties": {

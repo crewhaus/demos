@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { getStudioJs, renderMultiSpecDashboard, renderStudioHtml } from "./index.js";
+import {
+  CURATED_MCP_SERVERS,
+  getStudioJs,
+  renderMcpConnectorsPanel,
+  renderMultiSpecDashboard,
+  renderStudioHtml,
+} from "./index.js";
 
 describe("studio-ui (T1)", () => {
   test("renderStudioHtml emits a complete HTML document with the three nav tabs", () => {
@@ -67,5 +73,76 @@ describe("studio-ui v1 — Section 31 multi-spec dashboard", () => {
     ]);
     expect(html).toContain("evil&lt;script&gt;");
     expect(html).not.toContain("evil<script>");
+  });
+});
+
+describe("renderMcpConnectorsPanel (M5.2)", () => {
+  test("lists curated connectors: github + filesystem + postgres + fetch + memory + slack", () => {
+    const html = renderMcpConnectorsPanel({});
+    expect(html).toContain("GitHub");
+    expect(html).toContain("Filesystem");
+    expect(html).toContain("Postgres");
+    expect(html).toContain("Fetch");
+    expect(html).toContain("MCP reference");
+    expect(html).toContain("Slack");
+  });
+
+  test("CURATED_MCP_SERVERS has at least 6 entries", () => {
+    expect(CURATED_MCP_SERVERS.length).toBeGreaterThanOrEqual(6);
+  });
+
+  test("each card has an Add button bound to the connector id", () => {
+    const html = renderMcpConnectorsPanel({});
+    expect(html).toContain('data-id="github"');
+    expect(html).toContain('data-id="filesystem"');
+    expect(html).toContain('class="connector-add"');
+  });
+
+  test("currentSpecName personalizes the Add button label", () => {
+    const html = renderMcpConnectorsPanel({ currentSpecName: "my-bot" });
+    expect(html).toContain("my-bot");
+  });
+
+  test("env-var requirements are surfaced as a hint", () => {
+    const html = renderMcpConnectorsPanel({});
+    expect(html).toContain("GITHUB_PERSONAL_ACCESS_TOKEN");
+    expect(html).toContain("SLACK_BOT_TOKEN");
+    expect(html).toContain("SLACK_TEAM_ID");
+  });
+
+  test("custom catalog override displaces the default list", () => {
+    const html = renderMcpConnectorsPanel({
+      catalog: [
+        {
+          id: "custom",
+          displayName: "Custom",
+          description: "A test entry.",
+          transport: "stdio",
+          stdio: { command: "echo", args: ["hi"] },
+        },
+      ],
+    });
+    expect(html).toContain("Custom");
+    expect(html).not.toContain("GitHub");
+  });
+
+  test("escapes HTML in spec name + connector display fields", () => {
+    const html = renderMcpConnectorsPanel({
+      currentSpecName: "evil<script>",
+      catalog: [
+        {
+          id: "x",
+          displayName: "<a>",
+          description: "<b>",
+          transport: "stdio",
+          stdio: { command: "rm", args: ["-rf", "/"] },
+        },
+      ],
+    });
+    expect(html).toContain("evil&lt;script&gt;");
+    expect(html).toContain("&lt;a&gt;");
+    expect(html).not.toContain("<script>");
+    // Note: <a> appears nowhere because we escape it; ensure no unescaped <b> either
+    expect(html.indexOf("<b>")).toBe(-1);
   });
 });
