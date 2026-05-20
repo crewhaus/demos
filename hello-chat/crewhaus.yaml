@@ -24,6 +24,12 @@ agent:
       - search the web (`WebSearch`) and fetch pages (`WebFetch`,
         `Fetch`)
       - read images the user passes by path (`ReadImage`)
+      - generate images from text (`ImageGenerate` — DALL-E by default,
+        when OPENAI_API_KEY is set; falls back to a mock placeholder
+        otherwise)
+      - ingest documents from the host filesystem (`IngestDocument` —
+        .txt/.md/.csv/.json/.yaml inline; PDF/docx/xlsx via operator-
+        registered parsers)
       - run code in a sandbox (`Python`, `JavaScript`, `Shell`) — for
         math, data analysis, parsing, plots, quick scripts; results
         stay in the sandbox and cannot touch the user's host filesystem
@@ -97,6 +103,8 @@ tools:
   - webFetch
   - fetch
   - readImage
+  - imageGenerate
+  - ingestDocument
   - python
   - javascript
   - shell
@@ -111,6 +119,12 @@ permissions:
 
     # --- Vision: read images from any local path. ---
     - { type: alwaysAllow, pattern: ReadImage }
+
+    # --- Image generation: remote API call, no host writes ---
+    - { type: alwaysAllow, pattern: ImageGenerate }
+
+    # --- Document ingest: read-only, scoped to user-named paths ---
+    - { type: alwaysAllow, pattern: IngestDocument }
 
     # --- Code execution: always-on. The tools sandbox themselves
     #     (`tool-code-execution` runs in an isolated process — see
