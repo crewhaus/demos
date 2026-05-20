@@ -1,0 +1,11 @@
+{
+  "$comment": "Project hooks for hello-procode. The hooks-engine spawns each command as a subprocess with a restricted env (no API keys, no AWS_*, no GH_*) on the matching lifecycle event, writes the event payload as JSON to stdin, and expects a JSON HookDecision back on stdout. The pre-tool hook below is a belt-and-suspenders backstop for the permission rules: if a Bash invocation somehow slips past the allowlist, the hook denies it before it runs. See factory/packages/hooks-engine/src/index.ts for the full event list and payload shape.",
+  "hooks": [
+    {
+      "event": "pre-tool",
+      "matcher": "Bash",
+      "command": "node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const p=JSON.parse(s);const cmd=(p.input&&p.input.command)||'';if(/\\brm\\s+-rf\\s+\\//.test(cmd)||/\\bsudo\\b/.test(cmd)||/:\\(\\)\\{/.test(cmd)){process.stdout.write(JSON.stringify({decision:'block',reason:'hello-procode hook: blocked destructive pattern'}))}else{process.stdout.write(JSON.stringify({decision:'allow'}))}})\"",
+      "timeoutMs": 2000
+    }
+  ]
+}

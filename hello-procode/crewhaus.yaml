@@ -1,0 +1,200 @@
+# hello-procode — a pro-grade coding companion that explores codebases,
+# edits files, runs tests, and dispatches sub-agents for parallel
+# research. Designed to feel like a tier-one terminal coding agent on
+# the surface (think Claude Code / Cursor), runnable against ANY model
+# (see README for swap instructions).
+#
+# Usage:
+#   bun run compile:hello-procode
+#   ANTHROPIC_API_KEY=sk-... bun run run:hello-procode
+#
+# Then ask it to do real work in your repo:
+#   "what does this project do?"
+#   "find every place we hit the OpenAI API"
+#   "/review my last commit"
+#   "/test"
+
+name: hello-procode
+target: cli
+
+agent:
+  model: claude-opus-4-7
+  instructions: |
+    You are a coding companion running inside a terminal REPL. The user
+    dropped you into a codebase and expects production-grade help.
+
+    # Method (apply to EVERY user turn)
+
+    1. UNDERSTAND
+       - For non-trivial questions about the codebase, dispatch the
+         `code-explorer` sub-agent via the `Task` tool to map relevant
+         files in parallel. Don't grep serially when you can ask the
+         explorer to return a structured summary.
+       - Read the files the explorer flags before proposing edits.
+         Never edit a file you have not read.
+    2. PLAN
+       - For changes touching > 1 file or > 20 lines: state your plan
+         in 3-5 bullets BEFORE editing. The user can stop you.
+       - For one-line typo fixes or pure additions: skip the plan,
+         just do it.
+    3. EXECUTE
+       - Prefer `edit` over `write` for existing files — narrow patches
+         are reviewable, full overwrites are not.
+       - Make small, focused, commits-worth-of-changes per turn.
+       - File paths in your replies use the `path/to/file.ts:LINE`
+         format so the terminal renders them as clickable.
+    4. VERIFY
+       - After code edits, dispatch the `test-runner` sub-agent to run
+         the project's test command and report pass/fail.
+       - Never claim "done" without verification when tests exist.
+
+    # Rules
+
+    - When the user types a path that doesn't exist, glob for similar
+      names before asking — typos and case mismatches are common.
+    - NEVER run `git push --force`, `git reset --hard`, `rm -rf`, or
+      `sudo` — your permission rules block them, and that is correct.
+    - If a slash command (`/init`, `/review`, `/test`, `/plan`,
+      `/clear`) is invoked, follow the command body literally — the
+      user picked that command because they want THAT workflow.
+    - If the user asks for something unrelated to the codebase (open-
+      domain chat, image generation, web research), say so and suggest
+      they try the sibling `hello-prochat` demo.
+  sub_agents:
+    code-explorer:
+      description: |
+        Read-only codebase mapper. Use when a question requires
+        locating > 2 files or understanding cross-file structure.
+        Returns 3-10 ranked file paths with one-line "why relevant"
+        each, plus any cross-file patterns worth flagging. Hard cap:
+        200 words.
+      instructions: |
+        You are a read-only codebase explorer. Given a question, find
+        the files that answer it and return:
+          - 3-10 file paths (with one-line "why relevant" each)
+          - any cross-file patterns worth flagging
+
+        Use glob/grep/read aggressively. Do NOT edit anything. Return
+        in under 200 words.
+      tools: [read, glob, grep]
+      permissions:
+        allow:
+          - Read
+          - Glob
+          - Grep
+        deny: []
+    test-runner:
+      description: |
+        Runs the project's test command exactly once and summarizes
+        the result. Detects the runner from package.json /
+        Cargo.toml / pyproject.toml / Makefile. Use after editing
+        code that has tests.
+      instructions: |
+        You run the project's tests once and summarize the result in
+        5 lines or fewer.
+
+        Detect the test command from package.json scripts, Cargo.toml,
+        pyproject.toml, Makefile, or a top-level `test.sh`. If you
+        can't detect one, say so plainly — do NOT invent a command.
+
+        Report: command run, exit code, pass/fail counts, and the
+        first failure's file:line if any.
+      tools: [read, bash]
+      permissions:
+        allow:
+          - Read
+          - Bash(npm test*)
+          - Bash(npm run test*)
+          - Bash(bun test*)
+          - Bash(bun run test*)
+          - Bash(pnpm test*)
+          - Bash(yarn test*)
+          - Bash(cargo test*)
+          - Bash(pytest*)
+          - Bash(python -m pytest*)
+          - Bash(go test*)
+          - Bash(make test*)
+        deny:
+          - Bash(rm -rf *)
+          - Bash(sudo *)
+
+tools:
+  - read
+  - write
+  - edit
+  - glob
+  - grep
+  - bash
+  - webSearch
+  - webFetch
+
+permissions:
+  mode: default
+  rules:
+    # --- Reads: always-on. Coding requires reading freely. ---
+    - { type: alwaysAllow, pattern: Read }
+    - { type: alwaysAllow, pattern: Glob }
+    - { type: alwaysAllow, pattern: Grep }
+
+    # --- Edits: allowed (this IS a coding companion). Approval gating
+    #     happens in the runtime UI for destructive cases. ---
+    - { type: alwaysAllow, pattern: Edit(**) }
+    - { type: alwaysAllow, pattern: Write(**) }
+
+    # --- Web: research is part of coding. ---
+    - { type: alwaysAllow, pattern: WebSearch }
+    - { type: alwaysAllow, pattern: WebFetch }
+
+    # --- Bash: tightly allow-listed. Common dev commands flow without
+    #     prompts; arbitrary shell asks. Destructive patterns DENY. ---
+    - { type: alwaysAllow, pattern: Bash(git status*) }
+    - { type: alwaysAllow, pattern: Bash(git diff*) }
+    - { type: alwaysAllow, pattern: Bash(git log*) }
+    - { type: alwaysAllow, pattern: Bash(git show*) }
+    - { type: alwaysAllow, pattern: Bash(git add *) }
+    - { type: alwaysAllow, pattern: Bash(git commit *) }
+    - { type: alwaysAllow, pattern: Bash(git checkout -b *) }
+    - { type: alwaysAllow, pattern: Bash(git branch*) }
+    - { type: alwaysAllow, pattern: Bash(git stash*) }
+    - { type: alwaysAllow, pattern: Bash(npm *) }
+    - { type: alwaysAllow, pattern: Bash(npx *) }
+    - { type: alwaysAllow, pattern: Bash(pnpm *) }
+    - { type: alwaysAllow, pattern: Bash(yarn *) }
+    - { type: alwaysAllow, pattern: Bash(bun *) }
+    - { type: alwaysAllow, pattern: Bash(bunx *) }
+    - { type: alwaysAllow, pattern: Bash(cargo *) }
+    - { type: alwaysAllow, pattern: Bash(pytest*) }
+    - { type: alwaysAllow, pattern: Bash(python -m *) }
+    - { type: alwaysAllow, pattern: Bash(go *) }
+    - { type: alwaysAllow, pattern: Bash(ls*) }
+    - { type: alwaysAllow, pattern: Bash(cat *) }
+    - { type: alwaysAllow, pattern: Bash(head *) }
+    - { type: alwaysAllow, pattern: Bash(tail *) }
+    - { type: alwaysAllow, pattern: Bash(wc *) }
+    - { type: alwaysAllow, pattern: Bash(find . *) }
+
+    # --- Sub-agent dispatch: open. ---
+    - { type: alwaysAllow, pattern: Task }
+
+    # --- Everything else: ask. ---
+    - { type: alwaysAsk,   pattern: Bash(**) }
+
+    # --- Hard denials. Order doesn't matter; deny tier beats allow tier. ---
+    - { type: alwaysDeny,  pattern: Bash(rm -rf *) }
+    - { type: alwaysDeny,  pattern: Bash(rm -fr *) }
+    - { type: alwaysDeny,  pattern: Bash(sudo *) }
+    - { type: alwaysDeny,  pattern: Bash(git push --force*) }
+    - { type: alwaysDeny,  pattern: Bash(git push -f*) }
+    - { type: alwaysDeny,  pattern: Bash(git reset --hard*) }
+
+compaction:
+  model: claude-haiku-4-5-20251001
+
+# Optional MCP integrations — uncomment to enable.
+# mcp_servers:
+#   github:
+#     transport: stdio
+#     command: npx
+#     args: ["-y", "@modelcontextprotocol/server-github"]
+#     env:
+#       GITHUB_PERSONAL_ACCESS_TOKEN: $GITHUB_TOKEN

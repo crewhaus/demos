@@ -262,10 +262,20 @@ function tryCompileSpec(specText: string): { ok: boolean; stderr: string } {
     });
     if (result.status === 0) return { ok: true, stderr: "" };
     const lines = result.stderr.split("\n").filter((l) => l.trim() !== "");
-    // Prefer `crewhaus: ...` lines (the user-facing error); fall back to
-    // the first non-empty line.
+    // Prefer `crewhaus:` lines (the user-facing compiler error). Fall
+    // back to other non-warning lines if not present; only as a last
+    // resort report the first noisy line. Adapter-emitted warnings
+    // (e.g. `[adapter-anthropic] could not detect claude CLI...`) are
+    // skipped so the real failure surfaces.
     const userLine = lines.find((l) => l.startsWith("crewhaus:"));
-    return { ok: false, stderr: userLine ?? lines[0] ?? "(no error output)" };
+    if (userLine) return { ok: false, stderr: userLine };
+    const nonWarning = lines.find(
+      (l) =>
+        !l.startsWith("[adapter-") &&
+        !l.startsWith("[mcp]") &&
+        !l.includes("could not detect installed claude CLI"),
+    );
+    return { ok: false, stderr: nonWarning ?? lines[0] ?? "(no error output)" };
   } finally {
     rmSync(tmpRoot, { recursive: true, force: true });
   }

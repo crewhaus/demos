@@ -35,6 +35,12 @@
     "compile:hello-channel-imessage": "bun ../factory/apps/cli/src/index.ts compile hello-channel-imessage/crewhaus.yaml -o hello-channel-imessage/dist",
     "compile:hello-harness-designer": "bun ../factory/apps/cli/src/index.ts compile hello-harness-designer/crewhaus.yaml -o hello-harness-designer/dist",
     "run:hello-harness-designer": "bun hello-harness-designer/dist/agent.ts",
+    "compile:hello-procode": "bun ../factory/apps/cli/src/index.ts compile hello-procode/crewhaus.yaml -o hello-procode/dist",
+    "run:hello-procode": "bun hello-procode/dist/agent.ts",
+    "compile:hello-prochat": "bun ../factory/apps/cli/src/index.ts compile hello-prochat/crewhaus.yaml -o hello-prochat/dist",
+    "run:hello-prochat": "bun hello-prochat/dist/agent.ts",
+    "compile:hello-multichat": "bun ../factory/apps/cli/src/index.ts compile hello-multichat/crewhaus.yaml -o hello-multichat/dist",
+    "run:hello-multichat": "bun hello-multichat/dist/daemon.ts",
     "smoke:section-12": "bun scripts/section-12-smoke.ts",
     "smoke:section-19": "bun scripts/section-19-smoke.ts",
     "smoke:section-20": "bun scripts/section-20-smoke.ts",
@@ -43,7 +49,9 @@
     "smoke:section-23-res": "bun scripts/section-23-res-smoke.ts",
     "smoke:section-23-batch": "bun scripts/section-23-batch-smoke.ts",
     "smoke:section-24": "bun scripts/section-24-smoke.ts",
-    "smoke:section-25": "bun scripts/section-25-smoke.ts"
+    "smoke:section-25": "bun scripts/section-25-smoke.ts",
+    "smoke:hello-procode": "bun scripts/section-hello-procode-smoke.ts",
+    "smoke:hello-prochat": "bun scripts/section-hello-prochat-smoke.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.2.0",

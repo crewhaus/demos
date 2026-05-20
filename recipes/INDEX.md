@@ -28,6 +28,19 @@ problem they brought. Walk this tree from the top:
    writes the spec for you. Use this when you can describe the *goal*
    but not the *shape*. Everything below is for when you'd rather
    pick the shape yourself.
+0.5. **Want to imitate a top-tier production harness end-to-end?** →
+   pick the closest match and fork from there:
+     - "Like Claude Code / Cursor" → [Recipe 49 — Pro-grade Coder](49-procode.md)
+       (sub-agents, allow-listed bash, slash commands, project memory)
+     - "Like ChatGPT / Claude.ai" → [Recipe 50 — Pro-grade Chat](50-prochat.md)
+       (web browsing, vision, image generation, sandboxed code
+       interpreter, document ingest)
+     - "Like OpenClaw" → [Recipe 51 — Multi-channel Personal Assistant](51-multichat.md)
+       (one daemon listening on Slack + Telegram + Discord with
+       per-thread session isolation, heartbeat, emoji acks, control-UI
+       gateway)
+   Each forks the canonical shape from recipes 1, 3, etc., but with
+   every primitive wired up — they're the "full power" examples.
 1. **Are you just trying the system for the first time?** → start at
    [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md). Every other
    recipe assumes you've worked through it.

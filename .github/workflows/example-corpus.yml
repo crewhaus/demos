@@ -58,6 +58,23 @@ jobs:
           repository: crewhaus/factory
           path: factory
           token: ${{ secrets.CREWHAUS_REPO_TOKEN }}
+      # If the demos PR's branch name also exists in factory, check that
+      # out — lets cross-repo PRs (e.g. a spec field added to factory
+      # consumed by a new demo) test together. Falls back silently to
+      # factory's default branch when no matching branch exists.
+      - name: Match factory branch to demos PR branch when present
+        if: github.head_ref != ''
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          BRANCH="${{ github.head_ref }}"
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            echo "[example-corpus] factory has matching branch $BRANCH — checking out"
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+          else
+            echo "[example-corpus] no factory branch named $BRANCH; staying on default"
+          fi
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: ">=1.2.0"

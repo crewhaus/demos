@@ -35,12 +35,24 @@ describe("vscode-extension manifest (T1 — manifest validation in CI)", () => {
     expect(entry?.url).toBe("./schemas/spec.json");
   });
 
-  test("registers crewhaus.runSpec + crewhaus.openTrace commands", () => {
+  test("registers crewhaus.runSpec + crewhaus.continueSpec + crewhaus.openTrace commands (M5.1)", () => {
     const contributes = manifest["contributes"] as Record<string, unknown>;
     const cmds = contributes?.["commands"] as ReadonlyArray<{ command?: string }>;
     const ids = cmds.map((c) => c.command);
     expect(ids).toContain("crewhaus.runSpec");
+    expect(ids).toContain("crewhaus.continueSpec");
     expect(ids).toContain("crewhaus.openTrace");
+  });
+
+  test("editor/title + explorer/context menus surface runSpec on crewhaus.yaml files (M5.1)", () => {
+    const contributes = manifest["contributes"] as Record<string, unknown>;
+    const menus = contributes?.["menus"] as Record<string, unknown>;
+    expect(menus).toBeDefined();
+    const titleMenu = menus["editor/title"] as ReadonlyArray<{ command?: string }>;
+    expect(titleMenu.find((m) => m.command === "crewhaus.runSpec")).toBeDefined();
+    expect(titleMenu.find((m) => m.command === "crewhaus.continueSpec")).toBeDefined();
+    const contextMenu = menus["explorer/context"] as ReadonlyArray<{ command?: string }>;
+    expect(contextMenu.find((m) => m.command === "crewhaus.runSpec")).toBeDefined();
   });
 
   test("activationEvents include onLanguage:yaml so the extension activates on every yaml open", () => {

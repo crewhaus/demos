@@ -1,6 +1,16 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 19 `hello-*` example specs covering every target shape, 48 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 51 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+
+## Showcase demos
+
+Three demos go beyond minimal vertical slices and show what CrewHaus looks like at full power. Each one is a wink at a tier-one mainstream harness — feel familiar, fork and make it your own:
+
+- **[hello-procode](./hello-procode/)** — a pro-grade terminal coding companion (`target: cli`) à la Claude Code / Cursor: sub-agents for parallel codebase exploration, allow-listed bash, slash commands (`/init`, `/review`, `/test`, `/plan`), skills for debug / code-review / refactor, project-memory auto-load. ~190 lines of YAML.
+- **[hello-prochat](./hello-prochat/)** — a pro-grade conversational assistant (`target: cli`) à la ChatGPT / Claude.ai: web browsing, vision (image reading), sandboxed Python/JS/shell code interpreter, image generation, document ingest, parallel web-research sub-agent, slash commands (`/browse`, `/code`, `/analyze`, `/summarize`, `/imagine`, `/ingest`). ~110 lines of YAML.
+- **[hello-multichat](./hello-multichat/)** — an always-on multi-channel personal assistant (`target: channel`) à la OpenClaw: one daemon listening on Slack + Telegram + Discord simultaneously, per-thread session isolation, planner sub-agent for multi-step tasks, scheduled heartbeats, emoji status reactions, control-UI gateway. ~140 lines of YAML. 🦞
+
+All three default to Claude but the `model:` field accepts any provider (GPT-4o, Gemini, Bedrock, local OpenAI-compatible servers) — each demo's README documents the swap.
 
 ## How it relates to factory
 
