@@ -31,8 +31,8 @@ That creates a `.codegraph/index.db` SQLite database in the cwd. The four tools 
 
 ## Wiring in a spec
 
-```yaml
-# spec.yaml
+```yml
+# spec.yaml — illustrative; the `target: crew` schema is being extended to accept this agent/tools shape
 name: refactor-helper
 target: crew
 agent:

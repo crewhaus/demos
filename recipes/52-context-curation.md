@@ -46,8 +46,8 @@ console.log(`Curation: ${items.length} → ${result.items.length} items, saved $
 
 ## Spec-side configuration
 
-```yaml
-# spec.yaml
+```yml
+# spec.yaml — illustrative; `compaction.curate*` keys land in the spec schema in a follow-up to factory PR #99
 name: support-rag
 target: pipeline
 agent:
