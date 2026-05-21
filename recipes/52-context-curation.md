@@ -46,23 +46,31 @@ console.log(`Curation: ${items.length} → ${result.items.length} items, saved $
 
 ## Spec-side configuration
 
-```yml
-# spec.yaml — illustrative; `compaction.curate*` keys land in the spec schema in a follow-up to factory PR #99
+```yaml
+# spec.yaml
 name: support-rag
 target: pipeline
 agent:
   model: claude-sonnet-4-6
   instructions: |
     Answer support questions from the knowledge base.
+retrieve:
+  embedderModel: voyage-3-large
+  defaultK: 10              # over-retrieve; curator filters to top-K
+indexing:
+  chunkSize: 800
+  chunkOverlap: 100
+  documents:
+    - id: refund-policy
+      text: |
+        Refunds are processed within 5 business days of return receipt.
+    - id: shipping-policy
+      text: |
+        Standard shipping takes 3-5 business days. Express ships next-day.
 compaction:
   curate: true              # turn the curator on
   dedupeThreshold: 0.92     # default
   relevanceTopK: 5          # cap retrieved items per turn
-indexing:
-  chunkSize: 800
-  chunkOverlap: 100
-retrieve:
-  defaultK: 10              # over-retrieve; curator filters to top-K
 ```
 
 The `defaultK: 10` + `relevanceTopK: 5` pattern is the recommended one: over-retrieve (cheap, embeddings are already in your vector DB), then curate down to the top-K (also cheap, since the chunks carry their embeddings).

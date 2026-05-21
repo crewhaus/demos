@@ -31,24 +31,26 @@ That creates a `.codegraph/index.db` SQLite database in the cwd. The four tools 
 
 ## Wiring in a spec
 
-```yml
-# spec.yaml — illustrative; the `target: crew` schema is being extended to accept this agent/tools shape
+```yaml
+# spec.yaml
 name: refactor-helper
 target: crew
-agent:
-  model: claude-sonnet-4-6
-  instructions: |
-    You help senior engineers reason about code changes. Use CodeGraph tools to
-    answer "what calls this?" and "what's the blast radius of this change?"
-    before suggesting any refactor.
-tools:
-  - CodeGraphSearch
-  - CodeGraphCallers
-  - CodeGraphCallees
-  - CodeGraphImpact
-  # Also useful in combination:
-  - Read
-  - Grep
+model: claude-sonnet-4-6
+entry: refactor-helper
+roles:
+  refactor-helper:
+    instructions: |
+      You help senior engineers reason about code changes. Use CodeGraph tools to
+      answer "what calls this?" and "what's the blast radius of this change?"
+      before suggesting any refactor.
+    tools:
+      - codegraphSearch
+      - codegraphCallers
+      - codegraphCallees
+      - codegraphImpact
+      # Also useful in combination:
+      - read
+      - grep
 ```
 
 All four tools are `scope: "internal"` — the egress classifier short-circuits them, so they run at full speed.
