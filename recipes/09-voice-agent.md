@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-voice/crewhaus.yaml
+  spec: starters/voice/crewhaus.yaml
   bun_scripts:
     - smoke:section-24
 ---
@@ -71,10 +71,10 @@ operations-heavier and only justified when latency is the product.
 
 ## The smallest spec
 
-The bundled example [`hello-voice/crewhaus.yaml`](../hello-voice/crewhaus.yaml):
+The bundled example [`starters/voice/crewhaus.yaml`](../starters/voice/crewhaus.yaml):
 
 ```yaml
-name: hello-voice
+name: starters/voice
 target: voice
 agent:
   model: gpt-4o-realtime-preview
@@ -256,7 +256,7 @@ buffer, captures the agent's output frames, and writes them to
 stdout (or a configured output path).
 
 This is how `bun run smoke:section-24` works — a tiny fixture in
-`hello-voice/` plus an assertion that the run produces N
+`starters/voice/` plus an assertion that the run produces N
 output frames in expected time. Use the same pattern in CI for any
 voice agent: record a 5-second test prompt, smoke against it, assert
 on transcript text.
@@ -294,7 +294,7 @@ different shape is cheaper.
 
 ## Pointers to source
 
-- **Example:** [`hello-voice/crewhaus.yaml`](../hello-voice/crewhaus.yaml).
+- **Example:** [`starters/voice/crewhaus.yaml`](../starters/voice/crewhaus.yaml).
 - **Codegen:** [`packages/target-voice`](https://github.com/crewhaus/factory/blob/main/packages/target-voice).
 - **Voice runtime:** [`packages/voice-runtime`](https://github.com/crewhaus/factory/blob/main/packages/voice-runtime).
 - **VAD engine:** [`packages/vad-engine`](https://github.com/crewhaus/factory/blob/main/packages/vad-engine).

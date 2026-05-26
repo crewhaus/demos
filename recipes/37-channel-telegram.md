@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-channel-telegram/crewhaus.yaml
+  spec: starters/channels/telegram/crewhaus.yaml
   bun_scripts:
     - smoke:section-33-telegram
 ---
@@ -39,10 +39,10 @@ TELEGRAM_SECRET_TOKEN=<your hex>
 ## Step 2 — The spec
 
 The bundled example
-[`hello-channel-telegram/crewhaus.yaml`](../hello-channel-telegram/crewhaus.yaml):
+[`starters/channels/telegram/crewhaus.yaml`](../starters/channels/telegram/crewhaus.yaml):
 
 ```yaml
-name: hello-channel-telegram
+name: starters/channels/telegram
 target: channel
 agent:
   model: claude-sonnet-4-6
@@ -100,8 +100,8 @@ The runtime compares `X-Telegram-Bot-Api-Secret-Token` to the spec's
 ## Step 4 — Compile and register the webhook
 
 ```bash
-bun run compile hello-channel-telegram
-bun hello-channel-telegram/dist/daemon.ts
+bun run compile starters/channels/telegram
+bun starters/channels/telegram/dist/daemon.ts
 ```
 
 Point ngrok at the daemon's port:
@@ -277,7 +277,7 @@ to validate the wiring.
 
 ## Pointers to source
 
-- **Example:** [`hello-channel-telegram/crewhaus.yaml`](../hello-channel-telegram/crewhaus.yaml).
+- **Example:** [`starters/channels/telegram/crewhaus.yaml`](../starters/channels/telegram/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-telegram`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-telegram).
 - **Spec schema (telegram block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

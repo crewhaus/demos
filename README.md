@@ -1,14 +1,14 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 55 task-oriented [recipes](./recipes/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 copy-pasteable [starters](./starters/) covering every target shape, 55 task-oriented [recipes](./recipes/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## Showcase demos
 
 Three demos go beyond minimal vertical slices and show what CrewHaus looks like at full power. Each one is a wink at a tier-one mainstream harness — feel familiar, fork and make it your own:
 
-- **[hello-procode](./hello-procode/)** — a pro-grade terminal coding companion (`target: cli`) à la Claude Code / Cursor: sub-agents for parallel codebase exploration, allow-listed bash, slash commands (`/init`, `/review`, `/test`, `/plan`), skills for debug / code-review / refactor, project-memory auto-load. ~190 lines of YAML.
-- **[hello-prochat](./hello-prochat/)** — a pro-grade conversational assistant (`target: cli`) à la ChatGPT / Claude.ai: web browsing, vision (image reading), sandboxed Python/JS/shell code interpreter, image generation, document ingest, parallel web-research sub-agent, slash commands (`/browse`, `/code`, `/analyze`, `/summarize`, `/imagine`, `/ingest`). ~110 lines of YAML.
-- **[hello-multichat](./hello-multichat/)** — an always-on multi-channel personal assistant (`target: channel`) à la OpenClaw: one daemon listening on Slack + Telegram + Discord simultaneously, per-thread session isolation, planner sub-agent for multi-step tasks, scheduled heartbeats, emoji status reactions, control-UI gateway. ~140 lines of YAML. 🦞
+- **[procode](./starters/showcases/procode/)** — a pro-grade terminal coding companion (`target: cli`) à la Claude Code / Cursor: sub-agents for parallel codebase exploration, allow-listed bash, slash commands (`/init`, `/review`, `/test`, `/plan`), skills for debug / code-review / refactor, project-memory auto-load. ~190 lines of YAML.
+- **[prochat](./starters/showcases/prochat/)** — a pro-grade conversational assistant (`target: cli`) à la ChatGPT / Claude.ai: web browsing, vision (image reading), sandboxed Python/JS/shell code interpreter, image generation, document ingest, parallel web-research sub-agent, slash commands (`/browse`, `/code`, `/analyze`, `/summarize`, `/imagine`, `/ingest`). ~110 lines of YAML.
+- **[multichat](./starters/showcases/multichat/)** — an always-on multi-channel personal assistant (`target: channel`) à la OpenClaw: one daemon listening on Slack + Telegram + Discord simultaneously, per-thread session isolation, planner sub-agent for multi-step tasks, scheduled heartbeats, emoji status reactions, control-UI gateway. ~140 lines of YAML. 🦞
 
 All three default to Claude but the `model:` field accepts any provider (GPT-4o, Gemini, Bedrock, local OpenAI-compatible servers) — each demo's README documents the swap.
 
@@ -30,30 +30,41 @@ Factory has zero references back to this repo — the dependency is one-way (dem
 # from the demos/ directory
 bun install
 
-# see every available demo
+# see every available starter
 bun run list
 
-# compile and run any hello-* example
-bun run compile hello-cli          # → hello-cli/dist/agent.ts
-bun run run hello-cli              # runs the compiled agent
+# compile and run any starter (pass the path printed by `bun run list`)
+bun run compile starters/cli                       # → starters/cli/dist/agent.ts
+bun run run starters/cli                           # runs the compiled agent
+bun run compile starters/channels/discord          # nested channel adapter
+bun run compile starters/showcases/procode         # nested showcase
+
+# showcase aliases for muscle memory
+bun run compile:procode  # ↔ bun run compile starters/showcases/procode
+bun run compile:prochat
+bun run compile:multichat
 
 # validate every recipe
 bun run recipes:test
 ```
 
-Adding a new demo: drop a directory with a `crewhaus.yaml`, then
-`bun run compile <name>` and `bun run run <name>` work immediately —
-no package.json edit required.
+Adding a new starter: drop a directory under `starters/` with a `crewhaus.yaml`, then `bun run compile starters/<path>` and `bun run run starters/<path>` work immediately — no package.json edit required.
 
 ## Layout
 
 ```
 demos/
-  hello-cli/                   first agent — pick any of the 22 hello-* dirs
-  hello-workflow/
-  hello-channel/
-  …
-  recipes/
+  starters/                    user-facing: every dir is a copy-pasteable spec
+    cli/                       first agent — pick any of the 14 top-tier shapes
+    workflow/
+    channel/                   the generic channel adapter (Slack reference)
+    crew/  graph/  rag/  research/  batch/  voice/  browser/
+    managed/  eval/  federation/  harness-designer/  optimize/
+    channels/                  platform-specific channel adapter variants
+      discord/  imessage/  telegram/  whatsapp/
+    showcases/                 "full power" tier-1 harness imitations
+      procode/  prochat/  multichat/
+  recipes/                     55 task-oriented walkthrough docs
     01-cli-coding-agent.md
     …
     55-meta-cross-references.md
@@ -63,7 +74,7 @@ demos/
     section-07-cli-smoke/      spec-only smokes (crewhaus.yaml entry)
     section-09-mcp-smoke/
     section-27-smoke/          executable smokes (smoke.ts entry)
-    section-33-discord-smoke/  channel-adapter platform variants
+    section-33-{discord,imessage,telegram,whatsapp}-smoke/
     section-34-federation-smoke/
     section-35-{vscode,jetbrains,playground}-smoke/
     section-36-sandbox-image-{dotnet,go,java,php,r,ruby,rust,registry}-smoke/
@@ -73,9 +84,9 @@ demos/
     section-40-{example-corpus,template-marketplace-client,template-registry}-smoke/
     hello-{procode,prochat}-smoke/  showcase smokes
   scripts/
-    compile.ts                 parameterized: bun run compile <demo>
-    run.ts                     parameterized: bun run run <demo>
-    list.ts                    enumerates demos with target + README status
+    compile.ts                 parameterized: bun run compile <starter>
+    run.ts                     parameterized: bun run run <starter>
+    list.ts                    enumerates starters with target + README status
     test-recipes.ts            static recipe validator (links, scripts, specs)
     smoke-recipes.ts           runtime recipe smoke (compile + optional run)
   .github/workflows/
@@ -84,7 +95,7 @@ demos/
   README.md
 ```
 
-Each `hello-*` directory has a `crewhaus.yaml` (the spec), `README.md`, and optionally `.env.example`. Compiled output lands in `<example>/dist/` (gitignored).
+Each starter directory has a `crewhaus.yaml` (the spec), `README.md`, and optionally `.env.example`. Compiled output lands in `<starter>/dist/` (gitignored).
 
 ## Environment variables
 

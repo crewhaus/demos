@@ -33,7 +33,7 @@ The boundary-classifier + injection-detector wiring is exercised by
 the same smoke that covers caching/rate-limits/secrets includes a
 boundary classification probe over fixture content. Run with
 `bun smoke/section-27-smoke/smoke.ts`. For the permission-rules
-half of the fabric, see [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml)
+half of the fabric, see [`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml)
 lines 131–188 (the runnable deny-tier example).
 
 ## TL;DR

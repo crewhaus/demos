@@ -150,7 +150,7 @@ async function main(): Promise<void> {
       "bun",
       CLI_ENTRY,
       "compile",
-      join(REPO_ROOT, "hello-channel/crewhaus.yaml"),
+      join(REPO_ROOT, "starters/channel/crewhaus.yaml"),
       "-o",
       distDir,
     ],
@@ -164,7 +164,7 @@ async function main(): Promise<void> {
   // The daemon resolves `@crewhaus/*` via demos/tsconfig.json paths (bun
   // walks up from the script location). We copy the compiled output into
   // the example's own dist so re-runs pick up the latest build.
-  const exampleDist = join(REPO_ROOT, "hello-channel/dist");
+  const exampleDist = join(REPO_ROOT, "starters/channel/dist");
   mkdirSync(exampleDist, { recursive: true });
   for (const file of ["daemon.ts", "agent.ts", "session-router.ts", "gateway.ts"]) {
     const src = Bun.file(join(distDir, file));

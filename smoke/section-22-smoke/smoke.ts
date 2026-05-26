@@ -2,7 +2,7 @@
 /**
  * Section 22 — CRW (multi-agent crew) target smoke test.
  *
- * Compiles `hello-crew` and drives one crew run against the live
+ * Compiles `starters/crew` and drives one crew run against the live
  * model. The compiled bundle is a daemon that reads a single prompt on
  * stdin and emits one JSON-encoded `CrewEvent` per line on stdout.
  *
@@ -27,7 +27,7 @@ const CWD = process.cwd();
 const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
-const EXAMPLE = join(REPO_ROOT, "hello-crew");
+const EXAMPLE = join(REPO_ROOT, "starters/crew");
 const DIST_DAEMON = join(EXAMPLE, "dist", "daemon.ts");
 
 const log = (msg: string): void => {
@@ -133,7 +133,7 @@ const main = async (): Promise<void> => {
   if (!process.env["ANTHROPIC_AUTH_TOKEN"] && !process.env["ANTHROPIC_API_KEY"]) {
     throw new Error("ANTHROPIC_AUTH_TOKEN must be set (try `set -a; source .env; set +a`)");
   }
-  log("compiling hello-crew");
+  log("compiling starters/crew");
   await compileExample(`${EXAMPLE}/crewhaus.yaml`, `${EXAMPLE}/dist`);
 
   log("driving the happy-path crew run (this can take several minutes)");

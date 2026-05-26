@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-research/crewhaus.yaml
+  spec: starters/research/crewhaus.yaml
 ---
 
 # Recipe 07 — Autonomous Research
@@ -68,10 +68,10 @@ unsupervised production incident.
 
 ## The smallest spec
 
-The bundled example [`hello-research/crewhaus.yaml`](../hello-research/crewhaus.yaml):
+The bundled example [`starters/research/crewhaus.yaml`](../starters/research/crewhaus.yaml):
 
 ```yaml
-name: hello-research
+name: starters/research
 target: research
 agent:
   model: claude-haiku-4-5-20251001
@@ -91,7 +91,7 @@ branchingFactor: 3
 maxDurationMs: 240000
 retrieve:
   allowedFileRoots:
-    - hello-research/sources
+    - starters/research/sources
 permissions:
   mode: default
 ```
@@ -115,8 +115,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile hello-research
-bun run run hello-research
+bun run compile starters/research
+bun run run starters/research
 ```
 
 You'll see the planner spawn 3 sub-questions, each fetch its sources,
@@ -191,7 +191,7 @@ Each `state.json` carries:
 Resume with:
 
 ```bash
-bun run run hello-research -- --resume run_<id>
+bun run run starters/research -- --resume run_<id>
 ```
 
 The runtime walks `state.json`, skips completed sub-questions, and
@@ -290,7 +290,7 @@ overarching question** — and you want the citation discipline.
 
 ## Pointers to source
 
-- **Example:** [`hello-research/crewhaus.yaml`](../hello-research/crewhaus.yaml).
+- **Example:** [`starters/research/crewhaus.yaml`](../starters/research/crewhaus.yaml).
 - **Codegen:** [`packages/target-research-bundle`](https://github.com/crewhaus/factory/blob/main/packages/target-research-bundle).
 - **Planner:** [`packages/planner`](https://github.com/crewhaus/factory/blob/main/packages/planner).
 - **Crawler (Source + CiteFact):** [`packages/crawler`](https://github.com/crewhaus/factory/blob/main/packages/crawler).

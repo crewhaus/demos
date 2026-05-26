@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-harness-designer/crewhaus.yaml
+  spec: starters/harness-designer/crewhaus.yaml
 ---
 
 # Recipe 48 — Harness Designer (meta-recipe)
@@ -57,7 +57,7 @@ can begin. The designer in this recipe inverts that: it thinks in IR
 shapes *internally* and surfaces only intent-anchored questions ("Where
 will the user interact with it?", not "Which target shape?"). The
 mapping from intent to shape lives entirely in the
-[`agent.instructions`](../hello-harness-designer/crewhaus.yaml)
+[`agent.instructions`](../starters/harness-designer/crewhaus.yaml)
 block — about 80 lines of methodology that doubles as the answer to
 "how do I think about shape selection?" If you read nothing else in
 this recipe, read the instructions block.
@@ -93,7 +93,7 @@ needs them.
 ## Step 1 — The smallest spec
 
 Open
-[`hello-harness-designer/crewhaus.yaml`](../hello-harness-designer/crewhaus.yaml).
+[`starters/harness-designer/crewhaus.yaml`](../starters/harness-designer/crewhaus.yaml).
 It's a `target: cli` spec whose `agent.instructions` block encodes the
 entire methodology. The shape is the same as Recipe 01; the *content*
 is what makes it a harness designer.
@@ -163,8 +163,8 @@ tries to write `~/.zshrc`, the rule list converts that to an `ask`.
 From the repo root:
 
 ```bash
-bun run compile hello-harness-designer   # writes dist/agent.ts
-ANTHROPIC_AUTH_TOKEN=... bun run run hello-harness-designer
+bun run compile starters/harness-designer   # writes dist/agent.ts
+ANTHROPIC_AUTH_TOKEN=... bun run run starters/harness-designer
 ```
 
 The first turn always goes like this:
@@ -352,7 +352,7 @@ runtime. It tries three paths in order, all in the instructions:
 
 1. **In-repo (default).** If `$CWD/recipes/INDEX.md` exists (the demos
    repo checkout), `$CWD` is treated as the demos root. This is the
-   common case — you ran `bun run run hello-harness-designer` from
+   common case — you ran `bun run run starters/harness-designer` from
    the demos repo root.
 2. **Env override.** If `$CREWHAUS_FACTORY_PATH` is set and points at
    a valid checkout, use it. This is for users who installed the
@@ -388,14 +388,14 @@ Static + smoke validation, run from the repo root:
 
 ```bash
 bun run recipes:test    # static link + spec-fence validation
-bun run recipes:smoke   # compile:hello-harness-designer in CI mode
+bun run recipes:smoke   # compile:starters/harness-designer in CI mode
 ```
 
 Manual end-to-end:
 
 ```bash
-bun run compile hello-harness-designer
-ANTHROPIC_AUTH_TOKEN=... bun run run hello-harness-designer
+bun run compile starters/harness-designer
+ANTHROPIC_AUTH_TOKEN=... bun run run starters/harness-designer
 ```
 
 Then paste any of the three dialogue intents above. Confirm:
@@ -420,7 +420,7 @@ Then paste any of the three dialogue intents above. Confirm:
 - **Extract the methodology to a skill.** The 80-line "Method" +
   "Rules" block lives inline in `agent.instructions` today. Promoting
   it to a skill at
-  `hello-harness-designer/.crewhaus/skills/intent-driven-design/SKILL.md`
+  `starters/harness-designer/.crewhaus/skills/intent-driven-design/SKILL.md`
   would let multiple consumers share it (e.g., a future `crewhaus
   design` subcommand, or a Studio UI shell). Worth doing once a second
   consumer materializes.
@@ -446,7 +446,7 @@ Then paste any of the three dialogue intents above. Confirm:
 
 ## Pointers to source
 
-- **Example spec:** [hello-harness-designer/crewhaus.yaml](../hello-harness-designer/crewhaus.yaml)
+- **Example spec:** [starters/harness-designer/crewhaus.yaml](../starters/harness-designer/crewhaus.yaml)
 - **Spec schema (source of truth the designer reads at startup):** [packages/spec/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts)
 - **The compiler the designer validates against:** [apps/cli/src/index.ts](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts) (`runCompile`)
 - **The decision tree the designer walks:** [recipes/INDEX.md](INDEX.md) (lines 20–67)

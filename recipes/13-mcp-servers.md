@@ -40,7 +40,7 @@ A runnable end-to-end MCP demo lives at
 it wires the reference `@modelcontextprotocol/server-everything`
 server over stdio and exposes its tools as `everything__*`. For a
 real-world spec, the commented-out `mcp_servers:` block in
-[`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml) shows how
+[`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml) shows how
 to add the GitHub MCP server in one line.
 
 ## Adding an MCP server

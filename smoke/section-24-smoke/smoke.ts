@@ -37,7 +37,7 @@ const CWD = process.cwd();
 const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
-const EXAMPLE = join(REPO_ROOT, "hello-voice");
+const EXAMPLE = join(REPO_ROOT, "starters/voice");
 const DAEMON = join(EXAMPLE, "dist", "daemon.ts");
 
 const log = (msg: string): void => {
@@ -146,7 +146,7 @@ const main = async (): Promise<void> => {
       "OPENAI_API_KEY must be set (the VOICE target uses OpenAI Realtime; try `set -a; source .env; set +a`)",
     );
   }
-  log("compiling hello-voice");
+  log("compiling starters/voice");
   await compileExample();
 
   // -------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-managed/crewhaus.yaml
+  spec: starters/managed/crewhaus.yaml
 ---
 
 # Recipe 11 — Managed Multitenant
@@ -82,10 +82,10 @@ reads after this one (see *What to read next* below), not prereqs.
 
 ## The smallest spec
 
-The bundled example [`hello-managed/crewhaus.yaml`](../hello-managed/crewhaus.yaml):
+The bundled example [`starters/managed/crewhaus.yaml`](../starters/managed/crewhaus.yaml):
 
 ```yaml
-name: hello-managed
+name: starters/managed
 target: managed
 agent:
   model: claude-sonnet-4-6
@@ -114,8 +114,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile hello-managed
-bun run run hello-managed
+bun run compile starters/managed
+bun run run starters/managed
 ```
 
 The daemon binds to `:3000` (override with `PORT=...`). The first
@@ -321,7 +321,7 @@ need isolated **storage, budgets, and audit**.
 
 ## Pointers to source
 
-- **Example:** [`hello-managed/crewhaus.yaml`](../hello-managed/crewhaus.yaml).
+- **Example:** [`starters/managed/crewhaus.yaml`](../starters/managed/crewhaus.yaml).
 - **Codegen:** [`packages/target-managed`](https://github.com/crewhaus/factory/blob/main/packages/target-managed).
 - **Gateway protocol:** [`packages/gateway-protocol`](https://github.com/crewhaus/factory/blob/main/packages/gateway-protocol).
 - **Gateway server:** [`packages/gateway-server`](https://github.com/crewhaus/factory/blob/main/packages/gateway-server).

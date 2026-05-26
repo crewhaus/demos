@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-crew/crewhaus.yaml
+  spec: starters/crew/crewhaus.yaml
 ---
 
 # Recipe 04 — Multi-Agent Crew
@@ -59,11 +59,11 @@ with stronger tool descriptions.
 
 ## The smallest spec
 
-The bundled example [`hello-crew/crewhaus.yaml`](../hello-crew/crewhaus.yaml)
+The bundled example [`starters/crew/crewhaus.yaml`](../starters/crew/crewhaus.yaml)
 is three roles, one entry point:
 
 ```yaml
-name: hello-crew
+name: starters/crew
 target: crew
 model: claude-sonnet-4-6
 entry: researcher
@@ -100,8 +100,8 @@ Three things to notice:
 Compile and run:
 
 ```bash
-bun run compile hello-crew
-echo "Topic: rolling out vector-search to production" | bun run run hello-crew
+bun run compile starters/crew
+echo "Topic: rolling out vector-search to production" | bun run run starters/crew
 ```
 
 The crew daemon reads one prompt per line from stdin; if you run it
@@ -167,7 +167,7 @@ log has a `crew_done` event with `status: "aborted"` and a reason.
 Override per run on the CLI:
 
 ```bash
-bun run run hello-crew -- --max-activations 32 --refusal-depth 1
+bun run run starters/crew -- --max-activations 32 --refusal-depth 1
 ```
 
 For a small crew you're unlikely to hit them. The caps exist so a
@@ -189,7 +189,7 @@ inherits that context's `traceId`, so:
 To see it for yourself:
 
 ```bash
-CREWHAUS_TRACE=json bun run run hello-crew 2>&1 | jq -r '.traceId' | sort -u
+CREWHAUS_TRACE=json bun run run starters/crew 2>&1 | jq -r '.traceId' | sort -u
 ```
 
 You'll see one trace id printed many times. Drop into the JSONL log
@@ -318,7 +318,7 @@ decisions in the model's own words.
 
 ## Pointers to source
 
-- **Example:** [`hello-crew/crewhaus.yaml`](../hello-crew/crewhaus.yaml).
+- **Example:** [`starters/crew/crewhaus.yaml`](../starters/crew/crewhaus.yaml).
 - **Codegen:** [`packages/target-crew`](https://github.com/crewhaus/factory/blob/main/packages/target-crew).
 - **Orchestrator:** [`packages/crew-orchestrator`](https://github.com/crewhaus/factory/blob/main/packages/crew-orchestrator).
 - **Handoff tool:** [`packages/agent-handoff`](https://github.com/crewhaus/factory/blob/main/packages/agent-handoff).

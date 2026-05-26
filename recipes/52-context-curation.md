@@ -35,7 +35,7 @@ package's unit tests at
 are the only end-to-end exercise. To see it active, set
 `compaction.curate: true` and `compaction.dedupeThreshold: 0.92` on
 any `hello-*` spec that already runs multi-turn (e.g.
-[`hello-rag`](../hello-rag/crewhaus.yaml) — RAG is the canonical case
+[`starters/rag`](../starters/rag/crewhaus.yaml) — RAG is the canonical case
 for duplicate-chunk pile-up). A dedicated hello-curate demo with
 bundled embeddings is on the follow-up list.
 

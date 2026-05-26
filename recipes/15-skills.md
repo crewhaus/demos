@@ -241,7 +241,7 @@ the name).
 To see the system-prompt rendering:
 
 ```bash
-CREWHAUS_TRACE=pretty bun run run hello-cli 2>&1 | grep -A20 "system_prompt"
+CREWHAUS_TRACE=pretty bun run run starters/cli 2>&1 | grep -A20 "system_prompt"
 ```
 
 The "Skills available:" block prints with the rendered description

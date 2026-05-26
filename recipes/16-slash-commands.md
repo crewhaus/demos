@@ -24,7 +24,7 @@ sit in the middle: human-triggered, parameterized, terse.
 ## Try it
 
 The closest thing to a runnable slash-command demo lives in the
-showcase [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml) —
+showcase [`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml) —
 its agent instructions reference `/init`, `/review`, `/test`, `/plan`,
 `/clear` and the runtime resolves them against
 `.crewhaus/commands/*.md`. Dropping a `.md` file into
@@ -267,7 +267,7 @@ shadowing a project-level one due to a typo.
 To see expansions live:
 
 ```bash
-CREWHAUS_TRACE=pretty bun run run hello-cli
+CREWHAUS_TRACE=pretty bun run run starters/cli
 ```
 
 Each slash-command expansion logs at the user-message level:

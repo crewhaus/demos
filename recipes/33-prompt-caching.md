@@ -31,8 +31,8 @@ The marker-rotation half of the story is exercised by
 probe 4: backdate a marker by 8 days, assert `manage()` injects a
 fresh marker AND strips the old ones. Run with
 `bun smoke/section-27-smoke/smoke.ts`. The cache hit-rate telemetry
-shows up in [`hello-procode`](../hello-procode/crewhaus.yaml) and
-[`hello-prochat`](../hello-prochat/crewhaus.yaml) traces — both ship
+shows up in [`starters/showcases/procode`](../starters/showcases/procode/crewhaus.yaml) and
+[`starters/showcases/prochat`](../starters/showcases/prochat/crewhaus.yaml) traces — both ship
 `compaction:` blocks that pair caching with summarization.
 
 ## How Anthropic prompt caching works
@@ -237,7 +237,7 @@ caches.
 ## Worked observation
 
 ```bash
-CREWHAUS_TRACE=json bun run run hello-cli 2>&1 | jq -c 'select(.kind=="cost_accrual")'
+CREWHAUS_TRACE=json bun run run starters/cli 2>&1 | jq -c 'select(.kind=="cost_accrual")'
 ```
 
 After 10 turns in the same session:

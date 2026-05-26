@@ -2,27 +2,18 @@
 /**
  * Inventory of available demos.
  *
- * Walks the repo root, finds every top-level directory with a
- * `crewhaus.yaml`, and prints the demo name + its `target:` field +
- * whether a `README.md` is present. Drop-in replacement for the
- * discoverability that `bun run --list` provided when every demo had
- * its own `compile:hello-*` script.
+ * Walks `starters/` (top tier + channels/{...} + showcases/{...}), finds
+ * every directory with a `crewhaus.yaml`, and prints the demo name + its
+ * `target:` field + whether a `README.md` is present. Drop-in replacement
+ * for the discoverability that `bun run --list` provided when every demo
+ * had its own `compile:hello-*` script.
  */
 
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-
-const EXCLUDED_DIRS = new Set([
-  "node_modules",
-  "scripts",
-  "examples",
-  ".github",
-  ".crewhaus",
-  ".git",
-  ".claude",
-]);
+const STARTERS_ROOT = join(REPO_ROOT, "starters");
 
 function targetOf(spec: string): string {
   try {
@@ -36,23 +27,35 @@ function targetOf(spec: string): string {
 
 type Entry = { name: string; target: string; hasReadme: boolean };
 
-function main(): void {
-  const entries: Entry[] = [];
-  for (const name of readdirSync(REPO_ROOT).sort()) {
-    if (EXCLUDED_DIRS.has(name)) continue;
-    if (name.startsWith(".")) continue;
-    const dir = join(REPO_ROOT, name);
-    const spec = join(dir, "crewhaus.yaml");
-    if (!existsSync(spec)) continue;
+function walk(dir: string, entries: Entry[]): void {
+  const spec = join(dir, "crewhaus.yaml");
+  if (existsSync(spec)) {
     entries.push({
-      name,
+      name: relative(REPO_ROOT, dir),
       target: targetOf(spec),
       hasReadme: existsSync(join(dir, "README.md")),
     });
+    return; // don't descend into a demo dir
+  }
+  for (const name of readdirSync(dir).sort()) {
+    if (name.startsWith(".")) continue;
+    if (name === "node_modules" || name === "dist") continue;
+    const child = join(dir, name);
+    if (statSync(child).isDirectory()) walk(child, entries);
+  }
+}
+
+function main(): void {
+  if (!existsSync(STARTERS_ROOT)) {
+    process.stdout.write("No starters/ directory found.\n");
+    return;
   }
 
+  const entries: Entry[] = [];
+  walk(STARTERS_ROOT, entries);
+
   if (entries.length === 0) {
-    process.stdout.write("No demos found (no top-level dir contains crewhaus.yaml).\n");
+    process.stdout.write("No demos found under starters/.\n");
     return;
   }
 

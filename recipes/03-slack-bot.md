@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-channel/crewhaus.yaml
+  spec: starters/channel/crewhaus.yaml
   bun_scripts:
     - smoke:section-12
 ---
@@ -89,10 +89,10 @@ needed.
 
 ## Step 2 — The spec
 
-The bundled example [`hello-channel/crewhaus.yaml`](../hello-channel/crewhaus.yaml):
+The bundled example [`starters/channel/crewhaus.yaml`](../starters/channel/crewhaus.yaml):
 
 ```yaml
-name: hello-channel
+name: starters/channel
 target: channel
 agent:
   model: claude-sonnet-4-6
@@ -157,8 +157,8 @@ session router work in your environment.
 ## Step 4 — Run against your tunnel
 
 ```bash
-bun run compile hello-channel
-bun run run hello-channel
+bun run compile starters/channel
+bun run run starters/channel
 ```
 
 The daemon binds to `:3000` by default. Point your ngrok tunnel at
@@ -172,7 +172,7 @@ flow into the daemon.
 
 ## Step 5 — What the daemon actually does
 
-Read the generated `hello-channel/dist/` directory. Four
+Read the generated `starters/channel/dist/` directory. Four
 files, ~100 lines each:
 
 | File                  | Role                                                       |
@@ -411,7 +411,7 @@ each adapter runs side by side.
 
 ## Pointers to source
 
-- **Example:** [`hello-channel/crewhaus.yaml`](../hello-channel/crewhaus.yaml).
+- **Example:** [`starters/channel/crewhaus.yaml`](../starters/channel/crewhaus.yaml).
 - **Channel-target codegen:** [`packages/target-channel-bot`](https://github.com/crewhaus/factory/blob/main/packages/target-channel-bot).
 - **Slack adapter:** [`packages/channel-adapter-slack`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-slack).
 - **Spec schema (channel variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search for `channelSchema`).

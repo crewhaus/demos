@@ -2,7 +2,7 @@
 /**
  * Section 21 — RAG target smoke test.
  *
- * Compiles `hello-rag` and drives one turn against the live
+ * Compiles `starters/rag` and drives one turn against the live
  * model. Verifies:
  *
  *   1. The indexing pipeline runs at boot, emitting
@@ -30,7 +30,7 @@ const CWD = process.cwd();
 const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
-const SMOKE_EXAMPLE = join(REPO_ROOT, "hello-rag");
+const SMOKE_EXAMPLE = join(REPO_ROOT, "starters/rag");
 const SMOKE_DIST = join(SMOKE_EXAMPLE, "dist", "agent.ts");
 
 const log = (msg: string): void => {
@@ -123,7 +123,7 @@ const main = async (): Promise<void> => {
   if (!process.env["ANTHROPIC_AUTH_TOKEN"] && !process.env["ANTHROPIC_API_KEY"]) {
     throw new Error("ANTHROPIC_AUTH_TOKEN must be set (try `set -a; source .env; set +a`)");
   }
-  log("compiling hello-rag");
+  log("compiling starters/rag");
   await compileExample();
 
   log("driving 2 turns (this can take several minutes)");

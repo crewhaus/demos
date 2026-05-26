@@ -82,7 +82,7 @@ Append-only, one JSON object per line. Event kinds:
 ## Resume path
 
 ```bash
-bun apps/cli/src/index.ts run hello-cli/crewhaus.yaml \
+bun apps/cli/src/index.ts run starters/cli/crewhaus.yaml \
   --resume sess_abc123def4567890
 ```
 
@@ -141,7 +141,7 @@ For `target: graph` ([Recipe 05](05-stateful-graph.md)), checkpoints
 let you fork mid-run:
 
 ```bash
-bun run run hello-graph -- --branch-from run_<id> checkpoint_2
+bun run run starters/graph -- --branch-from run_<id> checkpoint_2
 ```
 
 The runtime:
