@@ -91,7 +91,7 @@ needed.
 
 ## Step 2 — The spec
 
-The bundled example [`examples/hello-channel/crewhaus.yaml`](../hello-channel/crewhaus.yaml):
+The bundled example [`hello-channel/crewhaus.yaml`](../hello-channel/crewhaus.yaml):
 
 ```yaml
 name: hello-channel
@@ -174,7 +174,7 @@ flow into the daemon.
 
 ## Step 5 — What the daemon actually does
 
-Read the generated `examples/hello-channel/dist/` directory. Four
+Read the generated `hello-channel/dist/` directory. Four
 files, ~100 lines each:
 
 | File                  | Role                                                       |
@@ -413,7 +413,7 @@ each adapter runs side by side.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-channel/crewhaus.yaml`](../hello-channel/crewhaus.yaml).
+- **Example:** [`hello-channel/crewhaus.yaml`](../hello-channel/crewhaus.yaml).
 - **Channel-target codegen:** [`packages/target-channel-bot`](https://github.com/crewhaus/factory/blob/main/packages/target-channel-bot).
 - **Slack adapter:** [`packages/channel-adapter-slack`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-slack).
 - **Spec schema (channel variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search for `channelSchema`).

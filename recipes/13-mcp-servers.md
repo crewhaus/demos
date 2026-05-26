@@ -1,9 +1,9 @@
 ---
 test:
-  spec: examples/mcp-smoke/crewhaus.yaml
+  spec: examples/section-09-mcp-smoke/crewhaus.yaml
   bun_scripts:
-    - compile:mcp-smoke
-    - run:mcp-smoke
+    - compile:section-09-mcp-smoke
+    - run:section-09-mcp-smoke
 ---
 
 # Recipe 13 — MCP Servers
@@ -36,7 +36,7 @@ it for trivial cases.
 ## Try it
 
 A runnable end-to-end MCP demo lives at
-[`examples/mcp-smoke/crewhaus.yaml`](../examples/mcp-smoke/crewhaus.yaml) —
+[`examples/section-09-mcp-smoke/crewhaus.yaml`](../examples/section-09-mcp-smoke/crewhaus.yaml) —
 it wires the reference `@modelcontextprotocol/server-everything`
 server over stdio and exposes its tools as `everything__*`. For a
 real-world spec, the commented-out `mcp_servers:` block in
@@ -45,10 +45,10 @@ to add the GitHub MCP server in one line.
 
 ## Adding an MCP server
 
-The smallest example, [`examples/mcp-smoke/crewhaus.yaml`](https://github.com/crewhaus/factory/blob/main/examples/mcp-smoke/crewhaus.yaml):
+The smallest example, [`examples/section-09-mcp-smoke/crewhaus.yaml`](../examples/section-09-mcp-smoke/crewhaus.yaml):
 
 ```yaml
-name: mcp-smoke
+name: section-09-mcp-smoke
 target: cli
 agent:
   model: claude-sonnet-4-6
@@ -72,8 +72,8 @@ Two transports:
 Run the smoke:
 
 ```bash
-bun run compile:mcp-smoke
-bun run run:mcp-smoke
+bun run compile:section-09-mcp-smoke
+bun run run:section-09-mcp-smoke
 ```
 
 The runtime:
@@ -296,7 +296,7 @@ deployments.
 
 ## Pointers to source
 
-- **Example:** [`examples/mcp-smoke/crewhaus.yaml`](https://github.com/crewhaus/factory/blob/main/examples/mcp-smoke/crewhaus.yaml).
+- **Example:** [`examples/section-09-mcp-smoke/crewhaus.yaml`](../examples/section-09-mcp-smoke/crewhaus.yaml).
 - **Host (lifecycle, reconnect):** [`packages/mcp-host`](https://github.com/crewhaus/factory/blob/main/packages/mcp-host).
 - **Tool layer:** [`packages/tool-mcp`](https://github.com/crewhaus/factory/blob/main/packages/tool-mcp).
 - **Boundary classifier (origin: "mcp"):** [`packages/boundary-classifier`](https://github.com/crewhaus/factory/blob/main/packages/boundary-classifier).

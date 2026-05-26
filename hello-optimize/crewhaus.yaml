@@ -2,9 +2,9 @@
 # so the active optimizer has room to improve. Pair this with a small
 # dataset and run:
 #
-#   crewhaus optimize examples/hello-optimize/crewhaus.yaml \
-#     --dataset examples/hello-optimize/dataset.jsonl \
-#     --graders examples/hello-optimize/graders.yaml \
+#   crewhaus optimize hello-optimize/crewhaus.yaml \
+#     --dataset hello-optimize/dataset.jsonl \
+#     --graders hello-optimize/graders.yaml \
 #     --iterations 5 \
 #     --seed 42
 #

@@ -70,7 +70,7 @@ by default.
 
 ## The smallest spec
 
-The bundled example [`examples/hello-graph/crewhaus.yaml`](../hello-graph/crewhaus.yaml)
+The bundled example [`hello-graph/crewhaus.yaml`](../hello-graph/crewhaus.yaml)
 has three nodes and one HITL pause:
 
 ```yaml
@@ -329,7 +329,7 @@ them. Past that you usually want a different shape.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-graph/crewhaus.yaml`](../hello-graph/crewhaus.yaml).
+- **Example:** [`hello-graph/crewhaus.yaml`](../hello-graph/crewhaus.yaml).
 - **Codegen:** [`packages/target-graph`](https://github.com/crewhaus/factory/blob/main/packages/target-graph).
 - **Engine:** [`packages/graph-engine`](https://github.com/crewhaus/factory/blob/main/packages/graph-engine).
 - **Checkpointing:** [`packages/checkpoint-store`](https://github.com/crewhaus/factory/blob/main/packages/checkpoint-store).

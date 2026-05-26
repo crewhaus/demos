@@ -9,8 +9,12 @@
         "typescript": "^5.7.0",
       },
     },
-    "examples/mcp-smoke": {
-      "name": "@crewhaus-examples/mcp-smoke",
+    "examples/section-07-cli-smoke": {
+      "name": "@crewhaus-examples/section-07-cli-smoke",
+      "version": "0.0.0",
+    },
+    "examples/section-09-mcp-smoke": {
+      "name": "@crewhaus-examples/section-09-mcp-smoke",
       "version": "0.0.0",
     },
     "examples/section-15-smoke": {
@@ -171,7 +175,9 @@
     },
   },
   "packages": {
-    "@crewhaus-examples/mcp-smoke": ["@crewhaus-examples/mcp-smoke@workspace:examples/mcp-smoke"],
+    "@crewhaus-examples/section-07-cli-smoke": ["@crewhaus-examples/section-07-cli-smoke@workspace:examples/section-07-cli-smoke"],
+
+    "@crewhaus-examples/section-09-mcp-smoke": ["@crewhaus-examples/section-09-mcp-smoke@workspace:examples/section-09-mcp-smoke"],
 
     "@crewhaus-examples/section-15-smoke": ["@crewhaus-examples/section-15-smoke@workspace:examples/section-15-smoke"],
 

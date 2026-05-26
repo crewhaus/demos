@@ -81,7 +81,7 @@ shape.
 
 ## The smallest spec
 
-The bundled example [`examples/hello-browser/crewhaus.yaml`](../hello-browser/crewhaus.yaml):
+The bundled example [`hello-browser/crewhaus.yaml`](../hello-browser/crewhaus.yaml):
 
 ```yaml
 name: hello-browser
@@ -376,7 +376,7 @@ work — a coverage gap that pure HTTP automation can't fill.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-browser/crewhaus.yaml`](../hello-browser/crewhaus.yaml).
+- **Example:** [`hello-browser/crewhaus.yaml`](../hello-browser/crewhaus.yaml).
 - **Codegen:** [`packages/target-browser-driver`](https://github.com/crewhaus/factory/blob/main/packages/target-browser-driver).
 - **Computer-use driver:** [`packages/computer-use-driver`](https://github.com/crewhaus/factory/blob/main/packages/computer-use-driver).
 - **Screenshot tool:** [`packages/tool-screen-capture`](https://github.com/crewhaus/factory/blob/main/packages/tool-screen-capture).

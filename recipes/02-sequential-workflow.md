@@ -57,7 +57,7 @@ move to crew, not to relax workflow's single-turn invariant.
 
 ## The smallest spec
 
-The bundled example [`examples/hello-workflow/crewhaus.yaml`](../hello-workflow/crewhaus.yaml)
+The bundled example [`hello-workflow/crewhaus.yaml`](../hello-workflow/crewhaus.yaml)
 is two steps: list files, then summarize. The whole file:
 
 ```yaml
@@ -229,7 +229,7 @@ That prints each step's terminal text on a separate line.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-workflow/crewhaus.yaml`](../hello-workflow/crewhaus.yaml).
+- **Example:** [`hello-workflow/crewhaus.yaml`](../hello-workflow/crewhaus.yaml).
 - **Spec schema:** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search for `workflowSchema`).
 - **Codegen:** [`packages/target-workflow`](https://github.com/crewhaus/factory/blob/main/packages/target-workflow).
 - **Runtime entry per step:** `runChatLoop({ singleTurn: true, seedMessages })` from [`packages/runtime-core/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/runtime-core/src/index.ts).

@@ -80,7 +80,7 @@ By the end of this recipe you'll have:
 
 ## Step 1 — The smallest possible eval spec
 
-The bundled example [`examples/hello-eval/crewhaus.yaml`](../hello-eval/crewhaus.yaml)
+The bundled example [`hello-eval/crewhaus.yaml`](../hello-eval/crewhaus.yaml)
 grades a math agent with one deterministic grader:
 
 ```yaml
@@ -113,7 +113,7 @@ Compile to see the generated bundle:
 
 ```bash
 bun run compile:hello-eval
-ls examples/hello-eval/dist/   # agent.ts
+ls hello-eval/dist/   # agent.ts
 ```
 
 ## Step 2 — Authoring a dataset
@@ -229,9 +229,9 @@ defense.
 ## Step 4 — Running an eval
 
 ```bash
-bun apps/cli/src/index.ts eval examples/hello-eval/crewhaus.yaml \
+bun apps/cli/src/index.ts eval hello-eval/crewhaus.yaml \
   --dataset .crewhaus/datasets/hello-eval/v1.json \
-  --graders examples/hello-eval/graders.yaml \
+  --graders hello-eval/graders.yaml \
   --concurrency 2 \
   --seed 42 \
   -o .crewhaus/evals/run-1
@@ -257,9 +257,9 @@ The point of having a dev split is to compare runs. After making a
 change to your agent, run a second eval:
 
 ```bash
-bun apps/cli/src/index.ts eval examples/hello-eval/crewhaus.yaml \
+bun apps/cli/src/index.ts eval hello-eval/crewhaus.yaml \
   --dataset .crewhaus/datasets/hello-eval/v1.json \
-  --graders examples/hello-eval/graders.yaml \
+  --graders hello-eval/graders.yaml \
   -o .crewhaus/evals/run-2
 ```
 
@@ -391,7 +391,7 @@ refuses unless you opt in.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-eval/crewhaus.yaml`](../hello-eval/crewhaus.yaml).
+- **Example:** [`hello-eval/crewhaus.yaml`](../hello-eval/crewhaus.yaml).
 - **Codegen:** [`packages/target-eval-bundle`](https://github.com/crewhaus/factory/blob/main/packages/target-eval-bundle).
 - **Modules:** [`packages/eval-dataset`](https://github.com/crewhaus/factory/blob/main/packages/eval-dataset), [`packages/eval-grader`](https://github.com/crewhaus/factory/blob/main/packages/eval-grader), [`packages/eval-judge`](https://github.com/crewhaus/factory/blob/main/packages/eval-judge), [`packages/eval-runner`](https://github.com/crewhaus/factory/blob/main/packages/eval-runner), [`packages/eval-report`](https://github.com/crewhaus/factory/blob/main/packages/eval-report).
 - **Production graders:** [`packages/grader-nlg-metrics`](https://github.com/crewhaus/factory/blob/main/packages/grader-nlg-metrics), [`packages/grader-semantic-similarity`](https://github.com/crewhaus/factory/blob/main/packages/grader-semantic-similarity), [`packages/grader-safety-classifiers`](https://github.com/crewhaus/factory/blob/main/packages/grader-safety-classifiers), [`packages/grader-multimodal`](https://github.com/crewhaus/factory/blob/main/packages/grader-multimodal).

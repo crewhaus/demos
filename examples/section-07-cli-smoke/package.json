@@ -1,0 +1,7 @@
+{
+  "name": "@crewhaus-examples/section-07-cli-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Section 7 — minimal CLI smoke spec for end-to-end pipeline coverage"
+}

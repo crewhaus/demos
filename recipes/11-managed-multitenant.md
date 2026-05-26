@@ -85,7 +85,7 @@ reads after this one (see *What to read next* below), not prereqs.
 
 ## The smallest spec
 
-The bundled example [`examples/hello-managed/crewhaus.yaml`](../hello-managed/crewhaus.yaml):
+The bundled example [`hello-managed/crewhaus.yaml`](../hello-managed/crewhaus.yaml):
 
 ```yaml
 name: hello-managed
@@ -324,7 +324,7 @@ need isolated **storage, budgets, and audit**.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-managed/crewhaus.yaml`](../hello-managed/crewhaus.yaml).
+- **Example:** [`hello-managed/crewhaus.yaml`](../hello-managed/crewhaus.yaml).
 - **Codegen:** [`packages/target-managed`](https://github.com/crewhaus/factory/blob/main/packages/target-managed).
 - **Gateway protocol:** [`packages/gateway-protocol`](https://github.com/crewhaus/factory/blob/main/packages/gateway-protocol).
 - **Gateway server:** [`packages/gateway-server`](https://github.com/crewhaus/factory/blob/main/packages/gateway-server).

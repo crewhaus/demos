@@ -8,25 +8,25 @@ The spec ships with a deliberately terse `agent.instructions: "Answer the user's
 
 ```bash
 # Default: rule-based mutator, emits patch.json + report.json
-crewhaus optimize examples/hello-optimize/crewhaus.yaml \
-  --dataset examples/hello-optimize/dataset.jsonl \
-  --graders examples/hello-optimize/graders.yaml \
+crewhaus optimize hello-optimize/crewhaus.yaml \
+  --dataset hello-optimize/dataset.jsonl \
+  --graders hello-optimize/graders.yaml \
   --iterations 5 \
   --seed 42
 
 # Apply the winning candidate directly to crewhaus.yaml
-crewhaus optimize examples/hello-optimize/crewhaus.yaml \
-  --dataset examples/hello-optimize/dataset.jsonl \
-  --graders examples/hello-optimize/graders.yaml \
+crewhaus optimize hello-optimize/crewhaus.yaml \
+  --dataset hello-optimize/dataset.jsonl \
+  --graders hello-optimize/graders.yaml \
   --iterations 5 \
   --seed 42 \
   --write-back
 
 # Use Claude-driven mutations (requires ANTHROPIC_AUTH_TOKEN or
 # ANTHROPIC_API_KEY)
-crewhaus optimize examples/hello-optimize/crewhaus.yaml \
-  --dataset examples/hello-optimize/dataset.jsonl \
-  --graders examples/hello-optimize/graders.yaml \
+crewhaus optimize hello-optimize/crewhaus.yaml \
+  --dataset hello-optimize/dataset.jsonl \
+  --graders hello-optimize/graders.yaml \
   --iterations 5 \
   --mutator claude
 ```

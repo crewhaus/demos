@@ -65,7 +65,7 @@ to wire Ragas-style faithfulness and answer-relevancy graders.
 
 ## The smallest spec
 
-The bundled example [`examples/hello-rag/crewhaus.yaml`](../hello-rag/crewhaus.yaml)
+The bundled example [`hello-rag/crewhaus.yaml`](../hello-rag/crewhaus.yaml)
 is one agent and four inline documents:
 
 ```yaml
@@ -325,7 +325,7 @@ the CLI decides whether to invoke the pipeline as a sub-agent.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-rag/crewhaus.yaml`](../hello-rag/crewhaus.yaml).
+- **Example:** [`hello-rag/crewhaus.yaml`](../hello-rag/crewhaus.yaml).
 - **Codegen:** [`packages/target-pipeline`](https://github.com/crewhaus/factory/blob/main/packages/target-pipeline).
 - **Engine:** [`packages/pipeline-engine`](https://github.com/crewhaus/factory/blob/main/packages/pipeline-engine).
 - **Chunkers:** [`packages/chunker`](https://github.com/crewhaus/factory/blob/main/packages/chunker).

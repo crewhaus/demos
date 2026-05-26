@@ -1,6 +1,6 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 55 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 55 task-oriented [recipes](./recipes/INDEX.md), and section-* example smokes under [examples/](./examples/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## Showcase demos
 
@@ -42,29 +42,20 @@ bun run recipes:test
 
 ```
 demos/
-  hello-cli/                   first agent — pick any of the 19 hello-* dirs
+  hello-cli/                   first agent — pick any of the 22 hello-* dirs
   hello-workflow/
   hello-channel/
   …
   recipes/
     01-cli-coding-agent.md
     …
-    48-harness-designer.md
+    55-meta-cross-references.md
     INDEX.md                   decision tree for picking a recipe
   examples/                    section-* example specs (extracted from factory)
-    section-15-smoke/          one workspace package per section reference spec
+    section-07-cli-smoke/      one workspace package per section reference spec
+    section-09-mcp-smoke/
+    section-15-smoke/
     …
-  packages/                    Studio + IDE tooling (extracted from factory)
-    studio-server/             Bun.serve daemon — spec CRUD, run inspection, plugin discovery
-    studio-ui/                 Vanilla-TS UI for studio-server
-    wizard/                    5-question guided spec creation
-    scaffold-templates/        built-in spec templates per target shape
-    trace-viewer/              Gantt-shaped trace timeline
-    graph-visualizer/          force-directed layout for graph IRs
-    plugin-sdk/                typed surface for third-party Studio plugins
-    vscode-extension/          spec authoring + run-from-editor for VS Code
-    jetbrains-plugin/          IntelliJ / WebStorm / PyCharm parity for the VS Code extension
-    crewhaus-playground/       browser REPL for the compiler — Monaco editor + live trace
   scripts/
     test-recipes.ts            validates every recipe spec compiles
     smoke-recipes.ts
@@ -72,13 +63,10 @@ demos/
   .github/workflows/
   package.json
   tsconfig.json
-  tsconfig.base.json
   README.md
 ```
 
 Each `hello-*` directory has a `crewhaus.yaml` (the spec), `README.md`, and optionally `.env.example`. Compiled output lands in `<example>/dist/` (gitignored).
-
-The `packages/` directory is a bun workspaces tree; each package keeps its own `package.json` and `tsconfig.json`. They import `@crewhaus/*` runtime packages from the sibling `../factory/` checkout via the `paths` block in `tsconfig.base.json`.
 
 ## Environment variables
 

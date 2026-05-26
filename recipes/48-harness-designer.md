@@ -95,7 +95,7 @@ needs them.
 ## Step 1 — The smallest spec
 
 Open
-[`examples/hello-harness-designer/crewhaus.yaml`](../hello-harness-designer/crewhaus.yaml).
+[`hello-harness-designer/crewhaus.yaml`](../hello-harness-designer/crewhaus.yaml).
 It's a `target: cli` spec whose `agent.instructions` block encodes the
 entire methodology. The shape is the same as Recipe 01; the *content*
 is what makes it a harness designer.
@@ -422,7 +422,7 @@ Then paste any of the three dialogue intents above. Confirm:
 - **Extract the methodology to a skill.** The 80-line "Method" +
   "Rules" block lives inline in `agent.instructions` today. Promoting
   it to a skill at
-  `examples/hello-harness-designer/.crewhaus/skills/intent-driven-design/SKILL.md`
+  `hello-harness-designer/.crewhaus/skills/intent-driven-design/SKILL.md`
   would let multiple consumers share it (e.g., a future `crewhaus
   design` subcommand, or a Studio UI shell). Worth doing once a second
   consumer materializes.
@@ -448,7 +448,7 @@ Then paste any of the three dialogue intents above. Confirm:
 
 ## Pointers to source
 
-- **Example spec:** [examples/hello-harness-designer/crewhaus.yaml](../hello-harness-designer/crewhaus.yaml)
+- **Example spec:** [hello-harness-designer/crewhaus.yaml](../hello-harness-designer/crewhaus.yaml)
 - **Spec schema (source of truth the designer reads at startup):** [packages/spec/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts)
 - **The compiler the designer validates against:** [apps/cli/src/index.ts](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts) (`runCompile`)
 - **The decision tree the designer walks:** [recipes/INDEX.md](INDEX.md) (lines 20–67)

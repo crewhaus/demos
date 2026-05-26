@@ -65,7 +65,7 @@ tenant SaaS image deployed to Linux would never even try.
 
 ## The spec
 
-[`examples/hello-channel-imessage/crewhaus.yaml`](../hello-channel-imessage/crewhaus.yaml):
+[`hello-channel-imessage/crewhaus.yaml`](../hello-channel-imessage/crewhaus.yaml):
 
 ```yaml
 name: hello-channel-imessage
@@ -270,7 +270,7 @@ without iMessage installed.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-channel-imessage/crewhaus.yaml`](../hello-channel-imessage/crewhaus.yaml).
+- **Example:** [`hello-channel-imessage/crewhaus.yaml`](../hello-channel-imessage/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-imessage`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-imessage).
 - **Spec schema (imessage block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

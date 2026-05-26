@@ -1,4 +1,4 @@
-name: mcp-smoke
+name: section-09-mcp-smoke
 target: cli
 agent:
   model: claude-sonnet-4-6
