@@ -10,6 +10,18 @@ Shape 1 (Wallet-Gated Action) and Shape 11 (Contract Deployment) from the §47 p
 
 The two-gate invariant is the load-bearing safety property: the §7 permission engine gates *whether* `EvmSendTransaction` may run; the `wallet-engine` gates *what the transaction may do* (allowed contracts, max value, simulation required). Both must approve; either can refuse.
 
+## Prerequisites
+
+- [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
+  underlying chat-loop and tool-calling semantics.
+- [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md) —
+  `EvmSendTransaction` is permission-gated like any other destructive
+  tool; this is one half of the two-gate invariant.
+- An EVM RPC endpoint (Alchemy, Infura, or a local node) for the
+  chain you're targeting, in `$BASE_RPC` or similar env var.
+- A funded test wallet on that chain (a fresh dev account with a few
+  cents of gas-token is enough for the smoke run).
+
 ## TL;DR — spec
 
 ```yaml

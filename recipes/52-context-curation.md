@@ -14,6 +14,19 @@
 - Letting `crewhaus optimize` tune both via `OPTIMIZABLE_PATHS`
 - Skipping the autocompact model call when curation alone is enough
 
+## Prerequisites
+
+- [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
+  underlying chat-loop and compaction model.
+- [Recipe 17 — Observability](17-observability.md) for the trace
+  events (`compaction_curate`, `cache_hit_rate`) that surface what the
+  curator did.
+- [Recipe 33 — Prompt Caching](33-prompt-caching.md) — curation pairs
+  naturally with caching: stable, reordered context maximizes cache
+  hits.
+- An embedding provider (any OpenAI-compatible endpoint, or one of the
+  built-in adapters) for the dedupe-by-cosine-similarity pass.
+
 ## A worked example — RAG retrieval
 
 `tool-retrieve` returns top-K chunks for a query. Across a multi-turn conversation, the same chunks tend to surface repeatedly (the user re-asks variants of the same question; the agent re-retrieves to refresh context). Without curation, those duplicates pile up.

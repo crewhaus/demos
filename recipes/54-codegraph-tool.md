@@ -14,6 +14,16 @@ CrewHaus's default code-exploration tools — `tool-fs.Read`, `Grep`, `Glob` —
 - Mock injection for tests (no real SDK needed)
 - Pairing with `target-crew` for refactor agents
 
+## Prerequisites
+
+- [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
+  underlying chat-loop and tool-registration semantics.
+- [Recipe 28 — Sub-agents and the Task Tool](28-sub-agents-and-task.md)
+  — codegraph is most useful inside crew or refactor sub-agents that
+  scan large codebases on the parent's behalf.
+- The optional `@colbymchenry/codegraph` peer dependency (the
+  installing section below shows the one-line `bun add` + index step).
+
 ## Installing
 
 The codegraph SDK is an *optional* peer dependency — CrewHaus targets that don't need code intelligence (`channel`, `voice`, `eval`) shouldn't be forced to install it.
@@ -96,7 +106,7 @@ The mock injector is cleared between tests via `_injectCodeGraphFactory(undefine
 
 ## Pairing with the security fabric
 
-`tool-codegraph` reads from the local SQLite index. Its outputs are file paths, line numbers, and short snippets — all tagged as `"tool"` origin by the post-tool boundary classifier per recipe 41. When that content later flows into a tool with `scope: "external"`, the egress fabric (recipe 51) detects the exfil risk if it appears verbatim in an outbound payload.
+`tool-codegraph` reads from the local SQLite index. Its outputs are file paths, line numbers, and short snippets — all tagged as `"tool"` origin by the post-tool boundary classifier per recipe 41. When that content later flows into a tool with `scope: "external"`, the egress fabric (recipe 55) detects the exfil risk if it appears verbatim in an outbound payload.
 
 A common safe pattern: codegraph's output is summarized by the model before any external transmission, so verbatim filenames don't appear in URLs or messages. Curate this with the egress fabric's `egressOverride: { tool: "pass" }` when the user's spec explicitly wants codegraph output in outbound channels (e.g., a Slack bot that says "the change touches src/spec.ts:42").
 
@@ -111,4 +121,4 @@ A common safe pattern: codegraph's output is summarized by the model before any 
 
 - [codegraph GitHub](https://github.com/colbymchenry/codegraph) — upstream project
 - [recipe 41-security-fabric.md](41-security-fabric.md) — source-side classification of tool output
-- [recipe 51-egress-fabric.md](51-egress-fabric.md) — sink-side check when codegraph content reaches an external tool
+- [recipe 55-egress-fabric.md](55-egress-fabric.md) — sink-side check when codegraph content reaches an external tool

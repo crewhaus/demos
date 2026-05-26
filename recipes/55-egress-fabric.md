@@ -1,4 +1,4 @@
-# Recipe 51 — Egress fabric (Pillar 3 sink side)
+# Recipe 55 — Egress fabric (Pillar 3 sink side)
 
 Recipe [41-security-fabric.md](41-security-fabric.md) covers the *source* half of CrewHaus's security fabric: every cross-trust-domain ingress (MCP, sub-agent, channel, federation, skill, compaction, tool, chain) flows through `boundary-classifier` with a `TrustOrigin` label, so an attacker who plants a jailbreak string in an MCP response can't sneak it into the model's context unredacted.
 
@@ -11,6 +11,14 @@ That stops the source. It does **not** stop the agent from later transmitting th
 - How `classifyEgress` folds verdicts across multiple matched origins
 - The `external-configured` vs `external-dynamic` sink scopes
 - Wiring an `egressOverride` to tighten policy beyond defaults
+
+## Prerequisites
+
+- [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md)
+  for the rule grammar that egress decisions integrate with.
+- [Recipe 41 — Security Fabric](41-security-fabric.md) — this recipe
+  is the sink-side counterpart. Reading 41 first sets up the
+  `TrustOrigin` and `dataLineage` model the egress check reads from.
 
 ## The full flow
 

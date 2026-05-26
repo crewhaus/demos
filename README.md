@@ -1,6 +1,6 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 51 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 55 task-oriented [recipes](./recipes/INDEX.md), section-* example smokes under [examples/](./examples/), and the Studio + IDE tooling that lives around the compiler under [packages/](./packages/). Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## Showcase demos
 

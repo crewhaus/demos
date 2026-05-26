@@ -10,6 +10,18 @@ Shape 3 (Smart-Contract Tool Gateway) and the read half of Shape 2 (On-Chain Ver
 
 The naming convention is `<contractId>__<methodName>` — the same `serverName__toolName` pattern `tool-mcp` uses for MCP-namespaced tools.
 
+## Prerequisites
+
+- [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
+  underlying chat-loop semantics.
+- [Recipe 13 — MCP Servers](13-mcp-servers.md) for the
+  `serverName__toolName` namespacing convention the contract gateway
+  reuses.
+- [Recipe 43 — Wallet-gated Action](43-wallet-gated-action.md) if
+  you'll be generating tools for `nonpayable`/`payable` functions —
+  those route through the same wallet two-gate flow.
+- A parsed ABI for the contract you want to expose (JSON form).
+
 ## TL;DR — at compile time
 
 ```ts

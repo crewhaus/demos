@@ -10,6 +10,16 @@ Shape 9 (Tokenized Access) and the credential-check half of Shape 12 (Decentrali
 
 The §47 contribution is the `permission-tokengated` resolver. It runs at session boot, queries the chain (`balanceOf` / `ownerOf` / `hasAny`), and emits standard `alwaysAllow` / `alwaysDeny` rules that the runtime folds into `RuleSet.builtin` before the first user message. The standard `permission-engine.evaluate()` makes the per-call decision synchronously.
 
+## Prerequisites
+
+- [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
+  underlying chat-loop semantics.
+- [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md) —
+  token-gated rules are standard `alwaysAllow` / `alwaysDeny` rules
+  emitted by a session-boot resolver; the static engine does the rest.
+- An EVM RPC endpoint and the contract addresses you're gating on
+  (NFT collection, ERC-20, ERC-1155, etc.).
+
 ## TL;DR — boot wiring
 
 ```ts
