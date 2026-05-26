@@ -66,4 +66,4 @@ This example is the smallest concrete proof that the managed gateway:
 - Hash-chains the audit log so tampering is detectable.
 - Rebase-isolates storage so `tenant-a` can never read `tenant-b`'s sessions.
 
-See [`recipes/11-managed-multitenant.md`](../recipes/11-managed-multitenant.md) for the full gateway protocol (`runs.continue`, `runs.cancel`, `sessions.fork`, `audit.tail`), policy hook integration, and SOC 2 evidence-export workflow.
+See [`walkthroughs/11-managed-multitenant.md`](../../walkthroughs/11-managed-multitenant.md) for the full gateway protocol (`runs.continue`, `runs.cancel`, `sessions.fork`, `audit.tail`), policy hook integration, and SOC 2 evidence-export workflow.

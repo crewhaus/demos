@@ -18,5 +18,5 @@ TELEGRAM_BOT_TOKEN=... ANTHROPIC_AUTH_TOKEN=sk-ant-oat... \
 
 The daemon long-polls by default. Set `TELEGRAM_WEBHOOK_URL=...` to switch
 to webhook mode (requires a public HTTPS endpoint). See
-[`recipes/37-channel-telegram.md`](../recipes/37-channel-telegram.md) for the
+[`walkthroughs/37-channel-telegram.md`](../../../walkthroughs/37-channel-telegram.md) for the
 update-offset bookkeeping and webhook vs. polling trade-off.

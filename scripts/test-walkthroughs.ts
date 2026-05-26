@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Static validation for recipes/*.md.
+ * Static validation for walkthroughs/*.md.
  *
  * For every recipe file, the script runs a set of checks that catch the
  * kinds of bugs human reviewers shouldn't have to find:
@@ -18,10 +18,10 @@
  *
  * The script is fast (~few-second on the full recipe set), deterministic,
  * and requires zero network or API credentials. It is the right thing
- * to run on every PR that touches recipes/.
+ * to run on every PR that touches walkthroughs/.
  *
  * For live runs of the smoke commands (compile + execute), see
- * scripts/smoke-recipes.ts, which is gated behind an env var and an
+ * scripts/smoke-walkthroughs.ts, which is gated behind an env var and an
  * Anthropic credential.
  */
 
@@ -39,7 +39,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const RECIPES_DIR = join(REPO_ROOT, "recipes");
+const WALKTHROUGHS_DIR = join(REPO_ROOT, "walkthroughs");
 const PACKAGE_JSON = join(REPO_ROOT, "package.json");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
@@ -116,9 +116,9 @@ function loadPkgScripts(): Set<string> {
 
 function loadRecipes(): Recipe[] {
   const out: Recipe[] = [];
-  for (const name of readdirSync(RECIPES_DIR).sort()) {
+  for (const name of readdirSync(WALKTHROUGHS_DIR).sort()) {
     if (!name.endsWith(".md")) continue;
-    const path = join(RECIPES_DIR, name);
+    const path = join(WALKTHROUGHS_DIR, name);
     const content = readFileSync(path, "utf-8");
     out.push({
       path,
@@ -445,7 +445,7 @@ function checkUniqueNumbers(recipes: Recipe[]): void {
 function main(): void {
   const recipes = loadRecipes();
   if (recipes.length === 0) {
-    process.stderr.write("no recipes found in recipes/\n");
+    process.stderr.write("no walkthroughs found in walkthroughs/\n");
     process.exit(1);
   }
 

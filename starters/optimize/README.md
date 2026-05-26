@@ -37,4 +37,4 @@ The patch is persisted under `.crewhaus/optimize/<runId>/patch.json` regardless 
 
 This example is the smallest concrete proof of Pillar 2 in factory's [CLAUDE.md](https://github.com/crewhaus/factory/blob/main/CLAUDE.md): the eval stack can produce a *spec patch* that improves grader pass-rate, not just an HTML report. The patch is the artifact that closes the active-optimization loop.
 
-See [recipes/42-active-optimization.md](../recipes/42-active-optimization.md) for the narrative walkthrough.
+See [walkthroughs/42-active-optimization.md](../../walkthroughs/42-active-optimization.md) for the narrative walkthrough.

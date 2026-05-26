@@ -19,6 +19,6 @@ WHATSAPP_PHONE_NUMBER_ID=... WHATSAPP_ACCESS_TOKEN=... \
 
 The daemon listens on `PORT` (default 3000) for Meta webhook callbacks.
 Configure the webhook URL in Meta's WhatsApp Business app dashboard. See
-[`recipes/39-channel-whatsapp.md`](../recipes/39-channel-whatsapp.md) for the
+[`walkthroughs/39-channel-whatsapp.md`](../../../walkthroughs/39-channel-whatsapp.md) for the
 24-hour customer-service window, template-message gating, and HMAC-SHA256
 signature verification.

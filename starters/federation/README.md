@@ -28,4 +28,4 @@ Production wires these in `spec.federation.peers`:
 - `deployment-a` (caller) — researcher agent. mTLS cert at `~/.crewhaus/federation/deployment-a/{cert,key}.pem`.
 - `deployment-b` (callee) — code-reviewer agent. mTLS cert at `~/.crewhaus/federation/deployment-b/{cert,key}.pem`.
 
-See [`recipes/27-federation.md`](../recipes/27-federation.md) for the envelope shape, mTLS pinning, traceparent propagation, and error-classification details.
+See [`walkthroughs/27-federation.md`](../../walkthroughs/27-federation.md) for the envelope shape, mTLS pinning, traceparent propagation, and error-classification details.

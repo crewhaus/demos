@@ -18,6 +18,6 @@ DISCORD_BOT_TOKEN=... DISCORD_APPLICATION_ID=... \
 ```
 
 The daemon registers commands at startup and opens a Discord Gateway
-WebSocket. See [`recipes/38-channel-discord.md`](../recipes/38-channel-discord.md)
+WebSocket. See [`walkthroughs/38-channel-discord.md`](../../../walkthroughs/38-channel-discord.md)
 for the interaction-token lifecycle, ephemeral-vs-public reply semantics,
 and slash-command registration flow.

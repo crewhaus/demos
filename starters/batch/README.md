@@ -14,5 +14,5 @@ bun run compile batch                       # writes dist/agent.ts
 ANTHROPIC_API_KEY=sk-... bun run run batch  # consumes the queue
 ```
 
-See [`recipes/08-batch-worker.md`](../recipes/08-batch-worker.md) for the
+See [`walkthroughs/08-batch-worker.md`](../../walkthroughs/08-batch-worker.md) for the
 narrative walkthrough, dataset shape, and graceful-shutdown semantics.

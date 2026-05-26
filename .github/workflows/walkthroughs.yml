@@ -1,30 +1,30 @@
-name: Recipes
+name: Walkthroughs
 
 on:
   push:
     branches: [main]
     paths:
-      - "recipes/**"
+      - "walkthroughs/**"
       - "GETTING-STARTED.md"
-      - "scripts/test-recipes.ts"
-      - "scripts/smoke-recipes.ts"
+      - "scripts/test-walkthroughs.ts"
+      - "scripts/smoke-walkthroughs.ts"
       - "starters/**/crewhaus.yaml"
       - "smoke/**/crewhaus.yaml"
-      - ".github/workflows/recipes.yml"
+      - ".github/workflows/walkthroughs.yml"
   pull_request:
     branches: [main]
     paths:
-      - "recipes/**"
+      - "walkthroughs/**"
       - "GETTING-STARTED.md"
-      - "scripts/test-recipes.ts"
-      - "scripts/smoke-recipes.ts"
+      - "scripts/test-walkthroughs.ts"
+      - "scripts/smoke-walkthroughs.ts"
       - "starters/**/crewhaus.yaml"
       - "smoke/**/crewhaus.yaml"
-      - ".github/workflows/recipes.yml"
+      - ".github/workflows/walkthroughs.yml"
 
 jobs:
   static:
-    name: Static recipe validation
+    name: Static walkthrough validation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout demos
@@ -65,10 +65,10 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Run static recipe tests
         working-directory: demos
-        run: bun run recipes:test
+        run: bun run walkthroughs:test
 
   smoke:
-    name: Recipe compile smoke (no model calls)
+    name: Walkthrough compile smoke (no model calls)
     runs-on: ubuntu-latest
     needs: static
     steps:
@@ -106,4 +106,4 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Run compile-only smoke for recipes with bun_scripts
         working-directory: demos
-        run: bun run recipes:smoke
+        run: bun run walkthroughs:smoke

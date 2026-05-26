@@ -18,6 +18,6 @@ ANTHROPIC_API_KEY=sk-... bun run run crew  # starts the crew daemon
 The entry role (`researcher`) accepts the first message; subsequent turns
 route to whichever role the entry role delegates to.
 
-See [`recipes/04-multi-agent-crew.md`](../recipes/04-multi-agent-crew.md) for
+See [`walkthroughs/04-multi-agent-crew.md`](../../walkthroughs/04-multi-agent-crew.md) for
 the role-routing model, the delegation contract, and the difference between
 `target: crew` and `target: graph`.
