@@ -68,7 +68,7 @@ The Wizard creates a spec in 5 questions:
 When the user submits, the wizard:
 
 1. Picks the matching template from
-   [`packages/scaffold-templates`](https://github.com/crewhaus/factory/blob/main/packages/scaffold-templates).
+   [`packages/scaffold-templates`](https://github.com/crewhaus/utilities/blob/main/scaffold-templates).
 2. Patches it with the user's answers.
 3. Writes the spec into the workspace.
 4. Drops a `.env.example` listing every `$VAR_NAME` the spec references.
@@ -258,12 +258,12 @@ plus the SSR-rendered HTML for key UI strings.
 
 ## Pointers to source
 
-- **Server:** [`packages/studio-server`](https://github.com/crewhaus/factory/blob/main/packages/studio-server).
-- **UI:** [`packages/studio-ui`](https://github.com/crewhaus/factory/blob/main/packages/studio-ui).
-- **Wizard:** [`packages/wizard`](https://github.com/crewhaus/factory/blob/main/packages/wizard).
-- **Scaffolds:** [`packages/scaffold-templates`](https://github.com/crewhaus/factory/blob/main/packages/scaffold-templates).
-- **Trace viewer:** [`packages/trace-viewer`](https://github.com/crewhaus/factory/blob/main/packages/trace-viewer).
-- **Graph visualizer:** [`packages/graph-visualizer`](https://github.com/crewhaus/factory/blob/main/packages/graph-visualizer).
-- **Plugin SDK:** [`packages/plugin-sdk`](https://github.com/crewhaus/factory/blob/main/packages/plugin-sdk).
+- **Server:** [`packages/studio-server`](https://github.com/crewhaus/utilities/blob/main/studio-server).
+- **UI:** [`packages/studio-ui`](https://github.com/crewhaus/utilities/blob/main/studio-ui).
+- **Wizard:** [`packages/wizard`](https://github.com/crewhaus/utilities/blob/main/wizard).
+- **Scaffolds:** [`packages/scaffold-templates`](https://github.com/crewhaus/utilities/blob/main/scaffold-templates).
+- **Trace viewer:** [`packages/trace-viewer`](https://github.com/crewhaus/utilities/blob/main/trace-viewer).
+- **Graph visualizer:** [`packages/graph-visualizer`](https://github.com/crewhaus/utilities/blob/main/graph-visualizer).
+- **Plugin SDK:** [`packages/plugin-sdk`](https://github.com/crewhaus/utilities/blob/main/plugin-sdk).
 - **Launcher:** [`scripts/studio-launcher.ts`](https://github.com/crewhaus/factory/blob/main/scripts/studio-launcher.ts).
 - **Module catalog reference:** §26, §31 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

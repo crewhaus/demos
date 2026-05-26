@@ -25,7 +25,7 @@
     "useDefineForClassFields": true,
     "baseUrl": ".",
     "paths": {
-      "@crewhaus/*": ["../factory/packages/*"]
+      "@crewhaus/*": ["../factory/packages/*", "../utilities/*"]
     }
   }
 }
