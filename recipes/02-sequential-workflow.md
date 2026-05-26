@@ -1,9 +1,6 @@
 ---
 test:
   spec: hello-workflow/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-workflow
-    - run:hello-workflow
 ---
 
 # Recipe 02 — Sequential Workflow
@@ -101,8 +98,8 @@ Note the differences from a CLI spec:
 Compile and run:
 
 ```bash
-bun run compile:hello-workflow
-bun run run:hello-workflow
+bun run compile hello-workflow
+bun run run hello-workflow
 ```
 
 You'll see the first step's output stream, then the second step's

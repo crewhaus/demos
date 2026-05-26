@@ -141,7 +141,7 @@ For `target: graph` ([Recipe 05](05-stateful-graph.md)), checkpoints
 let you fork mid-run:
 
 ```bash
-bun run run:hello-graph -- --branch-from run_<id> checkpoint_2
+bun run run hello-graph -- --branch-from run_<id> checkpoint_2
 ```
 
 The runtime:

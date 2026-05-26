@@ -28,8 +28,8 @@ graders are enough.
 point for custom graders. Compile and run:
 
 ```bash
-bun run compile:hello-eval
-bun run run:hello-eval
+bun run compile hello-eval
+bun run run hello-eval
 ```
 
 Then drop a custom grader at `~/.crewhaus/grader-plugins/my-grader/index.ts`

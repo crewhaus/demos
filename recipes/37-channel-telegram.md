@@ -2,7 +2,6 @@
 test:
   spec: hello-channel-telegram/crewhaus.yaml
   bun_scripts:
-    - compile:hello-channel-telegram
     - smoke:section-33-telegram
 ---
 
@@ -101,7 +100,7 @@ The runtime compares `X-Telegram-Bot-Api-Secret-Token` to the spec's
 ## Step 4 — Compile and register the webhook
 
 ```bash
-bun run compile:hello-channel-telegram
+bun run compile hello-channel-telegram
 bun hello-channel-telegram/dist/daemon.ts
 ```
 

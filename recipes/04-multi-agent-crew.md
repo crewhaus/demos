@@ -1,9 +1,6 @@
 ---
 test:
   spec: hello-crew/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-crew
-    - run:hello-crew
 ---
 
 # Recipe 04 — Multi-Agent Crew
@@ -103,8 +100,8 @@ Three things to notice:
 Compile and run:
 
 ```bash
-bun run compile:hello-crew
-echo "Topic: rolling out vector-search to production" | bun run run:hello-crew
+bun run compile hello-crew
+echo "Topic: rolling out vector-search to production" | bun run run hello-crew
 ```
 
 The crew daemon reads one prompt per line from stdin; if you run it
@@ -170,7 +167,7 @@ log has a `crew_done` event with `status: "aborted"` and a reason.
 Override per run on the CLI:
 
 ```bash
-bun run run:hello-crew -- --max-activations 32 --refusal-depth 1
+bun run run hello-crew -- --max-activations 32 --refusal-depth 1
 ```
 
 For a small crew you're unlikely to hit them. The caps exist so a
@@ -192,7 +189,7 @@ inherits that context's `traceId`, so:
 To see it for yourself:
 
 ```bash
-CREWHAUS_TRACE=json bun run run:hello-crew 2>&1 | jq -r '.traceId' | sort -u
+CREWHAUS_TRACE=json bun run run hello-crew 2>&1 | jq -r '.traceId' | sort -u
 ```
 
 You'll see one trace id printed many times. Drop into the JSONL log

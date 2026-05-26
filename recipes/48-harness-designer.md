@@ -1,8 +1,6 @@
 ---
 test:
   spec: hello-harness-designer/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-harness-designer
 ---
 
 # Recipe 48 — Harness Designer (meta-recipe)
@@ -165,8 +163,8 @@ tries to write `~/.zshrc`, the rule list converts that to an `ask`.
 From the repo root:
 
 ```bash
-bun run compile:hello-harness-designer   # writes dist/agent.ts
-ANTHROPIC_AUTH_TOKEN=... bun run run:hello-harness-designer
+bun run compile hello-harness-designer   # writes dist/agent.ts
+ANTHROPIC_AUTH_TOKEN=... bun run run hello-harness-designer
 ```
 
 The first turn always goes like this:
@@ -354,7 +352,7 @@ runtime. It tries three paths in order, all in the instructions:
 
 1. **In-repo (default).** If `$CWD/recipes/INDEX.md` exists (the demos
    repo checkout), `$CWD` is treated as the demos root. This is the
-   common case — you ran `bun run run:hello-harness-designer` from
+   common case — you ran `bun run run hello-harness-designer` from
    the demos repo root.
 2. **Env override.** If `$CREWHAUS_FACTORY_PATH` is set and points at
    a valid checkout, use it. This is for users who installed the
@@ -396,8 +394,8 @@ bun run recipes:smoke   # compile:hello-harness-designer in CI mode
 Manual end-to-end:
 
 ```bash
-bun run compile:hello-harness-designer
-ANTHROPIC_AUTH_TOKEN=... bun run run:hello-harness-designer
+bun run compile hello-harness-designer
+ANTHROPIC_AUTH_TOKEN=... bun run run hello-harness-designer
 ```
 
 Then paste any of the three dialogue intents above. Confirm:

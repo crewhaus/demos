@@ -1,9 +1,6 @@
 ---
 test:
   spec: hello-managed/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-managed
-    - run:hello-managed
 ---
 
 # Recipe 11 — Managed Multitenant
@@ -117,8 +114,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile:hello-managed
-bun run run:hello-managed
+bun run compile hello-managed
+bun run run hello-managed
 ```
 
 The daemon binds to `:3000` (override with `PORT=...`). The first

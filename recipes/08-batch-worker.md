@@ -1,9 +1,6 @@
 ---
 test:
   spec: hello-batch/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-batch
-    - run:hello-batch
 ---
 
 # Recipe 08 — Batch Worker
@@ -115,8 +112,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile:hello-batch
-bun run run:hello-batch
+bun run compile hello-batch
+bun run run hello-batch
 ```
 
 You'll see eight `job_start` / `job_end` event pairs interleaved (4 at

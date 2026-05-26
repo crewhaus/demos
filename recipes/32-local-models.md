@@ -64,7 +64,7 @@ The OpenAI adapter sends `Authorization: Bearer ${OPENAI_API_KEY ?? ""}`.
 Local servers ignore the header. To be explicit:
 
 ```bash
-OPENAI_API_KEY="" bun run run:hello   # works
+OPENAI_API_KEY="" bun run run hello-cli   # works
 ```
 
 If your local server *does* require a key (LiteLLM proxy in front of

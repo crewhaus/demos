@@ -237,7 +237,7 @@ caches.
 ## Worked observation
 
 ```bash
-CREWHAUS_TRACE=json bun run run:hello 2>&1 | jq -c 'select(.kind=="cost_accrual")'
+CREWHAUS_TRACE=json bun run run hello-cli 2>&1 | jq -c 'select(.kind=="cost_accrual")'
 ```
 
 After 10 turns in the same session:

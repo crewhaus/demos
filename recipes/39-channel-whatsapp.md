@@ -2,7 +2,6 @@
 test:
   spec: hello-channel-whatsapp/crewhaus.yaml
   bun_scripts:
-    - compile:hello-channel-whatsapp
     - smoke:section-33-whatsapp
 ---
 
@@ -104,7 +103,7 @@ breaks verification — read the body as a stream, hash, then parse.
 ## Step 4 — Compile and subscribe
 
 ```bash
-bun run compile:hello-channel-whatsapp
+bun run compile hello-channel-whatsapp
 bun hello-channel-whatsapp/dist/daemon.ts
 ```
 

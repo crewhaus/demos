@@ -267,7 +267,7 @@ shadowing a project-level one due to a typo.
 To see expansions live:
 
 ```bash
-CREWHAUS_TRACE=pretty bun run run:hello
+CREWHAUS_TRACE=pretty bun run run hello-cli
 ```
 
 Each slash-command expansion logs at the user-message level:

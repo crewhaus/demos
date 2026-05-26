@@ -1,9 +1,6 @@
 ---
 test:
   spec: hello-graph/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-graph
-    - run:hello-graph
 ---
 
 # Recipe 05 — Stateful Graph
@@ -114,8 +111,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile:hello-graph
-echo "Should we adopt a 4-day work week?" | bun run run:hello-graph
+bun run compile hello-graph
+echo "Should we adopt a 4-day work week?" | bun run run hello-graph
 ```
 
 The graph reads its input from stdin (the `input` field of the
@@ -208,7 +205,7 @@ finishes, the runtime:
 To resume:
 
 ```bash
-bun run run:hello-graph -- --resume run_<id> "approved with edits"
+bun run run hello-graph -- --resume run_<id> "approved with edits"
 ```
 
 The runtime loads the checkpoint, injects your decision as
@@ -224,7 +221,7 @@ that, on approval, calls `crewhaus resume --decision approved <runId>`.
 From any checkpoint you can branch to compare alternatives:
 
 ```bash
-bun run run:hello-graph -- --branch-from run_<id> checkpoint_2
+bun run run hello-graph -- --branch-from run_<id> checkpoint_2
 ```
 
 This forks a new run id whose initial state is checkpoint 2, sharing
