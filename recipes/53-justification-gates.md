@@ -21,6 +21,19 @@ Cyata's "guardian agent" model and Apono's intent-based authorization both ship 
 - [Recipe 55 — Egress Fabric](55-egress-fabric.md) for the sink-side
   fabric this gate composes with.
 
+## Try it
+
+No standalone justification-gate demo ships yet. The package tests at
+[`factory/packages/justification-gate`](https://github.com/crewhaus/factory/blob/main/packages/justification-gate)
+exercise both the rule-based and LLM-backed judges with full
+sample inputs. To see a gate fire in your own spec, set
+`requireJustification: true` on any tool descriptor in a `hello-*`
+demo (e.g. the `Bash` tool in
+[`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml)) and
+run the demo — the next tool call will prompt the model for a
+justification field. A dedicated hello-justification demo is on the
+follow-up list.
+
 ## The flow
 
 ```

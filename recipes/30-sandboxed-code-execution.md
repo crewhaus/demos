@@ -24,6 +24,18 @@ the right answer when the runtime needs **isolation guarantees**.
 - [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md)
   for tool flag behavior.
 
+## Try it
+
+The Python/JS/Shell sandbox primitives are exercised by
+[`examples/section-30-smoke/`](../examples/section-30-smoke) (backend
+adapter family — queues, vectors, browser, telephony, sandboxes).
+Seven polyglot sandbox images each have their own end-to-end smoke
+under
+[`examples/section-36-sandbox-image-{dotnet,go,java,php,r,ruby,rust}-smoke/`](../examples/) —
+each builds the image, runs a "hello world" inside it, and asserts
+network=none + read-only root. Run any with
+`bun examples/section-36-sandbox-image-<lang>-smoke/smoke.ts`.
+
 ## The `sandbox` package
 
 [`packages/sandbox`](https://github.com/crewhaus/factory/blob/main/packages/sandbox) exposes:

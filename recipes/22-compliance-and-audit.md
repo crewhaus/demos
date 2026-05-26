@@ -25,6 +25,17 @@ evidence bundles are skippable.
 - [Recipe 17 — Observability](17-observability.md) for the trace
   event taxonomy.
 
+## Try it
+
+The compliance-control collector + evidence-bundle pipeline is
+exercised end-to-end by
+[`examples/section-39-compliance-controls-smoke/`](../examples/section-39-compliance-controls-smoke).
+Run `bun examples/section-39-compliance-controls-smoke/smoke.ts` to
+see the audit log mapped to SOC 2 CC controls, signed, and packaged
+into an evidence tarball. The audit log itself is visible end-to-end
+in [`hello-managed`](../hello-managed/README.md) under
+`.crewhaus/hello-managed/<tenant>/audit/`.
+
 ## The audit log substrate
 
 Each tenant gets one JSONL file per day under

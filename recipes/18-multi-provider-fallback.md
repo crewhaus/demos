@@ -23,6 +23,16 @@ model is simpler and the failure mode is loud rather than silent.
 - Credentials for at least two providers (e.g.
   `ANTHROPIC_AUTH_TOKEN` + `OPENAI_API_KEY`).
 
+## Try it
+
+The circuit-breaker half of the fallback story is exercised by
+[`examples/section-27-smoke/smoke.ts`](../examples/section-27-smoke/smoke.ts)
+probe 3 (`bun run smoke:section-27`) — five injected failures trip
+the breaker; a cooldown + probe success closes it. No standalone
+hello-fallback demo ships yet; for a live two-provider hop you need
+real Anthropic + OpenAI credentials, which is why a fixture-only demo
+isn't expressive enough.
+
 ## The `model:` prefix grammar
 
 ```

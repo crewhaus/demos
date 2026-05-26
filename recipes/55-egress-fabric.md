@@ -20,6 +20,18 @@ That stops the source. It does **not** stop the agent from later transmitting th
   is the sink-side counterpart. Reading 41 first sets up the
   `TrustOrigin` and `dataLineage` model the egress check reads from.
 
+## Try it
+
+No standalone egress-fabric demo ships yet — `classifyEgress` and the
+`scope: "internal" | "external"` tool field are exercised by the
+package tests at
+[`factory/packages/egress-fabric`](https://github.com/crewhaus/factory/blob/main/packages/egress-fabric).
+To see a sink-block fire: mark a tool `scope: "external-dynamic"` and
+inject `dataLineage` tags via the source-side classifier (recipe 41)
+— the next outbound call carrying tainted lineage is blocked. A
+dedicated hello-egress demo with a poisoned-MCP fixture is on the
+follow-up list.
+
 ## The full flow
 
 ```

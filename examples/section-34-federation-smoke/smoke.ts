@@ -102,7 +102,7 @@ log("probe C: router happy path");
 // Use the static fixture cert from packages/federation-protocol — the
 // earlier on-the-fly openssl req approach timed out CI runners with slow
 // entropy. The fixture is test-only (no production deployment uses it).
-const FIXTURE_DIR = join(import.meta.dir, "..", "..", "packages", "federation-protocol", "src");
+const FIXTURE_DIR = join(import.meta.dir, "..", "..", "..", "factory", "packages", "federation-protocol", "src");
 const certPemFixture = readFileSync(join(FIXTURE_DIR, "fixtures-cert.pem"), "utf8");
 const keyPemFixture = readFileSync(join(FIXTURE_DIR, "fixtures-key.pem"), "utf8");
 const certs = {

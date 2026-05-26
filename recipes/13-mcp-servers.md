@@ -33,6 +33,16 @@ it for trivial cases.
 - [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
   underlying chat-loop semantics.
 
+## Try it
+
+A runnable end-to-end MCP demo lives at
+[`examples/mcp-smoke/crewhaus.yaml`](../examples/mcp-smoke/crewhaus.yaml) —
+it wires the reference `@modelcontextprotocol/server-everything`
+server over stdio and exposes its tools as `everything__*`. For a
+real-world spec, the commented-out `mcp_servers:` block in
+[`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml) shows how
+to add the GitHub MCP server in one line.
+
 ## Adding an MCP server
 
 The smallest example, [`examples/mcp-smoke/crewhaus.yaml`](https://github.com/crewhaus/factory/blob/main/examples/mcp-smoke/crewhaus.yaml):

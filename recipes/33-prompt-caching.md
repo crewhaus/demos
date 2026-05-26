@@ -24,6 +24,17 @@ defaults work without tuning.
 - An Anthropic account (the explicit-caching path) for hands-on
   experimentation.
 
+## Try it
+
+The marker-rotation half of the story is exercised by
+[`examples/section-27-smoke/smoke.ts`](../examples/section-27-smoke/smoke.ts)
+probe 4: backdate a marker by 8 days, assert `manage()` injects a
+fresh marker AND strips the old ones. Run with
+`bun examples/section-27-smoke/smoke.ts`. The cache hit-rate telemetry
+shows up in [`hello-procode`](../hello-procode/crewhaus.yaml) and
+[`hello-prochat`](../hello-prochat/crewhaus.yaml) traces — both ship
+`compaction:` blocks that pair caching with summarization.
+
 ## How Anthropic prompt caching works
 
 Anthropic's API accepts `cache_control: { type: "ephemeral" }`

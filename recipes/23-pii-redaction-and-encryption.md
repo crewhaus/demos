@@ -25,6 +25,24 @@ else in the deployment.
 - [Recipe 20 — Secrets Management](20-secrets-management.md) for KEK
   rotation.
 
+## Try it
+
+Three end-to-end smokes split this recipe by layer:
+
+- **Layer 1 (detector-based redaction):**
+  [`examples/section-39-pii-redactor-smoke/`](../examples/section-39-pii-redactor-smoke) —
+  asserts the 5 built-in regex detectors + classifier path replace PII
+  before audit-log write.
+- **Layer 2 (envelope encryption):**
+  [`examples/section-39-audit-encryption-smoke/`](../examples/section-39-audit-encryption-smoke) —
+  exercises KEK→DEK wrapping with a stub secrets-manager and verifies
+  rotation re-wraps without rewriting log lines.
+- **Layer 3 (retention windows):**
+  [`examples/section-39-data-retention-engine-smoke/`](../examples/section-39-data-retention-engine-smoke) —
+  drives right-to-delete + right-to-export against a fixture tenant.
+
+Run any with `bun examples/section-39-<name>-smoke/smoke.ts`.
+
 ## Layer 1 — Detector-based redaction
 
 [`packages/pii-redactor`](https://github.com/crewhaus/factory/blob/main/packages/pii-redactor) catches PII

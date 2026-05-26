@@ -19,6 +19,18 @@ covers the basics.
 - [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
   spec block and the first read of rule grammar.
 
+## Try it
+
+The richest live permissions block in the demos is
+[`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml) lines
+131–188: a complete `mode: default` setup with `alwaysAllow`,
+`alwaysAsk`, and `alwaysDeny` patterns covering reads, edits, web,
+allow-listed bash, and hard-denied destructive commands. Compile and
+run with
+`bun run compile:hello-procode && bun run run:hello-procode`, then try
+`git push --force` to watch the deny tier fire. Every other `hello-*`
+demo ships its own minimal permissions block.
+
 ## The five rule sources
 
 The permission engine evaluates rules from five layers, in order.
