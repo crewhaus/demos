@@ -17,6 +17,15 @@
 
 The fabric is a single chokepoint, `classifyBoundary`, invoked at every cross-trust-domain transition with a `TrustOrigin` tag. The chokepoint runs the same `prompt-injection-detector` rules, caches verdicts by `sha256(content)+origin`, and applies an origin-specific severity policy (`block` / `warn` / `pass`).
 
+## Prerequisites
+
+- [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
+  underlying chat-loop semantics.
+- [Recipe 14 — Hooks](14-hooks.md) for the `post-tool` and `pre-model`
+  hook seams where the boundary classifier attaches.
+- [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md) for
+  the rule grammar that classifier verdicts feed into.
+
 ## TL;DR
 
 ```ts

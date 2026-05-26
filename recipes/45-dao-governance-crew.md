@@ -10,6 +10,17 @@ Shape 6 (DAO Governance) from the §47 proposal. DAO proposal analysis is parall
 
 The §47 contribution is the *vote tx* phase. The crew converges to a recommendation; one role (or a follow-on `workflow`) calls `dao__castVote` (a contract-gateway tool from Recipe 44) to actually submit the vote.
 
+## Prerequisites
+
+- [Recipe 04 — Multi-Agent Crew](04-multi-agent-crew.md) for the
+  crew shape with parallel roles and convergence.
+- [Recipe 44 — Chain as Tool Gateway](44-chain-as-tool-gateway.md)
+  for the `contract__methodName` tools the voting phase calls.
+- [Recipe 43 — Wallet-gated Action](43-wallet-gated-action.md) for
+  the wallet two-gate flow the vote tx goes through.
+- An EVM RPC endpoint and a wallet that holds the DAO's governance
+  token (or a delegated voting key).
+
 ## TL;DR — spec
 
 ```yaml

@@ -1,7 +1,7 @@
 # Recipes
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 48 recipes are **complete** as of 2026-05-15. Every recipe is
+> All 55 recipes are **complete** as of 2026-05-25. Every recipe is
 > statically validated by `bun run recipes:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run recipes:smoke`.
@@ -19,7 +19,7 @@ below.
 
 ## Pick a recipe — diagnostic decision tree
 
-The 48 recipes cover a lot of ground. Most readers don't need to scan
+The 55 recipes cover a lot of ground. Most readers don't need to scan
 the table of contents; they need to find the shape that matches the
 problem they brought. Walk this tree from the top:
 
@@ -224,6 +224,34 @@ Reflexive recipes — CrewHaus designing itself. The system general enough that 
 | -- | --------------------------------------------------------------- | ------------------ | -------- |
 | 48 | [Harness Designer](48-harness-designer.md)                      | meta-cli           | complete |
 
+## Part J — Showcase demos (full-power examples)
+
+"Tier-1 mainstream harness" imitations — fork these to start at full power instead of building up from scratch. Each is referenced in §0.5 of the diagnostic tree above and from the top-level [README](../README.md#showcase-demos).
+
+| #  | Recipe                                                          | Imitates                | Status   |
+| -- | --------------------------------------------------------------- | ----------------------- | -------- |
+| 49 | [Pro-grade Coder](49-procode.md)                                | Claude Code / Cursor    | complete |
+| 50 | [Pro-grade Chat](50-prochat.md)                                 | ChatGPT / Claude.ai     | complete |
+| 51 | [Multi-channel Personal Assistant](51-multichat.md)             | OpenClaw                | complete |
+
+## Part K — Pillar extensions
+
+Deeper cuts on the Pillar 2 (active eval) and Pillar 3 (security fabric) invariants from [`CLAUDE.md`](https://github.com/crewhaus/factory/blob/main/CLAUDE.md). Read alongside the foundational Pillar recipes in Part G.
+
+| #  | Recipe                                                          | Pillar                  | Status   |
+| -- | --------------------------------------------------------------- | ----------------------- | -------- |
+| 52 | [Active Context Curation](52-context-curation.md)               | Pillar 2 — active       | complete |
+| 53 | [Justification Gates](53-justification-gates.md)                | Pillar 3 — intent       | complete |
+| 55 | [Egress Fabric](55-egress-fabric.md)                            | Pillar 3 — sink side    | complete |
+
+## Part L — Corpus integration
+
+Recipes that integrate external corpora (codebases, document stores) into the agent's context.
+
+| #  | Recipe                                                          | Integrates                       | Status   |
+| -- | --------------------------------------------------------------- | -------------------------------- | -------- |
+| 54 | [Codegraph Tool](54-codegraph-tool.md)                          | `@colbymchenry/codegraph`        | complete |
+
 ---
 
 ## Quick paths (for readers who already know the shape they want)
@@ -240,15 +268,17 @@ a known scenario:
 - **Multi-agent system.** 04 → 28 → 05 → 27.
 - **RAG / research.** 06 → 07 → 12.
 - **Blockchain integration.** 43 → 44 → 46 → 45 → 47.
-- **Active optimization (DSPy-inspired).** 12 → 34 → 42.
+- **Active optimization (DSPy-inspired).** 12 → 34 → 42 → 52.
+- **Pillar 3 hardening (defense-in-depth).** 29 → 41 → 53 → 55.
+- **Forking a tier-1 harness.** 49 (procode) or 50 (prochat) or 51 (multichat) → fork the matching showcase.
 - **Designing a new harness from intent.** 48 → (the recipe for the shape it picks) → 12 → 42.
 
 ## Status
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 48            | Total (01-40 + pillars 41, 42 + §47 recipes 43-47 + meta 48) |
-| 48            | Walkthrough complete    |
+| 55            | Total (01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions 52, 53, 55 + corpus tools 54) |
+| 55            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a

@@ -13,6 +13,18 @@ The two §47 shapes whose control flow is genuinely new:
 
 These are the only §47 shapes that needed new IR variants. Every other §47 shape (1, 2, 3, 4, 5, 6, 7, 9, 11, 12) is a recipe over existing shapes plus the §47 cross-cutting subsystem — see recipes 43-46.
 
+## Prerequisites
+
+- [Recipe 08 — Batch Worker](08-batch-worker.md) for the long-running
+  daemon shape this recipe extends to event-driven inputs.
+- [Recipe 11 — Managed Multitenant](11-managed-multitenant.md) for
+  the gateway/daemon operational discipline the `onchain` target
+  inherits (audit log, secrets, tenancy).
+- [Recipe 43 — Wallet-gated Action](43-wallet-gated-action.md) for
+  the wallet two-gate flow daemon-emitted transactions go through.
+- An EVM RPC endpoint with `eth_subscribe` support (websocket) for
+  event streaming.
+
 ## TL;DR — onchain daemon
 
 ```yaml

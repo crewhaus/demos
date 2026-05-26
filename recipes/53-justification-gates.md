@@ -9,7 +9,17 @@ Cyata's "guardian agent" model and Apono's intent-based authorization both ship 
 - The `requireJustification: true` flag on tool descriptors
 - The agent's experience when calling a justification-gated tool
 - Swapping the default rule-based judge for an LLM-backed one
-- Defense-in-depth interaction with the egress fabric (recipe 51)
+- Defense-in-depth interaction with the egress fabric (recipe 55)
+
+## Prerequisites
+
+- [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md)
+  for the static permission engine this layer sits on top of.
+- [Recipe 41 — Security Fabric](41-security-fabric.md) for the
+  source-side classifier — this recipe is one of the three Pillar 3
+  defense-in-depth layers (41 source, 55 sink, 53 intent).
+- [Recipe 55 — Egress Fabric](55-egress-fabric.md) for the sink-side
+  fabric this gate composes with.
 
 ## The flow
 
@@ -164,7 +174,7 @@ Verbatim — the justification IS the audit artifact; redacting it would defeat 
 
 ## Defense in depth
 
-Recipe 51 (egress fabric) and this recipe are independent. A tool can satisfy the justification gate and STILL get blocked by the egress fabric (because its input contains tagged cross-origin content). And vice versa.
+Recipe 55 (egress fabric) and this recipe are independent. A tool can satisfy the justification gate and STILL get blocked by the egress fabric (because its input contains tagged cross-origin content). And vice versa.
 
 Example: agent calls `Fetch({ url: "https://safe.example.com/", justification: "fetching documentation per session goal" })`. Justification passes. But the URL contains a tagged sub-agent string. Egress classifier denies. Both events land in audit.
 
@@ -185,5 +195,5 @@ Example: agent calls `Fetch({ url: "https://safe.example.com/", justification: "
 - SACR, "Runtime Security for AI Agents" (2026) — the three-layer model and intent-based authorization
 - Cyata's "guardian agent" approach in the SACR vendor breakdown
 - [recipe 41-security-fabric.md](41-security-fabric.md) — source-side fabric
-- [recipe 51-egress-fabric.md](51-egress-fabric.md) — sink-side fabric (defense-in-depth pair)
+- [recipe 55-egress-fabric.md](55-egress-fabric.md) — sink-side fabric (defense-in-depth pair)
 - [recipe 29-permissions-deep-dive.md](29-permissions-deep-dive.md) — the static permission engine

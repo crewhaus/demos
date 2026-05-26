@@ -15,6 +15,14 @@ The contract is:
 
 The patch is the artifact. It can be reviewed, committed, version-controlled, and re-applied — unlike a pure prompt string, it carries enough metadata to be auditable.
 
+## Prerequisites
+
+- [Recipe 12 — Eval Harness](12-eval-harness.md) for the dataset +
+  graders pipeline that `crewhaus optimize` uses as its fitness function.
+- [Recipe 34 — Building Custom Graders](34-building-custom-graders.md)
+  if your domain needs graders beyond the built-in set — the optimizer
+  is only as good as the signal its graders return.
+
 ## TL;DR
 
 ```bash

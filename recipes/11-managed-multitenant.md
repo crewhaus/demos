@@ -77,10 +77,11 @@ in the wild.
 
 - [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
   underlying chat-loop semantics.
-- [Recipe 19 — Rate Limiting and Budgets](19-rate-limiting-and-budgets.md)
-  for budget mechanics.
-- [Recipe 22 — Compliance and Audit](22-compliance-and-audit.md) if
-  evidence collection is required.
+
+The budget and audit primitives this spec configures are covered in
+depth in [Recipe 19](19-rate-limiting-and-budgets.md) and
+[Recipe 22](22-compliance-and-audit.md) — those are the natural next
+reads after this one (see *What to read next* below), not prereqs.
 
 ## The smallest spec
 
@@ -310,11 +311,16 @@ need isolated **storage, budgets, and audit**.
 
 ## What to read next
 
+- **Rate limits and budgets.** [Recipe 19 — Rate Limiting and Budgets](19-rate-limiting-and-budgets.md)
+  — the per-tenant budget mechanics this spec stubs out.
+- **Secret rotation.** [Recipe 20 — Secrets Management](20-secrets-management.md)
+  — gateway JWT keys and per-tenant secrets without restart.
 - **Canary rollouts.** [Recipe 21 — Deployment and Canary](21-deployment-and-canary.md)
   — ship a new spec to one tenant first.
 - **Evidence collection.** [Recipe 22 — Compliance and Audit](22-compliance-and-audit.md).
 - **PII safety.** [Recipe 23 — PII Redaction and Encryption](23-pii-redaction-and-encryption.md).
 - **Kubernetes deployment.** [Recipe 24 — Docker and Helm](24-docker-and-helm.md).
+- **Cloud target.** [Recipe 36 — Cloud Deploy](36-cloud-deploy.md).
 
 ## Pointers to source
 

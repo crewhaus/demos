@@ -419,12 +419,35 @@ function checkFrontmatter(recipe: Recipe): void {
   }
 }
 
+function checkUniqueNumbers(recipes: Recipe[]): void {
+  const byNumber = new Map<number, string[]>();
+  for (const recipe of recipes) {
+    const basename = recipe.rel.split("/").pop() ?? recipe.rel;
+    const m = basename.match(/^(\d{2})-/);
+    if (!m) continue;
+    const n = parseInt(m[1], 10);
+    const list = byNumber.get(n) ?? [];
+    list.push(recipe.rel);
+    byNumber.set(n, list);
+  }
+  for (const [n, files] of byNumber) {
+    if (files.length > 1) {
+      failures.push({
+        recipe: files[0],
+        message: `duplicate recipe number ${String(n).padStart(2, "0")} shared by: ${files.join(", ")}. Each numbered recipe must claim a unique number.`,
+      });
+    }
+  }
+}
+
 function main(): void {
   const recipes = loadRecipes();
   if (recipes.length === 0) {
     process.stderr.write("no recipes found in recipes/\n");
     process.exit(1);
   }
+
+  checkUniqueNumbers(recipes);
 
   for (const recipe of recipes) {
     checkLinks(recipe);
