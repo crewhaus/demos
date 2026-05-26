@@ -30,14 +30,14 @@ use [crew](04-multi-agent-crew.md) instead. Sub-agents are
 ## Try it
 
 Sub-agents are wired into every showcase demo. The richest live
-example is [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml)
+example is [`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml)
 (lines 63–119): two sub-agents (`code-explorer` read-only mapper and
 `test-runner` allow-listed bash) with their own `tools:` and
 `permissions:` blocks. Compile and run with
-`bun run compile hello-procode && bun run run hello-procode`; ask
+`bun run compile starters/showcases/procode && bun run run starters/showcases/procode`; ask
 "what does this project do?" and the `Task` dispatch fires immediately.
-Both [`hello-prochat`](../hello-prochat/crewhaus.yaml) and
-[`hello-multichat`](../hello-multichat/crewhaus.yaml) ship parallel
+Both [`starters/showcases/prochat`](../starters/showcases/prochat/crewhaus.yaml) and
+[`starters/showcases/multichat`](../starters/showcases/multichat/crewhaus.yaml) ship parallel
 research sub-agents as well.
 
 ## The `Task` tool

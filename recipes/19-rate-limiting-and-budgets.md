@@ -35,7 +35,7 @@ The rate-limiter half lives in
 probe 2: a 5 req/sec bucket pumped with 10 acquires asserts that
 back-pressure kicked in (elapsed ≥ 800 ms). Probe 1 of the same smoke
 exercises the cost-tracker side. The tenant-budget half is visible
-end-to-end in [`hello-managed`](../hello-managed/README.md) — set
+end-to-end in [`starters/managed`](../starters/managed/README.md) — set
 `tenants[].budget.maxInputTokens` to a small number, drive traffic
 with the README's curl block, and watch the budget gate trip.
 

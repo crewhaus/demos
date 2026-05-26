@@ -29,7 +29,7 @@ exercise both the rule-based and LLM-backed judges with full
 sample inputs. To see a gate fire in your own spec, set
 `requireJustification: true` on any tool descriptor in a `hello-*`
 demo (e.g. the `Bash` tool in
-[`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml)) and
+[`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml)) and
 run the demo — the next tool call will prompt the model for a
 justification field. A dedicated hello-justification demo is on the
 follow-up list.

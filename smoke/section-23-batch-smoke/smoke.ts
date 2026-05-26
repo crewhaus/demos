@@ -23,7 +23,7 @@ const CWD = process.cwd();
 const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
-const EXAMPLE = join(REPO_ROOT, "hello-batch");
+const EXAMPLE = join(REPO_ROOT, "starters/batch");
 const DAEMON = join(EXAMPLE, "dist", "agent.ts");
 
 const log = (msg: string): void => {
@@ -116,7 +116,7 @@ const main = async (): Promise<void> => {
   if (!process.env["ANTHROPIC_AUTH_TOKEN"] && !process.env["ANTHROPIC_API_KEY"]) {
     throw new Error("ANTHROPIC_AUTH_TOKEN must be set (try `set -a; source .env; set +a`)");
   }
-  log("compiling hello-batch");
+  log("compiling starters/batch");
   await compileExample();
 
   // -------------------------------------------------------------------------

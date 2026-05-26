@@ -8,7 +8,8 @@ on:
       - "GETTING-STARTED.md"
       - "scripts/test-recipes.ts"
       - "scripts/smoke-recipes.ts"
-      - "*/crewhaus.yaml"
+      - "starters/**/crewhaus.yaml"
+      - "smoke/**/crewhaus.yaml"
       - ".github/workflows/recipes.yml"
   pull_request:
     branches: [main]
@@ -17,7 +18,8 @@ on:
       - "GETTING-STARTED.md"
       - "scripts/test-recipes.ts"
       - "scripts/smoke-recipes.ts"
-      - "*/crewhaus.yaml"
+      - "starters/**/crewhaus.yaml"
+      - "smoke/**/crewhaus.yaml"
       - ".github/workflows/recipes.yml"
 
 jobs:

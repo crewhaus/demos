@@ -2,7 +2,7 @@
 /**
  * Section 20 — MGD target smoke test.
  *
- * Boots the compiled `hello-managed/dist/daemon.ts` against the
+ * Boots the compiled `starters/managed/dist/daemon.ts` against the
  * live model with two tenants (`tenant-a` and `tenant-b`). Verifies five
  * end-to-end behaviours via the gateway HTTP API:
  *
@@ -126,7 +126,7 @@ const CWD = process.cwd();
 const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
-const EXAMPLE = join(REPO_ROOT, "hello-managed");
+const EXAMPLE = join(REPO_ROOT, "starters/managed");
 const DIST_DAEMON = join(EXAMPLE, "dist", "daemon.ts");
 
 const log = (msg: string): void => {
@@ -195,7 +195,7 @@ async function main(): Promise<void> {
     throw new Error("ANTHROPIC_AUTH_TOKEN must be set (try `set -a; source .env; set +a`)");
   }
 
-  log("compiling hello-managed");
+  log("compiling starters/managed");
   compileExample();
 
   const tenantsRoot = mkdtempSync(join(tmpdir(), "section-20-tenants-"));

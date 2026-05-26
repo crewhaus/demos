@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-channel-imessage/crewhaus.yaml
+  spec: starters/channels/imessage/crewhaus.yaml
   bun_scripts:
     - smoke:section-33-imessage
 ---
@@ -64,10 +64,10 @@ tenant SaaS image deployed to Linux would never even try.
 
 ## The spec
 
-[`hello-channel-imessage/crewhaus.yaml`](../hello-channel-imessage/crewhaus.yaml):
+[`starters/channels/imessage/crewhaus.yaml`](../starters/channels/imessage/crewhaus.yaml):
 
 ```yaml
-name: hello-channel-imessage
+name: starters/channels/imessage
 target: channel
 agent:
   model: claude-sonnet-4-6
@@ -269,7 +269,7 @@ without iMessage installed.
 
 ## Pointers to source
 
-- **Example:** [`hello-channel-imessage/crewhaus.yaml`](../hello-channel-imessage/crewhaus.yaml).
+- **Example:** [`starters/channels/imessage/crewhaus.yaml`](../starters/channels/imessage/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-imessage`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-imessage).
 - **Spec schema (imessage block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

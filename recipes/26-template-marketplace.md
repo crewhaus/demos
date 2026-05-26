@@ -45,7 +45,7 @@ A file-backed registry under `<path>/`:
 
 ```
 <path>/
-  hello-cli/
+  starters/cli/
     manifest.json
     spec.yaml
     screenshots/

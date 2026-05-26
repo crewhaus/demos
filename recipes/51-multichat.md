@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-multichat/crewhaus.yaml
+  spec: starters/showcases/multichat/crewhaus.yaml
 ---
 
 # Recipe 51 — Multi-channel Personal Assistant (à la OpenClaw)
@@ -46,7 +46,7 @@ control UI, additional channel adapters (Matrix, Signal, IRC, Nostr,
 WeChat) — is **out of scope for this recipe** and tracked in the
 heavy-hitter plan as Phase 3 §3.1–§3.4. The deferred items are
 explicit in the spec via commented-out blocks at the top of
-[`hello-multichat/crewhaus.yaml`](../hello-multichat/crewhaus.yaml).
+[`starters/showcases/multichat/crewhaus.yaml`](../starters/showcases/multichat/crewhaus.yaml).
 
 </details>
 
@@ -66,13 +66,13 @@ The minimum viable run is with just Slack:
 
 ```bash
 bun install
-bun run compile hello-multichat
+bun run compile starters/showcases/multichat
 ANTHROPIC_API_KEY=sk-ant-... \
   SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
-  bun run run hello-multichat
+  bun run run starters/showcases/multichat
 ```
 
-The compiler emits four files into `hello-multichat/dist/`:
+The compiler emits four files into `starters/showcases/multichat/dist/`:
 `agent.ts` (the chat loop), `session-router.ts` (thread → session
 keying), `gateway.ts` (HTTP listener + adapter dispatch), and
 `daemon.ts` (the entry point that wires it all together).
@@ -88,10 +88,10 @@ Set additional env vars; the daemon picks them up:
 SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \
   DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_PUBLIC_KEY=... \
-  bun run run hello-multichat
+  bun run run starters/showcases/multichat
 ```
 
-In `hello-multichat/crewhaus.yaml`:
+In `starters/showcases/multichat/crewhaus.yaml`:
 
 ```yaml
 channels:
@@ -224,12 +224,12 @@ features, all tracked in the heavy-hitter plan's Phase 3:
 | Additional channel adapters (Matrix, Signal, IRC, Nostr, WeChat, …) | Out of scope; ~1 week per platform. |
 
 When those land, the corresponding YAML blocks (commented out at the
-top of [`crewhaus.yaml`](../hello-multichat/crewhaus.yaml)) get
+top of [`crewhaus.yaml`](../starters/showcases/multichat/crewhaus.yaml)) get
 enabled.
 
 ## What makes it feel pro-grade (OpenClaw-style)
 
-1. **Always-on daemon** — once you `bun run run hello-multichat`, the
+1. **Always-on daemon** — once you `bun run run starters/showcases/multichat`, the
    process listens forever. No "open a terminal" ceremony.
 2. **Multi-channel presence** — same agent answers wherever the user
    pings. Slack at work, Telegram on the train, Discord with friends.

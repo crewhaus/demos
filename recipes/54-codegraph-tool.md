@@ -32,7 +32,7 @@ by their package tests at
 with mock-injected SDK fixtures (so no real `@colbymchenry/codegraph`
 install is required to verify wiring). To see them live: install the
 peer + index your repo (Installing section below), add the four tools
-to [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml)'s
+to [`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml)'s
 `tools:` list, and run the demo against your indexed codebase. A
 dedicated hello-codegraph demo with a pre-indexed fixture repo is on
 the follow-up list.

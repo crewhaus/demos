@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-rag/crewhaus.yaml
+  spec: starters/rag/crewhaus.yaml
 ---
 
 # Recipe 06 — RAG Pipeline
@@ -62,11 +62,11 @@ to wire Ragas-style faithfulness and answer-relevancy graders.
 
 ## The smallest spec
 
-The bundled example [`hello-rag/crewhaus.yaml`](../hello-rag/crewhaus.yaml)
+The bundled example [`starters/rag/crewhaus.yaml`](../starters/rag/crewhaus.yaml)
 is one agent and four inline documents:
 
 ```yaml
-name: hello-rag
+name: starters/rag
 target: pipeline
 agent:
   model: claude-sonnet-4-6
@@ -114,8 +114,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile hello-rag
-bun run run hello-rag
+bun run compile starters/rag
+bun run run starters/rag
 ```
 
 Type "What target shapes does crewhaus support?". The agent will call
@@ -126,7 +126,7 @@ it will refuse — that chunk isn't in the corpus.
 ## How indexing works
 
 `indexing` runs **at compile time**, not at runtime. When `bun run
-compile hello-rag` executes:
+compile starters/rag` executes:
 
 1. Every document text is split via the `chunkStrategy`:
    - **`fixed`** — exact `chunkSize`-character windows with
@@ -141,7 +141,7 @@ compile hello-rag` executes:
    `Retrieve` calls — no re-embedding, no model API calls for the
    corpus itself.
 
-Re-running `compile hello-rag` after editing `documents:` re-indexes.
+Re-running `compile starters/rag` after editing `documents:` re-indexes.
 For larger corpora prefer `documentsFromDir: ./corpus/` (loads every
 `.md` and `.txt` recursively) or `documentsFromGlob: ['./docs/**/*.md']`.
 
@@ -322,7 +322,7 @@ the CLI decides whether to invoke the pipeline as a sub-agent.
 
 ## Pointers to source
 
-- **Example:** [`hello-rag/crewhaus.yaml`](../hello-rag/crewhaus.yaml).
+- **Example:** [`starters/rag/crewhaus.yaml`](../starters/rag/crewhaus.yaml).
 - **Codegen:** [`packages/target-pipeline`](https://github.com/crewhaus/factory/blob/main/packages/target-pipeline).
 - **Engine:** [`packages/pipeline-engine`](https://github.com/crewhaus/factory/blob/main/packages/pipeline-engine).
 - **Chunkers:** [`packages/chunker`](https://github.com/crewhaus/factory/blob/main/packages/chunker).

@@ -24,17 +24,17 @@ graders are enough.
 
 ## Try it
 
-[`hello-eval`](../hello-eval/README.md) is now the runnable starting
+[`starters/eval`](../starters/eval/README.md) is now the runnable starting
 point for custom graders. Compile and run:
 
 ```bash
-bun run compile hello-eval
-bun run run hello-eval
+bun run compile starters/eval
+bun run run starters/eval
 ```
 
 Then drop a custom grader at `~/.crewhaus/grader-plugins/my-grader/index.ts`
 (per Step 6 of [Recipe 12](12-eval-harness.md)) and reference it in
-[`hello-eval/graders.yaml`](../hello-eval/graders.yaml) — the same
+[`starters/eval/graders.yaml`](../starters/eval/graders.yaml) — the same
 spec re-runs against your new grader. The NLG, semantic-similarity,
 safety, and multimodal grader families each ship their own smoke
 under

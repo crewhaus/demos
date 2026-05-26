@@ -122,18 +122,18 @@ runnable from a 5–30 line spec and a one-line `bun run …`.
 
 | #  | Recipe                                                   | Shape       | Smallest example                                                  | Status   |
 | -- | -------------------------------------------------------- | ----------- | ----------------------------------------------------------------- | -------- |
-| 01 | [CLI Coding Agent](01-cli-coding-agent.md)               | `cli`       | [`hello-cli`](../hello-cli)                  | complete |
-| 02 | [Sequential Workflow](02-sequential-workflow.md)         | `workflow`  | [`hello-workflow`](../hello-workflow)        | complete |
-| 03 | [Slack Bot](03-slack-bot.md)                             | `channel`   | [`hello-channel`](../hello-channel)          | complete |
-| 04 | [Multi-Agent Crew](04-multi-agent-crew.md)               | `crew`      | [`hello-crew`](../hello-crew)                | complete |
-| 05 | [Stateful Graph](05-stateful-graph.md)                   | `graph`     | [`hello-graph`](../hello-graph)              | complete |
-| 06 | [RAG Pipeline](06-rag-pipeline.md)                       | `pipeline`  | [`hello-rag`](../hello-rag)                  | complete |
-| 07 | [Autonomous Research](07-autonomous-research.md)         | `research`  | [`hello-research`](../hello-research)        | complete |
-| 08 | [Batch Worker](08-batch-worker.md)                       | `batch`     | [`hello-batch`](../hello-batch)              | complete |
-| 09 | [Voice Agent](09-voice-agent.md)                         | `voice`     | [`hello-voice`](../hello-voice)              | complete |
-| 10 | [Browser Agent](10-browser-agent.md)                     | `browser`   | [`hello-browser`](../hello-browser)          | complete |
-| 11 | [Managed Multitenant](11-managed-multitenant.md)         | `managed`   | [`hello-managed`](../hello-managed)          | complete |
-| 12 | [Eval Harness](12-eval-harness.md)                       | `eval`      | [`hello-eval`](../hello-eval)                | complete |
+| 01 | [CLI Coding Agent](01-cli-coding-agent.md)               | `cli`       | [`starters/cli`](../starters/cli)                  | complete |
+| 02 | [Sequential Workflow](02-sequential-workflow.md)         | `workflow`  | [`starters/workflow`](../starters/workflow)        | complete |
+| 03 | [Slack Bot](03-slack-bot.md)                             | `channel`   | [`starters/channel`](../starters/channel)          | complete |
+| 04 | [Multi-Agent Crew](04-multi-agent-crew.md)               | `crew`      | [`starters/crew`](../starters/crew)                | complete |
+| 05 | [Stateful Graph](05-stateful-graph.md)                   | `graph`     | [`starters/graph`](../starters/graph)              | complete |
+| 06 | [RAG Pipeline](06-rag-pipeline.md)                       | `pipeline`  | [`starters/rag`](../starters/rag)                  | complete |
+| 07 | [Autonomous Research](07-autonomous-research.md)         | `research`  | [`starters/research`](../starters/research)        | complete |
+| 08 | [Batch Worker](08-batch-worker.md)                       | `batch`     | [`starters/batch`](../starters/batch)              | complete |
+| 09 | [Voice Agent](09-voice-agent.md)                         | `voice`     | [`starters/voice`](../starters/voice)              | complete |
+| 10 | [Browser Agent](10-browser-agent.md)                     | `browser`   | [`starters/browser`](../starters/browser)          | complete |
+| 11 | [Managed Multitenant](11-managed-multitenant.md)         | `managed`   | [`starters/managed`](../starters/managed)          | complete |
+| 12 | [Eval Harness](12-eval-harness.md)                       | `eval`      | [`starters/eval`](../starters/eval)                | complete |
 
 ## Part B — Core capabilities
 
@@ -335,7 +335,7 @@ Add a `test:` block to the recipe's frontmatter:
 ```yaml
 ---
 test:
-  spec: hello-cli/crewhaus.yaml
+  spec: starters/cli/crewhaus.yaml
   bun_scripts:
     - smoke:section-12     # extra smoke beyond compile/run, if any
   packages:
@@ -348,7 +348,7 @@ The static script validates that the `spec:` path resolves to a real
 crewhaus.yaml, that every `bun_scripts:` entry is a defined script
 in either repo's package.json, and that every `packages:` path
 exists. The smoke script then runs `bun run compile <demo>` derived
-from `spec:` (`hello-cli/crewhaus.yaml` → `hello-cli`), and in live
+from `spec:` (`starters/cli/crewhaus.yaml` → `starters/cli`), and in live
 mode also `bun run run <demo>`, plus any extra `bun_scripts:` entries.
 The recipe body should reference the same paths so a reader following
 along sees what the tests verify.

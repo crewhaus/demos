@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-channel-discord/crewhaus.yaml
+  spec: starters/channels/discord/crewhaus.yaml
   bun_scripts:
     - smoke:section-33-discord
 ---
@@ -41,10 +41,10 @@ Three fields, all needed.
 
 ## Step 2 — The spec
 
-[`hello-channel-discord/crewhaus.yaml`](../hello-channel-discord/crewhaus.yaml):
+[`starters/channels/discord/crewhaus.yaml`](../starters/channels/discord/crewhaus.yaml):
 
 ```yaml
-name: hello-channel-discord
+name: starters/channels/discord
 target: channel
 agent:
   model: claude-sonnet-4-6
@@ -103,8 +103,8 @@ for the helpers.
 ## Step 4 — Compile and register
 
 ```bash
-bun run compile hello-channel-discord
-bun hello-channel-discord/dist/daemon.ts
+bun run compile starters/channels/discord
+bun starters/channels/discord/dist/daemon.ts
 ```
 
 Point ngrok at the daemon's port:
@@ -297,7 +297,7 @@ Uses `generateEd25519Keypair()` to produce valid test payloads.
 
 ## Pointers to source
 
-- **Example:** [`hello-channel-discord/crewhaus.yaml`](../hello-channel-discord/crewhaus.yaml).
+- **Example:** [`starters/channels/discord/crewhaus.yaml`](../starters/channels/discord/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-discord`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-discord).
 - **Spec schema (discord block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

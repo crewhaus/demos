@@ -235,7 +235,7 @@ loud so you fix the actual problem. Set
 `CREWHAUS_DISABLE_CIRCUIT_BREAKER=1` for the duration of dev:
 
 ```bash
-CREWHAUS_DISABLE_CIRCUIT_BREAKER=1 bun run run hello-cli
+CREWHAUS_DISABLE_CIRCUIT_BREAKER=1 bun run run starters/cli
 ```
 
 That wraps every model in an always-closed breaker, so failures

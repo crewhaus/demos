@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-channel-whatsapp/crewhaus.yaml
+  spec: starters/channels/whatsapp/crewhaus.yaml
   bun_scripts:
     - smoke:section-33-whatsapp
 ---
@@ -42,10 +42,10 @@ WHATSAPP_APP_SECRET=...
 
 ## Step 2 — The spec
 
-[`hello-channel-whatsapp/crewhaus.yaml`](../hello-channel-whatsapp/crewhaus.yaml):
+[`starters/channels/whatsapp/crewhaus.yaml`](../starters/channels/whatsapp/crewhaus.yaml):
 
 ```yaml
-name: hello-channel-whatsapp
+name: starters/channels/whatsapp
 target: channel
 agent:
   model: claude-sonnet-4-6
@@ -103,8 +103,8 @@ breaks verification — read the body as a stream, hash, then parse.
 ## Step 4 — Compile and subscribe
 
 ```bash
-bun run compile hello-channel-whatsapp
-bun hello-channel-whatsapp/dist/daemon.ts
+bun run compile starters/channels/whatsapp
+bun starters/channels/whatsapp/dist/daemon.ts
 ```
 
 Tunnel to a public URL:
@@ -268,7 +268,7 @@ Validates:
 
 ## Pointers to source
 
-- **Example:** [`hello-channel-whatsapp/crewhaus.yaml`](../hello-channel-whatsapp/crewhaus.yaml).
+- **Example:** [`starters/channels/whatsapp/crewhaus.yaml`](../starters/channels/whatsapp/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-whatsapp`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-whatsapp).
 - **Spec schema (whatsapp block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

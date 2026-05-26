@@ -29,7 +29,7 @@ const CWD = process.cwd();
 const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
-const SMOKE_EXAMPLE = join(REPO_ROOT, "hello-graph");
+const SMOKE_EXAMPLE = join(REPO_ROOT, "starters/graph");
 const SMOKE_DIST = join(SMOKE_EXAMPLE, "dist", "agent.ts");
 
 const log = (msg: string): void => {
@@ -135,7 +135,7 @@ const main = async (): Promise<void> => {
     );
   }
 
-  log("compiling hello-graph");
+  log("compiling starters/graph");
   await compileExample(`${SMOKE_EXAMPLE}/crewhaus.yaml`, `${SMOKE_EXAMPLE}/dist`);
 
   // -------------------------------------------------------------------------

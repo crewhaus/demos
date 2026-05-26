@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-batch/crewhaus.yaml
+  spec: starters/batch/crewhaus.yaml
 ---
 
 # Recipe 08 — Batch Worker
@@ -69,11 +69,11 @@ in the *driver*: a queue instead of a static step list.
 
 ## The smallest spec
 
-The bundled example [`hello-batch/crewhaus.yaml`](../hello-batch/crewhaus.yaml)
+The bundled example [`starters/batch/crewhaus.yaml`](../starters/batch/crewhaus.yaml)
 is one agent, one in-memory queue, eight seeded jobs:
 
 ```yaml
-name: hello-batch
+name: starters/batch
 target: batch
 agent:
   model: claude-haiku-4-5-20251001
@@ -112,8 +112,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile hello-batch
-bun run run hello-batch
+bun run compile starters/batch
+bun run run starters/batch
 ```
 
 You'll see eight `job_start` / `job_end` event pairs interleaved (4 at
@@ -311,7 +311,7 @@ asking "should I use eval or batch": eval is batch + scoring.
 
 ## Pointers to source
 
-- **Example:** [`hello-batch/crewhaus.yaml`](../hello-batch/crewhaus.yaml).
+- **Example:** [`starters/batch/crewhaus.yaml`](../starters/batch/crewhaus.yaml).
 - **Codegen:** [`packages/target-batch-worker`](https://github.com/crewhaus/factory/blob/main/packages/target-batch-worker).
 - **Queue protocol:** [`packages/queue-protocol`](https://github.com/crewhaus/factory/blob/main/packages/queue-protocol).
 - **Consumer:** [`packages/queue-consumer`](https://github.com/crewhaus/factory/blob/main/packages/queue-consumer).

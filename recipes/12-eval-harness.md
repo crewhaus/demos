@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-eval/crewhaus.yaml
+  spec: starters/eval/crewhaus.yaml
   bun_scripts:
     - smoke:section-29
   packages:
@@ -79,18 +79,18 @@ By the end of this recipe you'll have:
 
 ## Step 1 — The smallest possible eval spec
 
-The bundled example [`hello-eval/crewhaus.yaml`](../hello-eval/crewhaus.yaml)
+The bundled example [`starters/eval/crewhaus.yaml`](../starters/eval/crewhaus.yaml)
 grades a math agent with one deterministic grader:
 
 ```yaml
-name: hello-eval
+name: starters/eval
 target: eval
 agent:
   model: claude-opus-4-7
   instructions: |
     Answer math questions with just the number.
 dataset:
-  name: hello-eval
+  name: starters/eval
   version: v1
   split: dev
 graders:
@@ -111,8 +111,8 @@ Five top-level fields:
 Compile to see the generated bundle:
 
 ```bash
-bun run compile hello-eval
-ls hello-eval/dist/   # agent.ts
+bun run compile starters/eval
+ls starters/eval/dist/   # agent.ts
 ```
 
 ## Step 2 — Authoring a dataset
@@ -125,7 +125,7 @@ A dataset file looks like:
 
 ```json
 {
-  "name": "hello-eval",
+  "name": "starters/eval",
   "version": "v1",
   "splits": {
     "train": [
@@ -228,9 +228,9 @@ defense.
 ## Step 4 — Running an eval
 
 ```bash
-bun apps/cli/src/index.ts eval hello-eval/crewhaus.yaml \
-  --dataset .crewhaus/datasets/hello-eval/v1.json \
-  --graders hello-eval/graders.yaml \
+bun apps/cli/src/index.ts eval starters/eval/crewhaus.yaml \
+  --dataset .crewhaus/datasets/starters/eval/v1.json \
+  --graders starters/eval/graders.yaml \
   --concurrency 2 \
   --seed 42 \
   -o .crewhaus/evals/run-1
@@ -256,9 +256,9 @@ The point of having a dev split is to compare runs. After making a
 change to your agent, run a second eval:
 
 ```bash
-bun apps/cli/src/index.ts eval hello-eval/crewhaus.yaml \
-  --dataset .crewhaus/datasets/hello-eval/v1.json \
-  --graders hello-eval/graders.yaml \
+bun apps/cli/src/index.ts eval starters/eval/crewhaus.yaml \
+  --dataset .crewhaus/datasets/starters/eval/v1.json \
+  --graders starters/eval/graders.yaml \
   -o .crewhaus/evals/run-2
 ```
 
@@ -390,7 +390,7 @@ refuses unless you opt in.
 
 ## Pointers to source
 
-- **Example:** [`hello-eval/crewhaus.yaml`](../hello-eval/crewhaus.yaml).
+- **Example:** [`starters/eval/crewhaus.yaml`](../starters/eval/crewhaus.yaml).
 - **Codegen:** [`packages/target-eval-bundle`](https://github.com/crewhaus/factory/blob/main/packages/target-eval-bundle).
 - **Modules:** [`packages/eval-dataset`](https://github.com/crewhaus/factory/blob/main/packages/eval-dataset), [`packages/eval-grader`](https://github.com/crewhaus/factory/blob/main/packages/eval-grader), [`packages/eval-judge`](https://github.com/crewhaus/factory/blob/main/packages/eval-judge), [`packages/eval-runner`](https://github.com/crewhaus/factory/blob/main/packages/eval-runner), [`packages/eval-report`](https://github.com/crewhaus/factory/blob/main/packages/eval-report).
 - **Production graders:** [`packages/grader-nlg-metrics`](https://github.com/crewhaus/factory/blob/main/packages/grader-nlg-metrics), [`packages/grader-semantic-similarity`](https://github.com/crewhaus/factory/blob/main/packages/grader-semantic-similarity), [`packages/grader-safety-classifiers`](https://github.com/crewhaus/factory/blob/main/packages/grader-safety-classifiers), [`packages/grader-multimodal`](https://github.com/crewhaus/factory/blob/main/packages/grader-multimodal).

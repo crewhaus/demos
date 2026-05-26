@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-procode/crewhaus.yaml
+  spec: starters/showcases/procode/crewhaus.yaml
 ---
 
 # Recipe 49 — Pro-grade Coder (à la Claude Code)
@@ -37,7 +37,7 @@ runtime, same compiler, same security model — but every primitive
 commands from 16, permission tiers from 29) wired into a single
 coherent spec that mirrors a tier-one production harness.
 
-The empirical claim: the gap between "hello-cli" and a Claude-Code-
+The empirical claim: the gap between "starters/cli" and a Claude-Code-
 style pro coding agent is ~190 lines of YAML, not a separate runtime.
 If your spec is missing something a tier-one harness has, the answer
 is almost always "add a permission rule" or "add a sub-agent" or "add
@@ -60,8 +60,8 @@ a skill" — not "fork the compiler."
 
 ```bash
 bun install
-bun run compile hello-procode
-ANTHROPIC_API_KEY=sk-ant-... bun run run hello-procode
+bun run compile starters/showcases/procode
+ANTHROPIC_API_KEY=sk-ant-... bun run run starters/showcases/procode
 ```
 
 Drop into a project you care about (`cd ~/my-project` first, or pass
@@ -77,7 +77,7 @@ in parallel. That's the recipe's flagship move.
 
 ## Step 2 — The sub-agents
 
-Open [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml) and
+Open [`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml) and
 look at the `agent.sub_agents:` map. Two roles:
 
 ```yaml
@@ -187,7 +187,7 @@ without losing context.
 ## Step 6 — Swap the model
 
 The `model:` field is provider-agnostic. Edit
-[`crewhaus.yaml`](../hello-procode/crewhaus.yaml) at `agent.model:`:
+[`crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml) at `agent.model:`:
 
 | Provider | `model:` | Env |
 |---|---|---|

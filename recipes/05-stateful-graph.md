@@ -1,6 +1,6 @@
 ---
 test:
-  spec: hello-graph/crewhaus.yaml
+  spec: starters/graph/crewhaus.yaml
 ---
 
 # Recipe 05 — Stateful Graph
@@ -67,11 +67,11 @@ by default.
 
 ## The smallest spec
 
-The bundled example [`hello-graph/crewhaus.yaml`](../hello-graph/crewhaus.yaml)
+The bundled example [`starters/graph/crewhaus.yaml`](../starters/graph/crewhaus.yaml)
 has three nodes and one HITL pause:
 
 ```yaml
-name: hello-graph
+name: starters/graph
 target: graph
 model: claude-sonnet-4-6
 entry: plan
@@ -111,8 +111,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile hello-graph
-echo "Should we adopt a 4-day work week?" | bun run run hello-graph
+bun run compile starters/graph
+echo "Should we adopt a 4-day work week?" | bun run run starters/graph
 ```
 
 The graph reads its input from stdin (the `input` field of the
@@ -205,7 +205,7 @@ finishes, the runtime:
 To resume:
 
 ```bash
-bun run run hello-graph -- --resume run_<id> "approved with edits"
+bun run run starters/graph -- --resume run_<id> "approved with edits"
 ```
 
 The runtime loads the checkpoint, injects your decision as
@@ -221,7 +221,7 @@ that, on approval, calls `crewhaus resume --decision approved <runId>`.
 From any checkpoint you can branch to compare alternatives:
 
 ```bash
-bun run run hello-graph -- --branch-from run_<id> checkpoint_2
+bun run run starters/graph -- --branch-from run_<id> checkpoint_2
 ```
 
 This forks a new run id whose initial state is checkpoint 2, sharing
@@ -326,7 +326,7 @@ them. Past that you usually want a different shape.
 
 ## Pointers to source
 
-- **Example:** [`hello-graph/crewhaus.yaml`](../hello-graph/crewhaus.yaml).
+- **Example:** [`starters/graph/crewhaus.yaml`](../starters/graph/crewhaus.yaml).
 - **Codegen:** [`packages/target-graph`](https://github.com/crewhaus/factory/blob/main/packages/target-graph).
 - **Engine:** [`packages/graph-engine`](https://github.com/crewhaus/factory/blob/main/packages/graph-engine).
 - **Checkpointing:** [`packages/checkpoint-store`](https://github.com/crewhaus/factory/blob/main/packages/checkpoint-store).
