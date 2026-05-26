@@ -40,7 +40,7 @@ TELEGRAM_SECRET_TOKEN=<your hex>
 ## Step 2 — The spec
 
 The bundled example
-[`examples/hello-channel-telegram/crewhaus.yaml`](../hello-channel-telegram/crewhaus.yaml):
+[`hello-channel-telegram/crewhaus.yaml`](../hello-channel-telegram/crewhaus.yaml):
 
 ```yaml
 name: hello-channel-telegram
@@ -102,7 +102,7 @@ The runtime compares `X-Telegram-Bot-Api-Secret-Token` to the spec's
 
 ```bash
 bun run compile:hello-channel-telegram
-bun examples/hello-channel-telegram/dist/daemon.ts
+bun hello-channel-telegram/dist/daemon.ts
 ```
 
 Point ngrok at the daemon's port:
@@ -278,7 +278,7 @@ to validate the wiring.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-channel-telegram/crewhaus.yaml`](../hello-channel-telegram/crewhaus.yaml).
+- **Example:** [`hello-channel-telegram/crewhaus.yaml`](../hello-channel-telegram/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-telegram`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-telegram).
 - **Spec schema (telegram block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

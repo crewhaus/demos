@@ -248,7 +248,7 @@ endpoints validated:
 
 The full Docker-compose fixture (cross-host certs, real DNS) is gated
 behind `CREWHAUS_FEDERATION_LIVE=1` and is a TODO for the cross-host
-pilot ([`examples/hello-federation/README.md`](../hello-federation/README.md)).
+pilot ([`hello-federation/README.md`](../hello-federation/README.md)).
 
 ## Boundary classification
 
@@ -293,5 +293,5 @@ deployment-a's model context without the classifier seeing them.
 - **Protocol:** [`packages/federation-protocol`](https://github.com/crewhaus/factory/blob/main/packages/federation-protocol).
 - **Discovery:** [`packages/federation-discovery`](https://github.com/crewhaus/factory/blob/main/packages/federation-discovery).
 - **Router:** [`packages/federation-router`](https://github.com/crewhaus/factory/blob/main/packages/federation-router).
-- **Fixture:** [`examples/hello-federation/README.md`](../hello-federation/README.md).
+- **Fixture:** [`hello-federation/README.md`](../hello-federation/README.md).
 - **Module catalog reference:** §34 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

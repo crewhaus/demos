@@ -42,7 +42,7 @@ Three fields, all needed.
 
 ## Step 2 — The spec
 
-[`examples/hello-channel-discord/crewhaus.yaml`](../hello-channel-discord/crewhaus.yaml):
+[`hello-channel-discord/crewhaus.yaml`](../hello-channel-discord/crewhaus.yaml):
 
 ```yaml
 name: hello-channel-discord
@@ -105,7 +105,7 @@ for the helpers.
 
 ```bash
 bun run compile:hello-channel-discord
-bun examples/hello-channel-discord/dist/daemon.ts
+bun hello-channel-discord/dist/daemon.ts
 ```
 
 Point ngrok at the daemon's port:
@@ -298,7 +298,7 @@ Uses `generateEd25519Keypair()` to produce valid test payloads.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-channel-discord/crewhaus.yaml`](../hello-channel-discord/crewhaus.yaml).
+- **Example:** [`hello-channel-discord/crewhaus.yaml`](../hello-channel-discord/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-discord`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-discord).
 - **Spec schema (discord block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

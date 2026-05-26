@@ -26,9 +26,9 @@ The patch is the artifact. It can be reviewed, committed, version-controlled, an
 ## TL;DR
 
 ```bash
-crewhaus optimize examples/hello-optimize/crewhaus.yaml \
-  --dataset examples/hello-optimize/dataset.jsonl \
-  --graders examples/hello-optimize/graders.yaml \
+crewhaus optimize hello-optimize/crewhaus.yaml \
+  --dataset hello-optimize/dataset.jsonl \
+  --graders hello-optimize/graders.yaml \
   --iterations 5 \
   --seed 42 \
   --write-back

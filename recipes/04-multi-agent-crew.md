@@ -62,7 +62,7 @@ with stronger tool descriptions.
 
 ## The smallest spec
 
-The bundled example [`examples/hello-crew/crewhaus.yaml`](../hello-crew/crewhaus.yaml)
+The bundled example [`hello-crew/crewhaus.yaml`](../hello-crew/crewhaus.yaml)
 is three roles, one entry point:
 
 ```yaml
@@ -321,7 +321,7 @@ decisions in the model's own words.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-crew/crewhaus.yaml`](../hello-crew/crewhaus.yaml).
+- **Example:** [`hello-crew/crewhaus.yaml`](../hello-crew/crewhaus.yaml).
 - **Codegen:** [`packages/target-crew`](https://github.com/crewhaus/factory/blob/main/packages/target-crew).
 - **Orchestrator:** [`packages/crew-orchestrator`](https://github.com/crewhaus/factory/blob/main/packages/crew-orchestrator).
 - **Handoff tool:** [`packages/agent-handoff`](https://github.com/crewhaus/factory/blob/main/packages/agent-handoff).

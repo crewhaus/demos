@@ -82,7 +82,7 @@ Append-only, one JSON object per line. Event kinds:
 ## Resume path
 
 ```bash
-bun apps/cli/src/index.ts run examples/hello-cli/crewhaus.yaml \
+bun apps/cli/src/index.ts run hello-cli/crewhaus.yaml \
   --resume sess_abc123def4567890
 ```
 

@@ -43,7 +43,7 @@ WHATSAPP_APP_SECRET=...
 
 ## Step 2 — The spec
 
-[`examples/hello-channel-whatsapp/crewhaus.yaml`](../hello-channel-whatsapp/crewhaus.yaml):
+[`hello-channel-whatsapp/crewhaus.yaml`](../hello-channel-whatsapp/crewhaus.yaml):
 
 ```yaml
 name: hello-channel-whatsapp
@@ -105,7 +105,7 @@ breaks verification — read the body as a stream, hash, then parse.
 
 ```bash
 bun run compile:hello-channel-whatsapp
-bun examples/hello-channel-whatsapp/dist/daemon.ts
+bun hello-channel-whatsapp/dist/daemon.ts
 ```
 
 Tunnel to a public URL:
@@ -269,7 +269,7 @@ Validates:
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-channel-whatsapp/crewhaus.yaml`](../hello-channel-whatsapp/crewhaus.yaml).
+- **Example:** [`hello-channel-whatsapp/crewhaus.yaml`](../hello-channel-whatsapp/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-whatsapp`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-whatsapp).
 - **Spec schema (whatsapp block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

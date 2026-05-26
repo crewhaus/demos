@@ -71,7 +71,7 @@ unsupervised production incident.
 
 ## The smallest spec
 
-The bundled example [`examples/hello-research/crewhaus.yaml`](../hello-research/crewhaus.yaml):
+The bundled example [`hello-research/crewhaus.yaml`](../hello-research/crewhaus.yaml):
 
 ```yaml
 name: hello-research
@@ -94,7 +94,7 @@ branchingFactor: 3
 maxDurationMs: 240000
 retrieve:
   allowedFileRoots:
-    - examples/hello-research/sources
+    - hello-research/sources
 permissions:
   mode: default
 ```
@@ -293,7 +293,7 @@ overarching question** — and you want the citation discipline.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-research/crewhaus.yaml`](../hello-research/crewhaus.yaml).
+- **Example:** [`hello-research/crewhaus.yaml`](../hello-research/crewhaus.yaml).
 - **Codegen:** [`packages/target-research-bundle`](https://github.com/crewhaus/factory/blob/main/packages/target-research-bundle).
 - **Planner:** [`packages/planner`](https://github.com/crewhaus/factory/blob/main/packages/planner).
 - **Crawler (Source + CiteFact):** [`packages/crawler`](https://github.com/crewhaus/factory/blob/main/packages/crawler).

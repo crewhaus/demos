@@ -55,7 +55,7 @@ that first — it sets up the mental model this recipe builds on.
 
 ## Step 1 — The smallest possible spec
 
-Open [`examples/hello-cli/crewhaus.yaml`](../hello-cli/crewhaus.yaml).
+Open [`hello-cli/crewhaus.yaml`](../hello-cli/crewhaus.yaml).
 The whole file is five lines:
 
 ```yaml
@@ -89,19 +89,19 @@ block; `|` preserves the linebreaks.
 From the repo root:
 
 ```bash
-bun run compile:hello   # writes examples/hello-cli/dist/agent.ts
+bun run compile:hello   # writes hello-cli/dist/agent.ts
 bun run run:hello       # opens an interactive REPL
 ```
 
 Type a message, get a streaming reply, type `exit` to quit.
 
 What just happened: `compile:hello` ran
-`bun apps/cli/src/index.ts compile examples/hello-cli/crewhaus.yaml -o examples/hello-cli/dist`.
+`bun apps/cli/src/index.ts compile hello-cli/crewhaus.yaml -o hello-cli/dist`.
 The compiler parsed the YAML, lowered it to an `IrV0` value, and
 emitted a single TypeScript file. Then `run:hello` executed that file
 with Bun.
 
-Open `examples/hello-cli/dist/agent.ts` and read it. It's about 25
+Open `hello-cli/dist/agent.ts` and read it. It's about 25
 lines and contains no magic — it imports `runChatLoop` from
 `@crewhaus/runtime-core`, loads hooks/skills/slash-commands from your
 `.crewhaus/` directory, and calls into the runtime. You could have
@@ -114,7 +114,7 @@ The five-line spec gives you a chat agent with no tools — it can talk
 but not act. Add filesystem and bash tools to turn it into something
 that can actually help with code.
 
-Create a copy at `examples/hello-cli/my-agent.yaml`:
+Create a copy at `hello-cli/my-agent.yaml`:
 
 ```yaml
 name: my-agent
@@ -156,7 +156,7 @@ tool names you can put in `tools:`:
 Compile and run:
 
 ```bash
-bun apps/cli/src/index.ts compile examples/hello-cli/my-agent.yaml -o /tmp/my-agent
+bun apps/cli/src/index.ts compile hello-cli/my-agent.yaml -o /tmp/my-agent
 bun /tmp/my-agent/agent.ts
 ```
 
@@ -362,7 +362,7 @@ The session id prints when the run starts.
 To resume:
 
 ```bash
-bun apps/cli/src/index.ts run examples/hello-cli/crewhaus.yaml --resume sess_abcdef0123456789
+bun apps/cli/src/index.ts run hello-cli/crewhaus.yaml --resume sess_abcdef0123456789
 ```
 
 The runtime walks the JSONL, replays the `user_message` and
@@ -482,8 +482,8 @@ you reach for often.
 
 ## Pointers to source
 
-- **Smallest example:** [`examples/hello-cli/crewhaus.yaml`](../hello-cli/crewhaus.yaml).
-- **Bigger example with MCP:** [`examples/mcp-smoke/crewhaus.yaml`](https://github.com/crewhaus/factory/blob/main/examples/mcp-smoke/crewhaus.yaml).
+- **Smallest example:** [`hello-cli/crewhaus.yaml`](../hello-cli/crewhaus.yaml).
+- **Bigger example with MCP:** [`examples/section-09-mcp-smoke/crewhaus.yaml`](../examples/section-09-mcp-smoke/crewhaus.yaml).
 - **Spec schema (the source of truth for valid YAML):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **CLI compiler entry:** [`apps/cli/src/index.ts`](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts).
 - **CLI codegen:** [`packages/target-cli`](https://github.com/crewhaus/factory/blob/main/packages/target-cli).

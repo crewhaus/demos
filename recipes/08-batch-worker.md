@@ -72,7 +72,7 @@ in the *driver*: a queue instead of a static step list.
 
 ## The smallest spec
 
-The bundled example [`examples/hello-batch/crewhaus.yaml`](../hello-batch/crewhaus.yaml)
+The bundled example [`hello-batch/crewhaus.yaml`](../hello-batch/crewhaus.yaml)
 is one agent, one in-memory queue, eight seeded jobs:
 
 ```yaml
@@ -314,7 +314,7 @@ asking "should I use eval or batch": eval is batch + scoring.
 
 ## Pointers to source
 
-- **Example:** [`examples/hello-batch/crewhaus.yaml`](../hello-batch/crewhaus.yaml).
+- **Example:** [`hello-batch/crewhaus.yaml`](../hello-batch/crewhaus.yaml).
 - **Codegen:** [`packages/target-batch-worker`](https://github.com/crewhaus/factory/blob/main/packages/target-batch-worker).
 - **Queue protocol:** [`packages/queue-protocol`](https://github.com/crewhaus/factory/blob/main/packages/queue-protocol).
 - **Consumer:** [`packages/queue-consumer`](https://github.com/crewhaus/factory/blob/main/packages/queue-consumer).

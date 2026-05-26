@@ -74,9 +74,9 @@ let pkgScripts: Set<string> | undefined;
 // this set once the corresponding script lands in factory or demos.
 const ASPIRATIONAL_SCRIPTS = new Set<string>([
   "build:binary", // recipe 24 (docker-and-helm)
-  "compile:mcp-smoke", // recipe 13 (mcp-servers)
+  "compile:section-09-mcp-smoke", // recipe 13 (mcp-servers)
   "play:jetbrains", // recipe 25 (vscode-and-jetbrains)
-  "run:mcp-smoke", // recipe 13 (mcp-servers)
+  "run:section-09-mcp-smoke", // recipe 13 (mcp-servers)
   "smoke:section-13", // recipe 28 (sub-agents-and-task)
   "smoke:section-18", // recipe 30 (sandboxed-code-execution)
   "smoke:section-29", // recipe 12 (eval-harness)

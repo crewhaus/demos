@@ -1,4 +1,4 @@
-name: cli-smoke
+name: section-07-cli-smoke
 target: cli
 agent:
   model: claude-haiku-4-5-20251001
