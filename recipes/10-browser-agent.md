@@ -135,12 +135,82 @@ The shape:
   `Screenshot` and `FindElement`) must be `alwaysAllow` for the agent
   to drive without prompting.
 
-Run a compile (the example needs an HTTP server at `127.0.0.1:7325`,
-which the smoke harness sets up):
+## Compile and run
+
+Compile the spec to a standalone TypeScript file:
 
 ```bash
-bun run compile:hello-browser
+bun run compile:hello-browser   # writes hello-browser/dist/agent.ts
 ```
+
+The output is a ~100-line `dist/agent.ts` you could have written by
+hand — same pattern as [Recipe 01 — Step 2](01-cli-coding-agent.md).
+Open it; nothing magic.
+
+To actually drive a browser you need two things the compile doesn't
+provide: a page at the spec's `startUrl` (`http://127.0.0.1:7325/`),
+and an `ANTHROPIC_AUTH_TOKEN` so the model can call out. The example
+ships with both a fixture page and a one-shot smoke that wires
+everything up.
+
+### Run it manually (two terminals)
+
+In **terminal A**, start the bundled fixture — a single-page app with
+a green Submit button whose state flips on click:
+
+```bash
+bun scripts/section-25-fixture-server.ts
+# [fixture] listening on http://127.0.0.1:7325/
+```
+
+In **terminal B**, invoke the compiled agent with a task:
+
+```bash
+set -a; source .env; set +a    # exports ANTHROPIC_AUTH_TOKEN
+bun run run:hello-browser -- --prompt "Click the green Submit button on the page."
+```
+
+The agent takes a `Screenshot`, calls `FindElement("the green Submit
+button")` to get a bounding box, calls `Click(x, y)` at the center,
+takes a verifying `Screenshot`, and ends its turn. JSON events land
+on stdout:
+
+```jsonl
+{"kind":"browser_start","backend":"chromium"}
+{"kind":"navigated","url":"http://127.0.0.1:7325/"}
+{"kind":"browser_done","finalText":"Clicked the Submit button. The page now shows BROW_SMOKE_OK."}
+```
+
+Confirm the click landed by re-fetching the fixture page — the
+marker flips from `PENDING` to `BROW_SMOKE_OK`:
+
+```bash
+curl -s http://127.0.0.1:7325/ | grep -o 'BROW_SMOKE_OK\|PENDING'
+```
+
+Screenshots from the run land under `.crewhaus/screenshots/<runId>/`
+so you can scroll back through what the agent saw at each step.
+
+### Run it as a one-shot smoke
+
+If you'd rather skip the two-terminal dance, the `section-25` smoke
+boots the fixture, compiles the example, runs the agent, asserts on
+the post-click DOM, and tears everything down — the same path CI
+exercises:
+
+```bash
+bun run smoke:section-25
+# [smoke] OK: fixture page shows BROW_SMOKE_OK — Submit click landed
+# Section 25 BROW smoke PASS
+```
+
+### Point it at your own page
+
+Pointing the spec at a different URL is a one-line change to
+`driver.startUrl`, then `bun run compile:hello-browser` again and
+`bun run run:hello-browser -- --prompt "..."` for whatever's on that
+page. The fixture exists only to give the recipe something
+deterministic to click — anything Chromium can render works.
 
 ## The vision-grounding loop
 
