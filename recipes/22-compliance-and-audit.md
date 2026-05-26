@@ -29,8 +29,8 @@ evidence bundles are skippable.
 
 The compliance-control collector + evidence-bundle pipeline is
 exercised end-to-end by
-[`examples/section-39-compliance-controls-smoke/`](../examples/section-39-compliance-controls-smoke).
-Run `bun examples/section-39-compliance-controls-smoke/smoke.ts` to
+[`smoke/section-39-compliance-controls-smoke/`](../smoke/section-39-compliance-controls-smoke).
+Run `bun smoke/section-39-compliance-controls-smoke/smoke.ts` to
 see the audit log mapped to SOC 2 CC controls, signed, and packaged
 into an evidence tarball. The audit log itself is visible end-to-end
 in [`hello-managed`](../hello-managed/README.md) under

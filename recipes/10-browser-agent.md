@@ -156,7 +156,7 @@ In **terminal A**, start the bundled fixture — a single-page app with
 a green Submit button whose state flips on click:
 
 ```bash
-bun scripts/section-25-fixture-server.ts
+bun smoke/section-25-smoke/fixture-server.ts
 # [fixture] listening on http://127.0.0.1:7325/
 ```
 

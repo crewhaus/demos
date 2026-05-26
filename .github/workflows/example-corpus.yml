@@ -25,13 +25,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: list
-        name: Enumerate */crewhaus.yaml
+        name: Enumerate */crewhaus.yaml and smoke/*/crewhaus.yaml
         run: |
           set -euo pipefail
+          # Walks hello-*/ at depth 2 and smoke/section-*-smoke/ at depth 3.
+          # Excludes node_modules/, scripts/, .github/, .crewhaus/ — none
+          # of which carry compilable specs.
           examples=$(
-            find . -mindepth 2 -maxdepth 2 -name crewhaus.yaml \
-              -not -path "./node_modules/*" \
-              -not -path "./scripts/*" \
+            {
+              find . -mindepth 2 -maxdepth 2 -name crewhaus.yaml \
+                -not -path "./node_modules/*" \
+                -not -path "./scripts/*" \
+                -not -path "./smoke/*" \
+                -not -path "./.github/*" \
+                -not -path "./.crewhaus/*"
+              find ./smoke -mindepth 2 -maxdepth 2 -name crewhaus.yaml \
+                -not -path "*/node_modules/*"
+            } \
               | sed 's|^\./||;s|/crewhaus.yaml||' \
               | sort \
               | jq -R -s -c 'split("\n") | map(select(length > 0))'

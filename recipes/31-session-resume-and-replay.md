@@ -27,9 +27,9 @@ enabled.
 ## Try it
 
 Studio's replay viewer is exercised by
-[`examples/section-31-smoke/smoke.ts`](../examples/section-31-smoke/smoke.ts)
+[`smoke/section-31-smoke/smoke.ts`](../smoke/section-31-smoke/smoke.ts)
 probe 4 — `trace-viewer: replay yields events deterministically`. Run
-`bun examples/section-31-smoke/smoke.ts`. For raw session resume, any
+`bun smoke/section-31-smoke/smoke.ts`. For raw session resume, any
 `hello-*` CLI demo writes `.crewhaus/sessions/sess_*.{json,jsonl}` on
 every run; re-invoke with `--resume sess_<id>` to pick up where you
 left off. A dedicated hello-resume demo with a pre-baked checkpoint

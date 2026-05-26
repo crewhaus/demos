@@ -1,6 +1,6 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 55 task-oriented [recipes](./recipes/INDEX.md), and section-* example smokes under [examples/](./examples/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 `hello-*` example specs covering every target shape, 55 task-oriented [recipes](./recipes/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## Showcase demos
 
@@ -58,15 +58,26 @@ demos/
     …
     55-meta-cross-references.md
     INDEX.md                   decision tree for picking a recipe
-  examples/                    section-* example specs (extracted from factory)
-    section-07-cli-smoke/      one workspace package per section reference spec
+  smoke/                       contributor-facing per-section regression tests
+    section-12-smoke/          single-file smokes (smoke.ts entry)
+    section-07-cli-smoke/      spec-only smokes (crewhaus.yaml entry)
     section-09-mcp-smoke/
-    section-15-smoke/
-    …
+    section-27-smoke/          executable smokes (smoke.ts entry)
+    section-33-discord-smoke/  channel-adapter platform variants
+    section-34-federation-smoke/
+    section-35-{vscode,jetbrains,playground}-smoke/
+    section-36-sandbox-image-{dotnet,go,java,php,r,ruby,rust,registry}-smoke/
+    section-37-exporter-{datadog,honeycomb,newrelic,splunk}-smoke/
+    section-38-grader-{multimodal,nlg-metrics,safety-classifiers,semantic-similarity}-smoke/
+    section-39-{audit-encryption,compliance-controls,data-retention-engine,pii-redactor}-smoke/
+    section-40-{example-corpus,template-marketplace-client,template-registry}-smoke/
+    hello-{procode,prochat}-smoke/  showcase smokes
   scripts/
-    test-recipes.ts            validates every recipe spec compiles
-    smoke-recipes.ts
-    section-{12,19,…25}-smoke.ts  end-to-end smoke tests for hello-* targets
+    compile.ts                 parameterized: bun run compile <demo>
+    run.ts                     parameterized: bun run run <demo>
+    list.ts                    enumerates demos with target + README status
+    test-recipes.ts            static recipe validator (links, scripts, specs)
+    smoke-recipes.ts           runtime recipe smoke (compile + optional run)
   .github/workflows/
   package.json
   tsconfig.json

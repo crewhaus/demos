@@ -15,3 +15,4 @@ dist/
 .crewhaus/*.jsonl
 .crewhaus/cache/
 .claude/
+.crewhaus/evals/

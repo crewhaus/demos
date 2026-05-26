@@ -31,7 +31,7 @@ For single-tenant CLIs, none of this is necessary.
 ## Try it
 
 The rate-limiter half lives in
-[`examples/section-27-smoke/smoke.ts`](../examples/section-27-smoke/smoke.ts)
+[`smoke/section-27-smoke/smoke.ts`](../smoke/section-27-smoke/smoke.ts)
 probe 2: a 5 req/sec bucket pumped with 10 acquires asserts that
 back-pressure kicked in (elapsed ≥ 800 ms). Probe 1 of the same smoke
 exercises the cost-tracker side. The tenant-budget half is visible

@@ -27,7 +27,7 @@ import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const CWD = process.cwd();
-const REPO_ROOT = resolve(import.meta.dir, "..");
+const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
 const SMOKE_EXAMPLE = join(REPO_ROOT, "hello-rag");

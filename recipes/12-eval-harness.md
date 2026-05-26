@@ -157,7 +157,7 @@ Three splits, one purpose each:
   training on the data you also evaluate on.
 
 To register a dataset programmatically, see the section-29 smoke at
-[`examples/section-29-smoke/smoke.ts`](https://github.com/crewhaus/factory/tree/main/examples/section-29-smoke/smoke.ts).
+[`smoke/section-29-smoke/smoke.ts`](https://github.com/crewhaus/factory/tree/main/smoke/section-29-smoke/smoke.ts).
 
 ## Step 3 — Built-in graders
 
@@ -396,5 +396,5 @@ refuses unless you opt in.
 - **Production graders:** [`packages/grader-nlg-metrics`](https://github.com/crewhaus/factory/blob/main/packages/grader-nlg-metrics), [`packages/grader-semantic-similarity`](https://github.com/crewhaus/factory/blob/main/packages/grader-semantic-similarity), [`packages/grader-safety-classifiers`](https://github.com/crewhaus/factory/blob/main/packages/grader-safety-classifiers), [`packages/grader-multimodal`](https://github.com/crewhaus/factory/blob/main/packages/grader-multimodal).
 - **Optimizer:** [`packages/prompt-optimizer`](https://github.com/crewhaus/factory/blob/main/packages/prompt-optimizer).
 - **Regression gate:** [`packages/regression-runner`](https://github.com/crewhaus/factory/blob/main/packages/regression-runner).
-- **End-to-end smoke:** [`examples/section-29-smoke/smoke.ts`](https://github.com/crewhaus/factory/tree/main/examples/section-29-smoke/smoke.ts).
+- **End-to-end smoke:** [`smoke/section-29-smoke/smoke.ts`](https://github.com/crewhaus/factory/tree/main/smoke/section-29-smoke/smoke.ts).
 - **Module catalog reference:** §16, §29, §38 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

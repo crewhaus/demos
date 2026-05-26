@@ -27,14 +27,14 @@ the right answer when the runtime needs **isolation guarantees**.
 ## Try it
 
 The Python/JS/Shell sandbox primitives are exercised by
-[`examples/section-30-smoke/`](../examples/section-30-smoke) (backend
+[`smoke/section-30-smoke/`](../smoke/section-30-smoke) (backend
 adapter family — queues, vectors, browser, telephony, sandboxes).
 Seven polyglot sandbox images each have their own end-to-end smoke
 under
-[`examples/section-36-sandbox-image-{dotnet,go,java,php,r,ruby,rust}-smoke/`](../examples/) —
+[`smoke/section-36-sandbox-image-{dotnet,go,java,php,r,ruby,rust}-smoke/`](../smoke/) —
 each builds the image, runs a "hello world" inside it, and asserts
 network=none + read-only root. Run any with
-`bun examples/section-36-sandbox-image-<lang>-smoke/smoke.ts`.
+`bun smoke/section-36-sandbox-image-<lang>-smoke/smoke.ts`.
 
 ## The `sandbox` package
 

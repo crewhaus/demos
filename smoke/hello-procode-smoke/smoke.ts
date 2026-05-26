@@ -7,7 +7,7 @@
  * runtime check: actually spawn the compiled bundle, send one prompt to
  * stdin, and assert the agent produces non-empty output within 60s.
  *
- * Run: `bun scripts/section-hello-procode-smoke.ts`
+ * Run: `bun smoke/hello-procode-smoke/smoke.ts`
  * Requires: `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` in env.
  *
  * Exits 0 on success, 1 on any failure.
@@ -17,7 +17,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const REPO_ROOT = resolve(import.meta.dir, "..");
+const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const DEMO_DIR = join(REPO_ROOT, "hello-procode");
 const BUNDLE = join(DEMO_DIR, "dist", "agent.ts");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));

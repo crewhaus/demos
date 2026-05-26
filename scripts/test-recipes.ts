@@ -369,11 +369,13 @@ function checkBunRunScripts(recipe: Recipe): void {
 function checkFrontmatter(recipe: Recipe): void {
   const fm = recipe.frontmatter;
   if (fm.spec !== undefined) {
-    // Specs may live in demos (hello-* tutorials) or factory (section-NN-smoke
-    // fixtures). Try demos first, then factory's examples/.
+    // Specs live in demos under hello-X/ (tutorials) or smoke/ (per-section
+    // fixtures); legacy fallback to factory/examples/ for any reference the
+    // factory repo never migrated.
     const candidates = [
       resolve(REPO_ROOT, fm.spec),
       resolve(FACTORY_ROOT, "examples", fm.spec.replace(/^examples\//, "")),
+      resolve(REPO_ROOT, fm.spec.replace(/^examples\//, "smoke/")),
     ];
     const specPath = candidates.find((p) => existsSync(p));
     if (specPath === undefined) {
