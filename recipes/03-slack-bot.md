@@ -30,9 +30,8 @@ By the end of this recipe you'll have:
 
 The `channel` target is two things at once: a long-running daemon
 pattern (similar to OpenAI's background-mode and AWS AgentCore's
-long-running session model — see
-[docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)) and a **trust
-boundary** under Pillar 3 ([CLAUDE.md](https://github.com/crewhaus/factory/blob/main/CLAUDE.md)). Inbound
+long-running session model) and a **trust boundary** under Pillar 3
+([CLAUDE.md](https://github.com/crewhaus/factory/blob/main/CLAUDE.md)). Inbound
 Slack messages — even from authenticated users in your own workspace
 — are externally-controlled content. Every text body that reaches the
 model is classified by

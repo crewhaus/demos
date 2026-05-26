@@ -30,10 +30,9 @@ the `host` backend caveats below.
 <details>
 <summary><strong>Architectural context</strong> — browser tools are the largest trust-surface expansion in any target shape</summary>
 
-The harness-design literature ([docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md))
-flags **browser tools, code execution, MCP servers, and external
-search** as the categories that "materially increase attack and
-compliance surface" — Microsoft recommends isolation and explicit
+The category of high-trust-surface tools — **browser, code
+execution, MCP servers, and external search** — is widely flagged as
+the set that "materially increases attack and compliance surface" — Microsoft recommends isolation and explicit
 approvals; OpenAI distinguishes hosted from local MCP and emphasizes
 guardrails; Azure documents that Bing grounding sends data outside the
 usual compliance boundary. Of those four, **browser** is the one

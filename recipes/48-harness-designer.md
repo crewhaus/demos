@@ -68,9 +68,9 @@ This recipe also lays the groundwork for Pillar 2 (eval is active).
 When the user has a dataset, the designer auto-runs
 [`crewhaus optimize`](42-active-optimization.md) on the generated spec,
 making the eval-driven tuning loop the *default* finishing pass rather
-than a separate journey. The DSPy MIPRO result — +13% accuracy on 5/7
-multi-stage programs (factory's [docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md))
-— is the empirical motivation; this recipe makes it one prompt away.
+than a separate journey. The DSPy MIPRO result — measurable accuracy
+gains from prompt optimization at the program layer — is the
+empirical motivation; this recipe makes it one prompt away.
 
 </details>
 

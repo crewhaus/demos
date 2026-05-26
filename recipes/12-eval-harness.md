@@ -28,11 +28,11 @@ of users.
 The eval stack is Pillar 2 of the crewhaus thesis
 ([CLAUDE.md](https://github.com/crewhaus/factory/blob/main/CLAUDE.md)): **eval is active, not passive** —
 failures should produce *spec patches*, not just HTML reports. The
-empirical case for that pillar comes from DSPy's MIPRO result, cited
-prominently in [docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md):
-**+13% accuracy on five of seven multi-stage LM programs**. That's
-one of the few primary-source results attributing measurable gains to
-the harness/programming layer itself, rather than to model choice or
+empirical case for that pillar comes from DSPy's MIPRO result:
+prompt optimization at the program/harness layer produces measurable
+accuracy gains on multi-stage LM programs — one of the few
+primary-source results attributing measurable gains to the
+harness/programming layer itself, rather than to model choice or
 prompt-engineering folklore.
 
 The landscape also signals that eval should be layered, not monolithic:

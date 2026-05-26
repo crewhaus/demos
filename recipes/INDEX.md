@@ -52,7 +52,7 @@ problem they brought. Walk this tree from the top:
    benefit from a dedicated specialist role?** → [Recipe 04 — Multi-Agent
    Crew](04-multi-agent-crew.md). (Google's scaling study found
    centralized multi-agent topologies help parallelizable reasoning,
-   while *hurting* sequential reasoning by 39–70% — see the
+   while *hurting* sequential reasoning measurably — see the
    architectural-context callouts in recipes 02 and 04.)
 4. **Is each step a clearly-bounded "extract → transform → format"
    stage with a single handoff?** → [Recipe 02 — Sequential
@@ -69,7 +69,8 @@ problem they brought. Walk this tree from the top:
    Harness](12-eval-harness.md) to set up the dataset, then
    [Recipe 42 — Active Optimization](42-active-optimization.md) for
    DSPy-style spec mutation (the empirical result that motivates the
-   project: +13% accuracy on 5/7 multi-stage programs).
+   project: measurable accuracy gains from program-layer prompt
+   optimization).
 8. **Are you running long-horizon autonomous work (research, batch
    jobs)?** → [Recipe 07 — Autonomous Research](07-autonomous-research.md)
    or [Recipe 08 — Batch Worker](08-batch-worker.md). Both lean on

@@ -34,8 +34,8 @@ instead. If you have many independent prompts to run, use
 
 The `research` target is the harness's answer to the **long-running
 autonomous session** pattern that Anthropic's Managed Agents,
-OpenAI's background-mode runs, and AWS AgentCore all converge on
-([docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)): a session
+OpenAI's background-mode runs, and AWS AgentCore all converge on: a
+session
 with persistent event history, durable checkpoints, compaction for
 long histories, and structured artifact output. Three primitives map
 to specific architectural lessons:

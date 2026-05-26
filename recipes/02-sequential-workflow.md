@@ -30,9 +30,8 @@ messaging).
 <summary><strong>Architectural context</strong> — why a sequential workflow is single-turn-threaded, not multi-agent</summary>
 
 The empirical case for keeping each step single-turn comes from
-Google's controlled agent-scaling study (cited in
-[docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)): **multi-agent
-variants degrade sequential reasoning tasks by 39–70%** compared to a
+Google's controlled agent-scaling study: **multi-agent variants
+degrade sequential reasoning tasks measurably** compared to a
 single-agent baseline. The same study found centralized multi-agent
 patterns *help* on parallelizable tasks — which is exactly the use
 case for [crew](04-multi-agent-crew.md), not workflow. Task structure

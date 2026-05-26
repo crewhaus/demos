@@ -226,7 +226,7 @@ See [docs/COMPILER-ARCHITECTURE.md §The lossy lower, and how `crewhaus optimize
 
 ## Comparison to DSPy
 
-This recipe is crewhaus's answer to DSPy's MIPRO result (+13% on five of seven multi-stage LM programs, cited in [`docs/AI-Harness-Systems.md`](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)). The differences:
+This recipe is crewhaus's answer to DSPy's MIPRO result. The differences:
 
 - **Crewhaus mutates SPECS, not in-memory Python programs.** Patches are version-controllable; DSPy's program state typically isn't.
 - **The mutation provider seam is explicit.** Rule-based and Claude-driven mutators are first-class; future providers (a DSPy bridge, an OPRO implementation) can plug in via the same `MutationProvider` interface without changing the orchestrator.

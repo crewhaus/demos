@@ -31,16 +31,15 @@ agents** that can't see the parent's context, use [`Task` sub-agents](28-sub-age
 <details>
 <summary><strong>Architectural context</strong> — when multi-agent helps, when it hurts</summary>
 
-Google's agent-scaling study (cited in
-[docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)) is the
-strongest empirical signal on when to reach for `crew`: **centralized
-multi-agent topologies help on highly parallelizable reasoning** —
-finance-style decomposition into independent subtasks is the canonical
-fit — and **decentralized topologies help on dynamic browsing /
-navigation**. The same study found multi-agent variants *hurt*
-sequential reasoning by 39–70%, which is why a "researcher → writer →
-critic" pipeline with a fixed step order belongs in
-[workflow](02-sequential-workflow.md), not crew. Reach for crew when
+Google's agent-scaling study is the strongest empirical signal on
+when to reach for `crew`: **centralized multi-agent topologies help
+on highly parallelizable reasoning** — finance-style decomposition
+into independent subtasks is the canonical fit — and **decentralized
+topologies help on dynamic browsing / navigation**. The same study
+found multi-agent variants *hurt* sequential reasoning measurably,
+which is why a "researcher → writer → critic" pipeline with a fixed
+step order belongs in [workflow](02-sequential-workflow.md), not
+crew. Reach for crew when
 the roles need to *negotiate* — clarifying questions, peer messaging,
 emergent routing — not when they just need to take turns.
 
