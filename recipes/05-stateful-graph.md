@@ -32,7 +32,7 @@ If you don't need durable state, conditional edges, or HITL, use
 <summary><strong>Architectural context</strong> — graph durability, checkpoint policy, and HITL</summary>
 
 LangGraph and Microsoft Agent Framework are the two canonical
-stateful-graph runtimes ([docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)).
+stateful-graph runtimes.
 LangGraph exposes durable execution with three explicit durability
 modes — `exit`, `async`, `sync` — and MAF centers graph workflows with
 **checkpointing, streaming, time travel, and OpenTelemetry**. Every

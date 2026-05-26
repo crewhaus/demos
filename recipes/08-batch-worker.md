@@ -35,8 +35,7 @@ your goal is one long-horizon research task, use
 <summary><strong>Architectural context</strong> — batch as the "background mode" pattern, with at-least-once semantics</summary>
 
 `batch` is the harness's mapping for the **background-mode** pattern
-OpenAI added to the Responses API for long-running tasks
-([docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)) and the
+OpenAI added to the Responses API for long-running tasks and the
 queue-worker pattern that every cloud-managed harness exposes (AWS
 SQS-backed agents, Foundry Agent Service queues, Anthropic's session
 runtime). The unifying invariant: **the calling system doesn't block

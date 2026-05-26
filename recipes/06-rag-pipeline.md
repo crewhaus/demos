@@ -31,7 +31,7 @@ fixed corpus), use [`research`](07-autonomous-research.md) instead.
 
 Haystack and LlamaIndex are the field's strongest signals that **when
 retrieval quality is the engineering challenge, you want a
-pipeline-first harness, not an agent-first one** ([docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)).
+pipeline-first harness, not an agent-first one**.
 Haystack's core design is "components connected by pipelines" —
 routers, retrievers, generators, tools as swappable units — and
 LlamaIndex is structured around data-centric workflows for the same

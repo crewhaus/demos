@@ -31,9 +31,9 @@ transcribes file uploads.
 <summary><strong>Architectural context</strong> — realtime is a different harness, not "CLI with audio"</summary>
 
 OpenAI's Realtime API and the Codex App Server's bidirectional
-JSON-RPC pattern ([docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md))
-are the strongest signals that **realtime is a categorically
-different harness shape**, not a thin wrapper over the chat loop.
+JSON-RPC pattern are the strongest signals that **realtime is a
+categorically different harness shape**, not a thin wrapper over the
+chat loop.
 Three properties don't compose backward into the polling REST model:
 
 - **Audio framing** — 24 kHz PCM in *and* out, with VAD-driven turn

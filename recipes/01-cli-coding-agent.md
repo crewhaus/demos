@@ -27,9 +27,9 @@ example and skip the explanations.
 <details>
 <summary><strong>Architectural context</strong> — why <code>cli</code> is the right shape to learn on</summary>
 
-Anthropic's own guidance for harness design ([docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md))
-is explicit: "teams usually do best with **simple, composable
-workflows** before escalating to elaborate agent architectures." The
+Anthropic's own guidance for harness design is explicit: "teams
+usually do best with **simple, composable workflows** before
+escalating to elaborate agent architectures." The
 `cli` shape is the smallest viable harness — one agent, one chat loop,
 one process — that still exercises every primitive (model adapter,
 tool gateway, policy engine, session store, telemetry). It maps

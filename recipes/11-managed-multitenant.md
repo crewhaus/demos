@@ -34,8 +34,8 @@ not worth it for a single user.
 
 The `managed` target is crewhaus's open-source mapping for the
 **managed harness platform** category that AWS AgentCore, Anthropic
-Managed Agents, Azure Foundry, and Gemini Agent Engine all occupy
-([docs/AI-Harness-Systems.md](https://github.com/crewhaus/factory/blob/main/docs/AI-Harness-Systems.md)). The
+Managed Agents, Azure Foundry, and Gemini Agent Engine all occupy.
+The
 unifying lesson across those platforms is that the "managed" surface
 is not just a deployment convenience — it's a **billing surface**.
 Anthropic prices sessions in `running` state at $0.08/hour; OpenAI
