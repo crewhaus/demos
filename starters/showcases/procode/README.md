@@ -127,7 +127,7 @@ Three high-leverage extensions:
    `bunx crewhaus optimize crewhaus.yaml --dataset dataset.jsonl
    --graders graders.yaml --write-back` to let the eval-driven optimizer
    mutate the spec for measurable accuracy gains
-   ([recipe 42](../recipes/42-active-optimization.md)).
+   ([walkthrough 42](../../../walkthroughs/42-active-optimization.md)).
 
 See [`hello-harness-designer`](../hello-harness-designer/) for a
 companion harness that DESIGNS new harnesses by interviewing you about

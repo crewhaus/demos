@@ -2,7 +2,7 @@
 /**
  * Dynamic recipe smoke test.
  *
- * Where scripts/test-recipes.ts does static validation (links, spec
+ * Where scripts/test-walkthroughs.ts does static validation (links, spec
  * parsing, package.json script presence), this script actually runs
  * each recipe's compile and (in live mode) run cycle.
  *
@@ -42,7 +42,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const RECIPES_DIR = join(REPO_ROOT, "recipes");
+const WALKTHROUGHS_DIR = join(REPO_ROOT, "walkthroughs");
 const PACKAGE_JSON = join(REPO_ROOT, "package.json");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const LIVE = process.env["RECIPE_SMOKE_LIVE"] === "1";
@@ -50,7 +50,7 @@ const LIVE = process.env["RECIPE_SMOKE_LIVE"] === "1";
 // Scripts present in either repo's package.json. The smoke runner skips
 // recipes referencing scripts that aren't actually defined — those are
 // aspirational gaps (caught with an inline-documented allowlist by the
-// static gate `recipes:test`) and the live invocation here would just
+// static gate `walkthroughs:test`) and the live invocation here would just
 // fail with "Script not found" if we didn't filter first.
 let definedScriptsCache: Set<string> | undefined;
 function loadDefinedScripts(): Set<string> {
@@ -223,7 +223,7 @@ function runScript(recipe: string, script: string): Result {
 }
 
 function main(): void {
-  const recipes = readdirSync(RECIPES_DIR)
+  const recipes = readdirSync(WALKTHROUGHS_DIR)
     .filter((n) => n.endsWith(".md"))
     .sort();
 
@@ -232,7 +232,7 @@ function main(): void {
   );
 
   for (const name of recipes) {
-    const path = join(RECIPES_DIR, name);
+    const path = join(WALKTHROUGHS_DIR, name);
     const content = readFileSync(path, "utf-8");
     const fm = parseFrontmatter(content);
     const hasSpec = fm.spec !== undefined;

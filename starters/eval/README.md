@@ -57,9 +57,9 @@ smallest concrete shape that the eval runner reads a registered
 dataset, runs an agent against it, applies the grader registry, and
 produces an HTML report.
 
-See [`recipes/12-eval-harness.md`](../recipes/12-eval-harness.md) for
+See [`walkthroughs/12-eval-harness.md`](../../walkthroughs/12-eval-harness.md) for
 the full walkthrough,
-[`recipes/34-building-custom-graders.md`](../recipes/34-building-custom-graders.md)
+[`walkthroughs/34-building-custom-graders.md`](../../walkthroughs/34-building-custom-graders.md)
 for custom graders, and
-[`recipes/42-active-optimization.md`](../recipes/42-active-optimization.md)
+[`walkthroughs/42-active-optimization.md`](../../walkthroughs/42-active-optimization.md)
 for the prompt-optimizer loop that runs on top of this stack.

@@ -18,6 +18,6 @@ ANTHROPIC_API_KEY=sk-... bun run run research  # accepts a research prompt
 The spec uses `file://` sources; point it at HTTP sources by editing the
 research plan in `crewhaus.yaml`.
 
-See [`recipes/07-autonomous-research.md`](../recipes/07-autonomous-research.md)
+See [`walkthroughs/07-autonomous-research.md`](../../walkthroughs/07-autonomous-research.md)
 for the sub-question decomposition strategy, claim-extraction contract, and
 the budget/iteration controls that cap runtime.

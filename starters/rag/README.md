@@ -18,5 +18,5 @@ ANTHROPIC_API_KEY=sk-... bun run run rag  # opens an interactive REPL
 The spec ships with a small in-process vector index over `./docs/`. To
 point it at your own corpus, set `RAG_CORPUS_DIR=...`.
 
-See [`recipes/06-rag-pipeline.md`](../recipes/06-rag-pipeline.md) for the
+See [`walkthroughs/06-rag-pipeline.md`](../../walkthroughs/06-rag-pipeline.md) for the
 chunker config, embedding-provider swap, and refusal-vs-best-effort policy.

@@ -18,6 +18,6 @@ OPENAI_API_KEY=sk-... bun run run voice     # starts the voice daemon
 The provider is OpenAI by default; switch with the `voice.provider:` field
 in `crewhaus.yaml` (`openai`, `elevenlabs`, etc.).
 
-See [`recipes/09-voice-agent.md`](../recipes/09-voice-agent.md) for the
+See [`walkthroughs/09-voice-agent.md`](../../walkthroughs/09-voice-agent.md) for the
 push-to-talk vs. always-on modes, VAD configuration, and how the runtime
 interleaves audio with tool calls.

@@ -16,5 +16,5 @@ ANTHROPIC_API_KEY=sk-... bun run run browser  # launches Chromium
 
 The browser runs headed by default; set `BROWSER_HEADLESS=1` for CI.
 
-See [`recipes/10-browser-agent.md`](../recipes/10-browser-agent.md) for the
+See [`walkthroughs/10-browser-agent.md`](../../walkthroughs/10-browser-agent.md) for the
 narrative walkthrough, screenshot pipeline, and selector strategy.

@@ -15,6 +15,6 @@ bun run compile graph                       # writes dist/agent.ts
 ANTHROPIC_API_KEY=sk-... bun run run graph  # runs the graph end-to-end
 ```
 
-See [`recipes/05-stateful-graph.md`](../recipes/05-stateful-graph.md) for the
+See [`walkthroughs/05-stateful-graph.md`](../../walkthroughs/05-stateful-graph.md) for the
 node-and-edge model, conditional edges, fan-out/fan-in, and the difference
 between graph and crew.

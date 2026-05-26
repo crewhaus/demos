@@ -26,10 +26,10 @@ agent:
     The Zod spec schema lives in factory. Resolve both at startup:
 
       Demos (for recipes):
-        1. If `$CWD/recipes/INDEX.md` exists, use $CWD. (Designer is
+        1. If `$CWD/walkthroughs/INDEX.md` exists, use $CWD. (Designer is
            running from inside the demos checkout — the common case.)
         2. Else if `$CREWHAUS_DEMOS_PATH` is set and the file exists at
-           `$CREWHAUS_DEMOS_PATH/recipes/INDEX.md`, use that path.
+           `$CREWHAUS_DEMOS_PATH/walkthroughs/INDEX.md`, use that path.
         3. Else clone `https://github.com/crewhaus/demos` to
            `~/.crewhaus/demos-cache` (mkdir -p first), then use that path.
 
@@ -45,7 +45,7 @@ agent:
     pull --ff-only origin main` so the docs reflect HEAD. If the pull
     fails (offline, conflict), note it once and proceed with stale docs.
 
-    Read `<demos>/recipes/INDEX.md` (focus on lines 20-67, the
+    Read `<demos>/walkthroughs/INDEX.md` (focus on lines 20-67, the
     diagnostic decision tree) and `<factory>/packages/spec/src/index.ts`
     (the Zod schema — source of truth for valid YAML).
 
@@ -66,7 +66,7 @@ agent:
           session keying / compaction / graph.
        Stop asking when you have enough to write a defensible spec.
     4. Before writing, Read the recipe that matches the chosen shape
-       (e.g. `recipes/03-slack-bot.md` for `target: channel` with
+       (e.g. `walkthroughs/03-slack-bot.md` for `target: channel` with
        Slack) plus any cross-cutting recipes that apply (14 hooks, 29
        permissions, 41 security fabric for any agent with `bash` or
        network tools).

@@ -36,6 +36,6 @@ Catalog modules touched (per factory's [docs/MODULE-CATALOG.md](https://github.c
   every other `Bash` call gates through `ask`
 - R15 `eval-runner`, `prompt-optimizer` (when the user has a dataset)
 
-See [Recipe 48](../recipes/48-harness-designer.md) for the full
+See [Recipe 48](../../walkthroughs/48-harness-designer.md) for the full
 walkthrough, including three worked dialogues and the rationale behind
 the intent-driven interview pattern.

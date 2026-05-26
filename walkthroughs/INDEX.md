@@ -1,18 +1,18 @@
-# Recipes
+# Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
 > All 55 recipes are **complete** as of 2026-05-25. Every recipe is
-> statically validated by `bun run recipes:test` and every recipe with
+> statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
-> validated by `bun run recipes:smoke`.
+> validated by `bun run walkthroughs:smoke`.
 
 If you're new here, start with [`GETTING-STARTED.md`](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md)
 first. Each recipe assumes you've read it.
 
-Every recipe is statically validated by `bun run recipes:test`
-([`scripts/test-recipes.ts`](../scripts/test-recipes.ts)). Recipes
+Every recipe is statically validated by `bun run walkthroughs:test`
+([`scripts/test-walkthroughs.ts`](../scripts/test-walkthroughs.ts)). Recipes
 that opt into a `test:` frontmatter block also get compile-smoke
-coverage via `bun run recipes:smoke`. See [Testing recipes](#testing-recipes)
+coverage via `bun run walkthroughs:smoke`. See [Testing recipes](#testing-recipes)
 below.
 
 ---
@@ -290,16 +290,16 @@ re-compiles on every PR.
 
 ## Testing recipes
 
-Two scripts validate every recipe in `recipes/`:
+Two scripts validate every walkthrough in `walkthroughs/`:
 
 ```bash
-bun run recipes:test    # static checks; ~5 seconds
-bun run recipes:smoke   # compile + smoke runs; ~10 seconds in CI mode
+bun run walkthroughs:test    # static checks; ~5 seconds
+bun run walkthroughs:smoke   # compile + smoke runs; ~10 seconds in CI mode
 ```
 
-### `recipes:test` — static validation
+### `walkthroughs:test` — static validation
 
-[`scripts/test-recipes.ts`](../scripts/test-recipes.ts) catches the
+[`scripts/test-walkthroughs.ts`](../scripts/test-walkthroughs.ts) catches the
 bugs human reviewers shouldn't have to:
 
 - **Broken markdown links.** Every relative-path link must resolve to
@@ -316,9 +316,9 @@ bugs human reviewers shouldn't have to:
 
 Runs in well under a second; requires no network or API credentials.
 
-### `recipes:smoke` — compile + run smoke
+### `walkthroughs:smoke` — compile + run smoke
 
-[`scripts/smoke-recipes.ts`](../scripts/smoke-recipes.ts) actually
+[`scripts/smoke-walkthroughs.ts`](../scripts/smoke-walkthroughs.ts) actually
 runs the `bun_scripts` each recipe declares. Two modes:
 
 - **Default (CI):** runs only `compile:*` scripts. No model calls,
@@ -355,8 +355,8 @@ along sees what the tests verify.
 
 ### CI
 
-[`.github/workflows/recipes.yml`](../.github/workflows/recipes.yml)
-runs `recipes:test` on every PR touching `recipes/**`,
-`scripts/test-recipes.ts`, or `*/crewhaus.yaml`, followed by
-the compile-only `recipes:smoke`. Both must pass before a recipe PR
+[`.github/workflows/walkthroughs.yml`](../.github/workflows/walkthroughs.yml)
+runs `walkthroughs:test` on every PR touching `walkthroughs/**`,
+`scripts/test-walkthroughs.ts`, or `*/crewhaus.yaml`, followed by
+the compile-only `walkthroughs:smoke`. Both must pass before a recipe PR
 merges.

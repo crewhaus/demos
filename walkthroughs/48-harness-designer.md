@@ -187,18 +187,18 @@ you ask for something CrewHaus can't do.
 
 > **You:** I want a Slack bot that reviews pull requests on our repo.
 >
-> **Designer:** *(reads `recipes/INDEX.md`, walks to step 6 of the
+> **Designer:** *(reads `walkthroughs/INDEX.md`, walks to step 6 of the
 > diagnostic tree → channel target with Slack adapter. Reads
-> `recipes/03-slack-bot.md`.)* Got it — a Slack bot. Two quick
+> `walkthroughs/03-slack-bot.md`.)* Got it — a Slack bot. Two quick
 > questions: should it read the diffs itself via the `gh` CLI, or only
 > respond to whatever text the user pastes into Slack? And should it
 > post review comments back to GitHub, or only into the Slack thread?
 >
 > **You:** Read diffs via `gh`, post comments back to Slack only.
 >
-> **Designer:** *(reads `recipes/14-hooks.md`,
-> `recipes/29-permissions-deep-dive.md`,
-> `recipes/41-security-fabric.md` because the spec will include
+> **Designer:** *(reads `walkthroughs/14-hooks.md`,
+> `walkthroughs/29-permissions-deep-dive.md`,
+> `walkthroughs/41-security-fabric.md` because the spec will include
 > bash.)* Where should I write this?
 >
 > **You:** `./slack-pr-reviewer`
@@ -238,7 +238,7 @@ in user terms, not compiler terms.
 > I want to be able to ask questions about them.
 >
 > **Designer:** *(walks to step 5 of the decision tree → pipeline
-> shape. Reads `recipes/06-rag-pipeline.md`. Defaults from
+> shape. Reads `walkthroughs/06-rag-pipeline.md`. Defaults from
 > [packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)
 > `OPTIMIZABLE_PATHS.pipeline`: `chunkSize: 1000`, `chunkOverlap: 200`,
 > `defaultK: 5`.)* Two questions. Are the PDFs all in one folder I can
@@ -350,7 +350,7 @@ data) or a spec plus the next obvious step (when they didn't).
 The designer needs to read the recipes catalog and the Zod schema at
 runtime. It tries three paths in order, all in the instructions:
 
-1. **In-repo (default).** If `$CWD/recipes/INDEX.md` exists (the demos
+1. **In-repo (default).** If `$CWD/walkthroughs/INDEX.md` exists (the demos
    repo checkout), `$CWD` is treated as the demos root. This is the
    common case — you ran `bun run run starters/harness-designer` from
    the demos repo root.
@@ -387,8 +387,8 @@ sequence prints which path it resolved to, so this is visible.
 Static + smoke validation, run from the repo root:
 
 ```bash
-bun run recipes:test    # static link + spec-fence validation
-bun run recipes:smoke   # compile:starters/harness-designer in CI mode
+bun run walkthroughs:test    # static link + spec-fence validation
+bun run walkthroughs:smoke   # compile:starters/harness-designer in CI mode
 ```
 
 Manual end-to-end:
@@ -403,7 +403,7 @@ Then paste any of the three dialogue intents above. Confirm:
 - The designer's first question is open-ended ("what do you want this
   agent to do?"), not a multiple-choice menu.
 - It never asks "which target shape?" or "which tools?".
-- It reads `recipes/INDEX.md` and at least one recipe before
+- It reads `walkthroughs/INDEX.md` and at least one recipe before
   generating.
 - The generated YAML has a header comment block citing intent +
   consulted recipes.
@@ -449,7 +449,7 @@ Then paste any of the three dialogue intents above. Confirm:
 - **Example spec:** [starters/harness-designer/crewhaus.yaml](../starters/harness-designer/crewhaus.yaml)
 - **Spec schema (source of truth the designer reads at startup):** [packages/spec/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts)
 - **The compiler the designer validates against:** [apps/cli/src/index.ts](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts) (`runCompile`)
-- **The decision tree the designer walks:** [recipes/INDEX.md](INDEX.md) (lines 20–67)
+- **The decision tree the designer walks:** [walkthroughs/INDEX.md](INDEX.md) (lines 20–67)
 - **Contrast: the config-driven wizard:** [packages/wizard/src/index.ts](https://github.com/crewhaus/utilities/blob/main/wizard/src/index.ts)
 - **Contrast: the stub-only init:** [apps/cli/src/index.ts](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts) (`runInit`)
 - **`OPTIMIZABLE_PATHS` defaults the designer uses:** [packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)

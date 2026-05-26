@@ -17,6 +17,6 @@ ANTHROPIC_AUTH_TOKEN=sk-ant-oat... bun run run channels/imessage
 
 You will be prompted to grant Full Disk Access (for `chat.db` read) and
 Automation permissions (for AppleScript send). See
-[`recipes/40-channel-imessage.md`](../recipes/40-channel-imessage.md) for the
+[`walkthroughs/40-channel-imessage.md`](../../../walkthroughs/40-channel-imessage.md) for the
 poll-vs-stream trade-off, contact-allowlist setup, and the macOS
 permission flow.

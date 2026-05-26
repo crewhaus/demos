@@ -3,7 +3,7 @@
  * Runtime smoke test for the hello-procode showcase demo.
  *
  * Compile-smoke is handled by `bun run recipes:smoke` via the recipe's
- * frontmatter (recipes/49-procode.md). This script adds a LIVE
+ * frontmatter (walkthroughs/49-procode.md). This script adds a LIVE
  * runtime check: actually spawn the compiled bundle, send one prompt to
  * stdin, and assert the agent produces non-empty output within 60s.
  *
