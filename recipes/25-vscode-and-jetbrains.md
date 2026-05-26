@@ -24,7 +24,7 @@ schema is enough.
 ## The shared JSON Schema
 
 Both plugins consume the same JSON Schema (Draft-07) at
-[`packages/vscode-extension/schemas/spec.json`](https://github.com/crewhaus/factory/blob/main/packages/vscode-extension/schemas/spec.json).
+[`packages/vscode-extension/schemas/spec.json`](https://github.com/crewhaus/utilities/blob/main/vscode-extension/schemas/spec.json).
 The schema covers all 12 target shapes via a `discriminator: target`
 union.
 
@@ -42,7 +42,7 @@ the JSON Schema.
 
 ## VS Code
 
-[`packages/vscode-extension`](https://github.com/crewhaus/factory/blob/main/packages/vscode-extension)
+[`packages/vscode-extension`](https://github.com/crewhaus/utilities/blob/main/vscode-extension)
 registers:
 
 | Surface              | Behavior                                                                |
@@ -116,7 +116,7 @@ containing `/`, `..`, or null bytes — same as the runtime resolver.
 
 ## JetBrains
 
-[`packages/jetbrains-plugin`](https://github.com/crewhaus/factory/blob/main/packages/jetbrains-plugin) plugs
+[`packages/jetbrains-plugin`](https://github.com/crewhaus/utilities/blob/main/jetbrains-plugin) plugs
 into the JetBrains YAML plugin's JSON Schema integration:
 
 | Surface                 | Behavior                                                              |
@@ -236,7 +236,7 @@ in the IDE preferences. The plugin auto-registers the schema; the
 
 ## Pointers to source
 
-- **VS Code extension:** [`packages/vscode-extension`](https://github.com/crewhaus/factory/blob/main/packages/vscode-extension).
-- **JetBrains plugin:** [`packages/jetbrains-plugin`](https://github.com/crewhaus/factory/blob/main/packages/jetbrains-plugin).
-- **Shared schema:** [`packages/vscode-extension/schemas/spec.json`](https://github.com/crewhaus/factory/blob/main/packages/vscode-extension/schemas/spec.json).
+- **VS Code extension:** [`packages/vscode-extension`](https://github.com/crewhaus/utilities/blob/main/vscode-extension).
+- **JetBrains plugin:** [`packages/jetbrains-plugin`](https://github.com/crewhaus/utilities/blob/main/jetbrains-plugin).
+- **Shared schema:** [`packages/vscode-extension/schemas/spec.json`](https://github.com/crewhaus/utilities/blob/main/vscode-extension/schemas/spec.json).
 - **Module catalog reference:** §35 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

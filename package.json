@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "User-facing CrewHaus demos: hello-* example specs + 48 recipes + Studio/IDE tooling packages + section-* example smokes. Depends on a sibling ../factory/ checkout for the compiler and CLI.",
-  "workspaces": ["packages/*", "examples/*"],
+  "description": "User-facing CrewHaus demos: hello-* example specs + 48 recipes + section-* example smokes. Depends on a sibling ../factory/ checkout for the compiler and CLI. Studio + IDE tooling moved to the sibling ../utilities/ checkout (crewhaus/utilities).",
+  "workspaces": ["examples/*"],
   "scripts": {
     "recipes:test": "bun scripts/test-recipes.ts",
     "recipes:smoke": "bun scripts/smoke-recipes.ts",

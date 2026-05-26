@@ -277,5 +277,5 @@ JSONL and the result store.
 - **Event log:** [`packages/event-log`](https://github.com/crewhaus/factory/blob/main/packages/event-log).
 - **Branch history (graph only):** [`packages/branch-history`](https://github.com/crewhaus/factory/blob/main/packages/branch-history).
 - **Checkpoint store:** [`packages/checkpoint-store`](https://github.com/crewhaus/factory/blob/main/packages/checkpoint-store).
-- **Trace viewer / replay:** [`packages/trace-viewer`](https://github.com/crewhaus/factory/blob/main/packages/trace-viewer).
+- **Trace viewer / replay:** [`packages/trace-viewer`](https://github.com/crewhaus/utilities/blob/main/trace-viewer).
 - **Module catalog reference:** §10 (sessions/event-log), §19 (branch-history), §31 (trace-viewer) in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

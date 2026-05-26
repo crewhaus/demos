@@ -26,7 +26,7 @@
     // either a runtime file read (the spec source pulled by scripts) gated
     // behind FACTORY_PATH, or a shell-out to the factory CLI.
     "paths": {
-      "@crewhaus/*": ["../factory/packages/*"]
+      "@crewhaus/*": ["../factory/packages/*", "../utilities/*"]
     }
   },
   // No "include" by design: the tsconfig exists solely to provide the paths

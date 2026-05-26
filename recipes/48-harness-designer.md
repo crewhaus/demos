@@ -52,7 +52,7 @@ It uses the same `runChatLoop` from
 
 The designer's *methodology* is what makes it intent-driven rather
 than config-driven. Existing onboarding paths — `crewhaus init` writes
-a stub, [`packages/wizard`](https://github.com/crewhaus/factory/blob/main/packages/wizard) asks five technical
+a stub, [`packages/wizard`](https://github.com/crewhaus/utilities/blob/main/wizard) asks five technical
 questions (`target`, `name`, `model`, `tools`, `permissions.mode`) —
 both require the user to already think in CrewHaus terms before they
 can begin. The designer in this recipe inverts that: it thinks in IR
@@ -378,7 +378,7 @@ sequence prints which path it resolved to, so this is visible.
 | Thing | What it does | Why this isn't that |
 |---|---|---|
 | `crewhaus init` ([apps/cli/src/index.ts](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts)) | Writes a 6-line stub spec with hardcoded defaults | No interview, no shape selection. Use when you already know the shape and want a starter file. |
-| [`packages/wizard`](https://github.com/crewhaus/factory/blob/main/packages/wizard) | Headless state machine, asks 5 technical questions (`target`, `name`, `model`, `tools`, `permissions.mode`) and patches a scaffold template | Config-driven, not intent-driven. Use when you know the shape and want a fast template-fill. The designer in this recipe *replaces* the wizard's UX. |
+| [`packages/wizard`](https://github.com/crewhaus/utilities/blob/main/wizard) | Headless state machine, asks 5 technical questions (`target`, `name`, `model`, `tools`, `permissions.mode`) and patches a scaffold template | Config-driven, not intent-driven. Use when you know the shape and want a fast template-fill. The designer in this recipe *replaces* the wizard's UX. |
 | [Recipe 42 — Active optimization](42-active-optimization.md) | Mutates `agent.instructions` etc. on an *existing* spec via eval feedback | Tunes a spec you already have; doesn't generate one. Natural follow-up — the designer auto-runs it when a dataset is provided. |
 | `crewhaus doctor` (`--philosophy-alignment`) | Checks env health and three-pillar alignment | Audits, doesn't author. Useful to run after the designer has produced a spec. |
 | [Recipe 26 — Template marketplace](26-template-marketplace.md) | Browse + clone published spec templates | Curated reuse vs. bespoke generation. Use the marketplace when an existing template fits your need. |
@@ -452,6 +452,6 @@ Then paste any of the three dialogue intents above. Confirm:
 - **Spec schema (source of truth the designer reads at startup):** [packages/spec/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts)
 - **The compiler the designer validates against:** [apps/cli/src/index.ts](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts) (`runCompile`)
 - **The decision tree the designer walks:** [recipes/INDEX.md](INDEX.md) (lines 20–67)
-- **Contrast: the config-driven wizard:** [packages/wizard/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/wizard/src/index.ts)
+- **Contrast: the config-driven wizard:** [packages/wizard/src/index.ts](https://github.com/crewhaus/utilities/blob/main/wizard/src/index.ts)
 - **Contrast: the stub-only init:** [apps/cli/src/index.ts](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts) (`runInit`)
 - **`OPTIMIZABLE_PATHS` defaults the designer uses:** [packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)
