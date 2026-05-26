@@ -28,6 +28,7 @@
     "run:hello-batch": "bun hello-batch/dist/agent.ts",
     "compile:hello-voice": "bun ../factory/apps/cli/src/index.ts compile hello-voice/crewhaus.yaml -o hello-voice/dist",
     "compile:hello-browser": "bun ../factory/apps/cli/src/index.ts compile hello-browser/crewhaus.yaml -o hello-browser/dist",
+    "run:hello-browser": "bun hello-browser/dist/agent.ts",
     "compile:hello-eval": "bun ../factory/apps/cli/src/index.ts compile hello-eval/crewhaus.yaml -o hello-eval/dist",
     "compile:hello-channel-telegram": "bun ../factory/apps/cli/src/index.ts compile hello-channel-telegram/crewhaus.yaml -o hello-channel-telegram/dist",
     "compile:hello-channel-discord": "bun ../factory/apps/cli/src/index.ts compile hello-channel-discord/crewhaus.yaml -o hello-channel-discord/dist",
