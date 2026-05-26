@@ -53,5 +53,4 @@ console.log(t?.yaml); // ready to write to disk as crewhaus.yaml
 
 ## Related
 
-- Module brief: [docs/module-briefs/246-scaffold-templates.md](../../../docs/module-briefs/246-scaffold-templates.md)
 - Source: [src/index.ts](./src/index.ts)

@@ -97,5 +97,4 @@ Spec names must match `/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i` (single alnum, or a
 
 ## Related
 
-- Module brief: [docs/module-briefs/241-studio-server.md](../../../docs/module-briefs/241-studio-server.md)
 - Source: [src/index.ts](./src/index.ts)

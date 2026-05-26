@@ -86,5 +86,4 @@ Patterns are minimatch-style globs (`**` recursive, `*` single-segment). Empty o
 
 ## Related
 
-- Module brief: [docs/module-briefs/247-plugin-sdk.md](../../../docs/module-briefs/247-plugin-sdk.md)
 - Source: [src/index.ts](./src/index.ts)

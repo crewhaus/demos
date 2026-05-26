@@ -87,5 +87,4 @@ History is capped at 1000 entries (oldest dropped).
 
 ## Related
 
-- Module brief: [docs/module-briefs/243-graph-visualizer.md](../../../docs/module-briefs/243-graph-visualizer.md)
 - Source: [src/index.ts](./src/index.ts)

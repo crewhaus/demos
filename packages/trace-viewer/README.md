@@ -78,5 +78,4 @@ For point events, `t1 === t0`. Unpaired start events get `t1 === t0` until the m
 
 ## Related
 
-- Module brief: [docs/module-briefs/242-trace-viewer.md](../../../docs/module-briefs/242-trace-viewer.md)
 - Source: [src/index.ts](./src/index.ts)

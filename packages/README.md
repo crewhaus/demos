@@ -84,6 +84,5 @@ Inter-package edges:
 
 ## Related docs
 
-- Module briefs (internal design): [240-studio-ui](../../docs/module-briefs/240-studio-ui.md), [241-studio-server](../../docs/module-briefs/241-studio-server.md), [242-trace-viewer](../../docs/module-briefs/242-trace-viewer.md), [243-graph-visualizer](../../docs/module-briefs/243-graph-visualizer.md), [245-wizard](../../docs/module-briefs/245-wizard.md), [246-scaffold-templates](../../docs/module-briefs/246-scaffold-templates.md), [247-plugin-sdk](../../docs/module-briefs/247-plugin-sdk.md)
 - Catalog: [docs/MODULE-CATALOG.md:145](../../docs/MODULE-CATALOG.md) lists these as the Section 26 (Studio) and Section 35 (IDE) entry points
 - Parent: [../README.md](../README.md) for the full demos tree and environment variables
