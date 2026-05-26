@@ -25,6 +25,15 @@ write a tool.
 - [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
   underlying chat-loop semantics.
 
+## Try it
+
+No standalone skills demo ships yet — skills are discovered from
+`~/.claude/skills/` and project `.crewhaus/skills/` at runtime, so the
+mechanism is data, not spec. Any compiled `hello-*` CLI bundle picks
+up a skill the moment you drop a `SKILL.md` under
+`.crewhaus/skills/<name>/`. A dedicated hello-skills demo with bundled
+skill files is on the follow-up list.
+
 ## The skill file format
 
 A skill is a directory containing one `SKILL.md` with frontmatter and

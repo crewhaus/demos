@@ -28,6 +28,17 @@ gen_ai/* semantic conventions."
 - A working spec from [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md)
   to point the observability surfaces at.
 
+## Try it
+
+Four end-to-end exporter smokes ship under
+[`examples/section-37-exporter-{datadog,honeycomb,newrelic,splunk}-smoke/`](../examples/) —
+each compiles a CLI bundle with an OTLP exporter pointed at a stub
+collector and asserts spans/metrics/logs land with the right
+`gen_ai.*` semantic conventions. Run any with
+`bun examples/section-37-exporter-<vendor>-smoke/smoke.ts` to see
+the observability pipeline end-to-end without a real
+Datadog/Honeycomb/New Relic/Splunk endpoint.
+
 ## The five layers
 
 | Layer                | What it does                                              | Cost   | Opt in via                                                |

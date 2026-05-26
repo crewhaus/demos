@@ -1,0 +1,3 @@
+graders:
+  - name: exact_match
+    type: exact_match

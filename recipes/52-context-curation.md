@@ -27,6 +27,18 @@
 - An embedding provider (any OpenAI-compatible endpoint, or one of the
   built-in adapters) for the dedupe-by-cosine-similarity pass.
 
+## Try it
+
+No standalone curator demo ships yet — the `compaction-curator`
+package's unit tests at
+[`factory/packages/compaction-curator`](https://github.com/crewhaus/factory/blob/main/packages/compaction-curator)
+are the only end-to-end exercise. To see it active, set
+`compaction.curate: true` and `compaction.dedupeThreshold: 0.92` on
+any `hello-*` spec that already runs multi-turn (e.g.
+[`hello-rag`](../hello-rag/crewhaus.yaml) — RAG is the canonical case
+for duplicate-chunk pile-up). A dedicated hello-curate demo with
+bundled embeddings is on the follow-up list.
+
 ## A worked example — RAG retrieval
 
 `tool-retrieve` returns top-K chunks for a query. Across a multi-turn conversation, the same chunks tend to surface repeatedly (the user re-asks variants of the same question; the agent re-retrieves to refresh context). Without curation, those duplicates pile up.

@@ -27,6 +27,19 @@ use [crew](04-multi-agent-crew.md) instead. Sub-agents are
 - [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md)
   for permission inheritance modes.
 
+## Try it
+
+Sub-agents are wired into every showcase demo. The richest live
+example is [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml)
+(lines 63–119): two sub-agents (`code-explorer` read-only mapper and
+`test-runner` allow-listed bash) with their own `tools:` and
+`permissions:` blocks. Compile and run with
+`bun run compile:hello-procode && bun run run:hello-procode`; ask
+"what does this project do?" and the `Task` dispatch fires immediately.
+Both [`hello-prochat`](../hello-prochat/crewhaus.yaml) and
+[`hello-multichat`](../hello-multichat/crewhaus.yaml) ship parallel
+research sub-agents as well.
+
 ## The `Task` tool
 
 The parent agent calls:

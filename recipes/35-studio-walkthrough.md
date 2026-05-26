@@ -19,6 +19,18 @@ faster. Studio shines for onboarding, demos, and operations.
 - [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for what
   a spec is.
 
+## Try it
+
+Studio's five surfaces (server, trace-viewer, graph-visualizer,
+plugin-sdk sandbox, multi-spec dashboard) are exercised end-to-end by
+[`examples/section-31-smoke/smoke.ts`](../examples/section-31-smoke/smoke.ts) —
+run `bun examples/section-31-smoke/smoke.ts`. The IDE-side surfaces
+ship as separate smokes:
+[`examples/section-35-vscode-smoke/`](../examples/section-35-vscode-smoke),
+[`examples/section-35-jetbrains-smoke/`](../examples/section-35-jetbrains-smoke),
+and
+[`examples/section-35-playground-smoke/`](../examples/section-35-playground-smoke).
+
 ## Starting Studio
 
 ```bash

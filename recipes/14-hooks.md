@@ -23,6 +23,16 @@ Hooks pay subprocess cost; TS predicates don't.
 - [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
   underlying chat-loop semantics.
 
+## Try it
+
+No standalone demo ships for hooks yet — they're exercised by the
+package tests at
+[`factory/packages/hooks-engine`](https://github.com/crewhaus/factory/blob/main/packages/hooks-engine).
+The fixture test suite (`hooks-engine/src/index.test.ts`) walks every
+lifecycle event with a working hook config; copy a fixture into any
+`hello-*` spec's top-level `hooks:` block to see it fire. A dedicated
+hello-hooks demo is on the follow-up list.
+
 ## The nine lifecycle events
 
 | Event           | When                                              | Common uses                                       |

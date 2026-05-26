@@ -21,6 +21,17 @@ sit in the middle: human-triggered, parameterized, terse.
 - [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md) for the
   underlying REPL.
 
+## Try it
+
+The closest thing to a runnable slash-command demo lives in the
+showcase [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml) —
+its agent instructions reference `/init`, `/review`, `/test`, `/plan`,
+`/clear` and the runtime resolves them against
+`.crewhaus/commands/*.md`. Dropping a `.md` file into
+`.crewhaus/commands/<name>.md` makes `<name>` an immediate slash
+command in any compiled CLI bundle. A dedicated hello-slash-commands
+demo with bundled command files is on the follow-up list.
+
 ## The command file format
 
 A slash command is one markdown file under `<cwd>/.crewhaus/commands/<name>.md`:
