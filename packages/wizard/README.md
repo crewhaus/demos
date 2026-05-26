@@ -84,5 +84,4 @@ Each target maps to one [scaffold-templates](../scaffold-templates/) entry:
 
 ## Related
 
-- Module brief: [docs/module-briefs/245-wizard.md](../../../docs/module-briefs/245-wizard.md)
 - Source: [src/index.ts](./src/index.ts)

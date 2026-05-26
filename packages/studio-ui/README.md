@@ -40,5 +40,4 @@ const html = renderStudioHtml({ title: "My Studio" });
 
 ## Related
 
-- Module brief: [docs/module-briefs/240-studio-ui.md](../../../docs/module-briefs/240-studio-ui.md)
 - Source: [src/index.ts](./src/index.ts)
