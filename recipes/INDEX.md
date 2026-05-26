@@ -337,18 +337,21 @@ Add a `test:` block to the recipe's frontmatter:
 test:
   spec: hello-cli/crewhaus.yaml
   bun_scripts:
-    - compile:hello
-    - run:hello
+    - smoke:section-12     # extra smoke beyond compile/run, if any
   packages:
     - packages/runtime-core
     - packages/target-cli
 ---
 ```
 
-The static script validates that every path exists and every script
-is defined; the smoke script then runs the compile-prefixed bun
-scripts. The recipe body should reference the same paths so a reader
-following along sees what the tests verify.
+The static script validates that the `spec:` path resolves to a real
+crewhaus.yaml, that every `bun_scripts:` entry is a defined script
+in either repo's package.json, and that every `packages:` path
+exists. The smoke script then runs `bun run compile <demo>` derived
+from `spec:` (`hello-cli/crewhaus.yaml` → `hello-cli`), and in live
+mode also `bun run run <demo>`, plus any extra `bun_scripts:` entries.
+The recipe body should reference the same paths so a reader following
+along sees what the tests verify.
 
 ### CI
 

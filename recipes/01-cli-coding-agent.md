@@ -1,9 +1,6 @@
 ---
 test:
   spec: hello-cli/crewhaus.yaml
-  bun_scripts:
-    - compile:hello
-    - run:hello
 ---
 
 # Recipe 01 — CLI Coding Agent
@@ -89,16 +86,16 @@ block; `|` preserves the linebreaks.
 From the repo root:
 
 ```bash
-bun run compile:hello   # writes hello-cli/dist/agent.ts
-bun run run:hello       # opens an interactive REPL
+bun run compile hello-cli   # writes hello-cli/dist/agent.ts
+bun run run hello-cli       # opens an interactive REPL
 ```
 
 Type a message, get a streaming reply, type `exit` to quit.
 
-What just happened: `compile:hello` ran
+What just happened: `compile hello-cli` ran
 `bun apps/cli/src/index.ts compile hello-cli/crewhaus.yaml -o hello-cli/dist`.
 The compiler parsed the YAML, lowered it to an `IrV0` value, and
-emitted a single TypeScript file. Then `run:hello` executed that file
+emitted a single TypeScript file. Then `run hello-cli` executed that file
 with Bun.
 
 Open `hello-cli/dist/agent.ts` and read it. It's about 25

@@ -30,13 +30,20 @@ Factory has zero references back to this repo — the dependency is one-way (dem
 # from the demos/ directory
 bun install
 
+# see every available demo
+bun run list
+
 # compile and run any hello-* example
-bun run compile:hello              # → hello-cli/dist/agent.ts
-bun run run:hello                  # runs the compiled agent
+bun run compile hello-cli          # → hello-cli/dist/agent.ts
+bun run run hello-cli              # runs the compiled agent
 
 # validate every recipe
 bun run recipes:test
 ```
+
+Adding a new demo: drop a directory with a `crewhaus.yaml`, then
+`bun run compile <name>` and `bun run run <name>` work immediately —
+no package.json edit required.
 
 ## Layout
 

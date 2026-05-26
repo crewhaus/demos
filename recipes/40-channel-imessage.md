@@ -2,7 +2,6 @@
 test:
   spec: hello-channel-imessage/crewhaus.yaml
   bun_scripts:
-    - compile:hello-channel-imessage
     - smoke:section-33-imessage
 ---
 

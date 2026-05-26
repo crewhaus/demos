@@ -153,7 +153,7 @@ fast iteration, the runtime maintains a **warm pool**: pre-warmed
 containers that wait for the next call.
 
 ```bash
-CREWHAUS_SANDBOX_WARM_POOL=2 bun run run:hello
+CREWHAUS_SANDBOX_WARM_POOL=2 bun run run hello-cli
 ```
 
 Keeps 2 warm Python containers, 2 warm Node containers, etc. The

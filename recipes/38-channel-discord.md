@@ -2,7 +2,6 @@
 test:
   spec: hello-channel-discord/crewhaus.yaml
   bun_scripts:
-    - compile:hello-channel-discord
     - smoke:section-33-discord
 ---
 
@@ -104,7 +103,7 @@ for the helpers.
 ## Step 4 — Compile and register
 
 ```bash
-bun run compile:hello-channel-discord
+bun run compile hello-channel-discord
 bun hello-channel-discord/dist/daemon.ts
 ```
 

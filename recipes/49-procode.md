@@ -1,8 +1,6 @@
 ---
 test:
   spec: hello-procode/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-procode
 ---
 
 # Recipe 49 — Pro-grade Coder (à la Claude Code)
@@ -62,8 +60,8 @@ a skill" — not "fork the compiler."
 
 ```bash
 bun install
-bun run compile:hello-procode
-ANTHROPIC_API_KEY=sk-ant-... bun run run:hello-procode
+bun run compile hello-procode
+ANTHROPIC_API_KEY=sk-ant-... bun run run hello-procode
 ```
 
 Drop into a project you care about (`cd ~/my-project` first, or pass

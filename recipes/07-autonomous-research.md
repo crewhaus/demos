@@ -1,9 +1,6 @@
 ---
 test:
   spec: hello-research/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-research
-    - run:hello-research
 ---
 
 # Recipe 07 — Autonomous Research
@@ -118,8 +115,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile:hello-research
-bun run run:hello-research
+bun run compile hello-research
+bun run run hello-research
 ```
 
 You'll see the planner spawn 3 sub-questions, each fetch its sources,
@@ -194,7 +191,7 @@ Each `state.json` carries:
 Resume with:
 
 ```bash
-bun run run:hello-research -- --resume run_<id>
+bun run run hello-research -- --resume run_<id>
 ```
 
 The runtime walks `state.json`, skips completed sub-questions, and

@@ -1,8 +1,6 @@
 ---
 test:
   spec: hello-browser/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-browser
 ---
 
 # Recipe 10 — Browser Agent
@@ -139,7 +137,7 @@ The shape:
 Compile the spec to a standalone TypeScript file:
 
 ```bash
-bun run compile:hello-browser   # writes hello-browser/dist/agent.ts
+bun run compile hello-browser   # writes hello-browser/dist/agent.ts
 ```
 
 The output is a ~100-line `dist/agent.ts` you could have written by
@@ -166,7 +164,7 @@ In **terminal B**, invoke the compiled agent with a task:
 
 ```bash
 set -a; source .env; set +a    # exports ANTHROPIC_AUTH_TOKEN
-bun run run:hello-browser -- --prompt "Click the green Submit button on the page."
+bun run run hello-browser -- --prompt "Click the green Submit button on the page."
 ```
 
 The agent takes a `Screenshot`, calls `FindElement("the green Submit
@@ -206,8 +204,8 @@ bun run smoke:section-25
 ### Point it at your own page
 
 Pointing the spec at a different URL is a one-line change to
-`driver.startUrl`, then `bun run compile:hello-browser` again and
-`bun run run:hello-browser -- --prompt "..."` for whatever's on that
+`driver.startUrl`, then `bun run compile hello-browser` again and
+`bun run run hello-browser -- --prompt "..."` for whatever's on that
 page. The fixture exists only to give the recipe something
 deterministic to click — anything Chromium can render works.
 

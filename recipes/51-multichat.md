@@ -1,8 +1,6 @@
 ---
 test:
   spec: hello-multichat/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-multichat
 ---
 
 # Recipe 51 — Multi-channel Personal Assistant (à la OpenClaw)
@@ -68,10 +66,10 @@ The minimum viable run is with just Slack:
 
 ```bash
 bun install
-bun run compile:hello-multichat
+bun run compile hello-multichat
 ANTHROPIC_API_KEY=sk-ant-... \
   SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
-  bun run run:hello-multichat
+  bun run run hello-multichat
 ```
 
 The compiler emits four files into `hello-multichat/dist/`:
@@ -90,7 +88,7 @@ Set additional env vars; the daemon picks them up:
 SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \
   DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_PUBLIC_KEY=... \
-  bun run run:hello-multichat
+  bun run run hello-multichat
 ```
 
 In `hello-multichat/crewhaus.yaml`:
@@ -231,7 +229,7 @@ enabled.
 
 ## What makes it feel pro-grade (OpenClaw-style)
 
-1. **Always-on daemon** — once you `bun run run:hello-multichat`, the
+1. **Always-on daemon** — once you `bun run run hello-multichat`, the
    process listens forever. No "open a terminal" ceremony.
 2. **Multi-channel presence** — same agent answers wherever the user
    pings. Slack at work, Telegram on the train, Discord with friends.

@@ -2,8 +2,6 @@
 test:
   spec: hello-channel/crewhaus.yaml
   bun_scripts:
-    - compile:hello-channel
-    - run:hello-channel
     - smoke:section-12
 ---
 
@@ -159,8 +157,8 @@ session router work in your environment.
 ## Step 4 — Run against your tunnel
 
 ```bash
-bun run compile:hello-channel
-bun run run:hello-channel
+bun run compile hello-channel
+bun run run hello-channel
 ```
 
 The daemon binds to `:3000` by default. Point your ngrok tunnel at

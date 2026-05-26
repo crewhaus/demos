@@ -27,7 +27,7 @@ The richest live permissions block in the demos is
 `alwaysAsk`, and `alwaysDeny` patterns covering reads, edits, web,
 allow-listed bash, and hard-denied destructive commands. Compile and
 run with
-`bun run compile:hello-procode && bun run run:hello-procode`, then try
+`bun run compile hello-procode && bun run run hello-procode`, then try
 `git push --force` to watch the deny tier fire. Every other `hello-*`
 demo ships its own minimal permissions block.
 

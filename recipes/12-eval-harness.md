@@ -2,7 +2,6 @@
 test:
   spec: hello-eval/crewhaus.yaml
   bun_scripts:
-    - compile:hello-eval
     - smoke:section-29
   packages:
     - packages/eval-dataset
@@ -112,7 +111,7 @@ Five top-level fields:
 Compile to see the generated bundle:
 
 ```bash
-bun run compile:hello-eval
+bun run compile hello-eval
 ls hello-eval/dist/   # agent.ts
 ```
 

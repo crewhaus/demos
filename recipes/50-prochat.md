@@ -1,8 +1,6 @@
 ---
 test:
   spec: hello-prochat/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-prochat
 ---
 
 # Recipe 50 — Pro-grade Chat (à la ChatGPT)
@@ -58,8 +56,8 @@ runtime; the capabilities are what we're showcasing.
 
 ```bash
 bun install
-bun run compile:hello-prochat
-ANTHROPIC_API_KEY=sk-ant-... bun run run:hello-prochat
+bun run compile hello-prochat
+ANTHROPIC_API_KEY=sk-ant-... bun run run hello-prochat
 ```
 
 Five prompts to try, in order:

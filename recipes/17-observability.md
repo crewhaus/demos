@@ -93,7 +93,7 @@ The JSONL is also what `--resume` reads — see
 For watching an agent's turn unfold in real time:
 
 ```bash
-CREWHAUS_TRACE=pretty bun run run:hello
+CREWHAUS_TRACE=pretty bun run run hello-cli
 ```
 
 Color-coded events stream to stderr. `model_stream_token` deltas
@@ -103,7 +103,7 @@ summary line when stderr is piped). `NO_COLOR=1` disables ANSI codes.
 For machine consumption:
 
 ```bash
-CREWHAUS_TRACE=json bun run run:hello | jq -c .
+CREWHAUS_TRACE=json bun run run hello-cli | jq -c .
 ```
 
 One JSON object per event on stdout. This format is stable and meant
@@ -132,13 +132,13 @@ For Prometheus-shaped counters and histograms.
 
 ```bash
 # Buffered stdout JSON, emitted as one dump on shutdown:
-CREWHAUS_METRICS=stdout bun run run:hello
+CREWHAUS_METRICS=stdout bun run run hello-cli
 
 # Atomic Prometheus textfile writes:
-CREWHAUS_METRICS=textfile:/var/lib/node_exporter/crewhaus.prom bun run run:hello
+CREWHAUS_METRICS=textfile:/var/lib/node_exporter/crewhaus.prom bun run run hello-cli
 
 # Pull-based HTTP endpoint:
-CREWHAUS_METRICS=http:9464 bun run run:hello   # GET http://localhost:9464/metrics
+CREWHAUS_METRICS=http:9464 bun run run hello-cli   # GET http://localhost:9464/metrics
 ```
 
 The metrics:
@@ -169,7 +169,7 @@ OTLP/HTTP export with `gen_ai/*` semantic conventions:
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
 OTEL_SERVICE_NAME=my-agent \
 OTEL_EXPORTER_OTLP_HEADERS="api-key=…,tenant=acme" \
-  bun run run:hello
+  bun run run hello-cli
 ```
 
 The exporter pairs lifecycle events into spans:
@@ -197,9 +197,9 @@ flow as one trace. To attach an external traceparent, set the
 For dollar-amount reporting per session and per tenant:
 
 ```bash
-CREWHAUS_COST_TRACKING=1 bun run run:hello
+CREWHAUS_COST_TRACKING=1 bun run run hello-cli
 # Optionally annotate with tenant id (managed-shape deployments):
-CREWHAUS_TENANT_ID=acme bun run run:hello
+CREWHAUS_TENANT_ID=acme bun run run hello-cli
 ```
 
 The cost tracker subscribes to `model_response` events, looks up

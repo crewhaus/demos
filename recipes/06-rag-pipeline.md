@@ -1,9 +1,6 @@
 ---
 test:
   spec: hello-rag/crewhaus.yaml
-  bun_scripts:
-    - compile:hello-rag
-    - run:hello-rag
 ---
 
 # Recipe 06 — RAG Pipeline
@@ -117,8 +114,8 @@ The shape:
 Run it:
 
 ```bash
-bun run compile:hello-rag
-bun run run:hello-rag
+bun run compile hello-rag
+bun run run hello-rag
 ```
 
 Type "What target shapes does crewhaus support?". The agent will call
@@ -129,7 +126,7 @@ it will refuse — that chunk isn't in the corpus.
 ## How indexing works
 
 `indexing` runs **at compile time**, not at runtime. When `bun run
-compile:hello-rag` executes:
+compile hello-rag` executes:
 
 1. Every document text is split via the `chunkStrategy`:
    - **`fixed`** — exact `chunkSize`-character windows with
@@ -144,7 +141,7 @@ compile:hello-rag` executes:
    `Retrieve` calls — no re-embedding, no model API calls for the
    corpus itself.
 
-Re-running `compile:hello-rag` after editing `documents:` re-indexes.
+Re-running `compile hello-rag` after editing `documents:` re-indexes.
 For larger corpora prefer `documentsFromDir: ./corpus/` (loads every
 `.md` and `.txt` recursively) or `documentsFromGlob: ['./docs/**/*.md']`.
 
