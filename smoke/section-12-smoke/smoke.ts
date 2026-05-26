@@ -21,7 +21,7 @@ import type { Subprocess } from "bun";
  *   4. POST a tampered signature → assert 401 + zero new model calls.
  *   5. SIGINT the daemon → assert clean exit (exit code 0).
  *
- * Run with `bun run smoke:section-12` (or directly: `bun scripts/section-12-smoke.ts`).
+ * Run with `bun run smoke:section-12` (or directly: `bun smoke/section-12-smoke/smoke.ts`).
  * Requires a Claude credential in `.env` — `ANTHROPIC_AUTH_TOKEN` (Pro/Max
  * OAuth) or `ANTHROPIC_API_KEY` (pay-per-token).
  *
@@ -37,7 +37,7 @@ function signSlackBody(args: { body: string; timestamp: number; signingSecret: s
   return `v0=${createHmac("sha256", args.signingSecret).update(base).digest("hex")}`;
 }
 
-const REPO_ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+const REPO_ROOT = new URL("../..", import.meta.url).pathname.replace(/\/$/, "");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps/cli/src/index.ts");
 const TEST_SECRET = "section-12-smoke-secret-1234567890";

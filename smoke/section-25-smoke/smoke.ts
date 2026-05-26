@@ -30,12 +30,12 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 
 const CWD = process.cwd();
-const REPO_ROOT = resolve(import.meta.dir, "..");
+const REPO_ROOT = resolve(import.meta.dir, "..", "..");
 const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
 const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
 const EXAMPLE = join(REPO_ROOT, "hello-browser");
 const DAEMON = join(EXAMPLE, "dist", "agent.ts");
-const FIXTURE = join(REPO_ROOT, "scripts", "section-25-fixture-server.ts");
+const FIXTURE = join(import.meta.dir, "fixture-server.ts");
 const PORT = Number(process.env["BROW_SMOKE_PORT"] ?? 7325);
 
 const log = (msg: string): void => {

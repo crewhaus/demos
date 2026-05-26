@@ -24,11 +24,11 @@ vars, the env-var backend is already in use (without you naming it).
 ## Try it
 
 The secrets-manager file backend + rotation event is exercised by
-[`examples/section-27-smoke/smoke.ts`](../examples/section-27-smoke/smoke.ts)
+[`smoke/section-27-smoke/smoke.ts`](../smoke/section-27-smoke/smoke.ts)
 probe 5: rotate a secret, verify the audit log records a
 `secrets_rotation` event under the configured tenant, confirm
 `onRotation()` listeners fired. Run with
-`bun examples/section-27-smoke/smoke.ts`. For Vault, see the package
+`bun smoke/section-27-smoke/smoke.ts`. For Vault, see the package
 tests at [`factory/packages/secrets-manager`](https://github.com/crewhaus/factory/blob/main/packages/secrets-manager).
 
 ## The `Secrets` interface

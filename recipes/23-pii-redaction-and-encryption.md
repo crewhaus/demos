@@ -30,18 +30,18 @@ else in the deployment.
 Three end-to-end smokes split this recipe by layer:
 
 - **Layer 1 (detector-based redaction):**
-  [`examples/section-39-pii-redactor-smoke/`](../examples/section-39-pii-redactor-smoke) —
+  [`smoke/section-39-pii-redactor-smoke/`](../smoke/section-39-pii-redactor-smoke) —
   asserts the 5 built-in regex detectors + classifier path replace PII
   before audit-log write.
 - **Layer 2 (envelope encryption):**
-  [`examples/section-39-audit-encryption-smoke/`](../examples/section-39-audit-encryption-smoke) —
+  [`smoke/section-39-audit-encryption-smoke/`](../smoke/section-39-audit-encryption-smoke) —
   exercises KEK→DEK wrapping with a stub secrets-manager and verifies
   rotation re-wraps without rewriting log lines.
 - **Layer 3 (retention windows):**
-  [`examples/section-39-data-retention-engine-smoke/`](../examples/section-39-data-retention-engine-smoke) —
+  [`smoke/section-39-data-retention-engine-smoke/`](../smoke/section-39-data-retention-engine-smoke) —
   drives right-to-delete + right-to-export against a fixture tenant.
 
-Run any with `bun examples/section-39-<name>-smoke/smoke.ts`.
+Run any with `bun smoke/section-39-<name>-smoke/smoke.ts`.
 
 ## Layer 1 — Detector-based redaction
 

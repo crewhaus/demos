@@ -38,7 +38,7 @@ Then drop a custom grader at `~/.crewhaus/grader-plugins/my-grader/index.ts`
 spec re-runs against your new grader. The NLG, semantic-similarity,
 safety, and multimodal grader families each ship their own smoke
 under
-[`examples/section-38-grader-{nlg-metrics,semantic-similarity,safety-classifiers,multimodal}-smoke/`](../examples/).
+[`smoke/section-38-grader-{nlg-metrics,semantic-similarity,safety-classifiers,multimodal}-smoke/`](../smoke/).
 
 ## The grader contract
 

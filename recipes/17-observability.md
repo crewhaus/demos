@@ -31,11 +31,11 @@ gen_ai/* semantic conventions."
 ## Try it
 
 Four end-to-end exporter smokes ship under
-[`examples/section-37-exporter-{datadog,honeycomb,newrelic,splunk}-smoke/`](../examples/) —
+[`smoke/section-37-exporter-{datadog,honeycomb,newrelic,splunk}-smoke/`](../smoke/) —
 each compiles a CLI bundle with an OTLP exporter pointed at a stub
 collector and asserts spans/metrics/logs land with the right
 `gen_ai.*` semantic conventions. Run any with
-`bun examples/section-37-exporter-<vendor>-smoke/smoke.ts` to see
+`bun smoke/section-37-exporter-<vendor>-smoke/smoke.ts` to see
 the observability pipeline end-to-end without a real
 Datadog/Honeycomb/New Relic/Splunk endpoint.
 

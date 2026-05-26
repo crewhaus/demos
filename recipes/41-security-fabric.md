@@ -29,10 +29,10 @@ The fabric is a single chokepoint, `classifyBoundary`, invoked at every cross-tr
 ## Try it
 
 The boundary-classifier + injection-detector wiring is exercised by
-[`examples/section-27-smoke/smoke.ts`](../examples/section-27-smoke/smoke.ts) —
+[`smoke/section-27-smoke/smoke.ts`](../smoke/section-27-smoke/smoke.ts) —
 the same smoke that covers caching/rate-limits/secrets includes a
 boundary classification probe over fixture content. Run with
-`bun examples/section-27-smoke/smoke.ts`. For the permission-rules
+`bun smoke/section-27-smoke/smoke.ts`. For the permission-rules
 half of the fabric, see [`hello-procode/crewhaus.yaml`](../hello-procode/crewhaus.yaml)
 lines 131–188 (the runnable deny-tier example).
 

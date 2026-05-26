@@ -480,7 +480,7 @@ you reach for often.
 ## Pointers to source
 
 - **Smallest example:** [`hello-cli/crewhaus.yaml`](../hello-cli/crewhaus.yaml).
-- **Bigger example with MCP:** [`examples/section-09-mcp-smoke/crewhaus.yaml`](../examples/section-09-mcp-smoke/crewhaus.yaml).
+- **Bigger example with MCP:** [`smoke/section-09-mcp-smoke/crewhaus.yaml`](../smoke/section-09-mcp-smoke/crewhaus.yaml).
 - **Spec schema (the source of truth for valid YAML):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **CLI compiler entry:** [`apps/cli/src/index.ts`](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts).
 - **CLI codegen:** [`packages/target-cli`](https://github.com/crewhaus/factory/blob/main/packages/target-cli).

@@ -26,7 +26,7 @@ model is simpler and the failure mode is loud rather than silent.
 ## Try it
 
 The circuit-breaker half of the fallback story is exercised by
-[`examples/section-27-smoke/smoke.ts`](../examples/section-27-smoke/smoke.ts)
+[`smoke/section-27-smoke/smoke.ts`](../smoke/section-27-smoke/smoke.ts)
 probe 3 (`bun run smoke:section-27`) — five injected failures trip
 the breaker; a cooldown + probe success closes it. No standalone
 hello-fallback demo ships yet; for a live two-provider hop you need
