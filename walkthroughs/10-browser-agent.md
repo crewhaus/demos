@@ -192,9 +192,6 @@ marker flips from `PENDING` to `BROW_SMOKE_OK`:
 curl -s http://127.0.0.1:7325/ | grep -o 'BROW_SMOKE_OK\|PENDING'
 ```
 
-Screenshots from the run land under `.crewhaus/screenshots/<runId>/`
-so you can scroll back through what the agent saw at each step.
-
 ### Run it as a one-shot smoke
 
 If you'd rather skip the two-terminal dance, the `section-25` smoke
@@ -339,11 +336,6 @@ jq -c 'select(.kind | startswith("browser_"))' "$SESSION"
 | `browser_action`        | `{ tool, args, latencyMs, success }`          |
 | `browser_navigation`    | `{ url, method: "click" \| "goto" \| "redirect" }` |
 | `browser_session_end`   | `{ reason }`                                  |
-
-Screenshots are stored under `.crewhaus/screenshots/<runId>/` (PNG)
-and referenced from the JSONL by hash. This makes a 30-action run's
-log human-reviewable: each `tool_use` is followed by a screenshot
-event with a clickable hash.
 
 ## Things that look like browser but aren't
 
