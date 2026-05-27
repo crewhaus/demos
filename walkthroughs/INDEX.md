@@ -15,6 +15,16 @@ that opt into a `test:` frontmatter block also get compile-smoke
 coverage via `bun run walkthroughs:smoke`. See [Testing recipes](#testing-recipes)
 below.
 
+### Conventions
+
+**Run every shell snippet from the `demos/` repo root.** All paths
+(`starters/browser`, `smoke/section-25-smoke/...`) are relative to it,
+and the `.env` that holds `ANTHROPIC_AUTH_TOKEN` is expected at
+`demos/.env`. Bun auto-loads `./.env` on every `bun run` invocation,
+so if your cwd is the root, credentials are picked up automatically;
+if you `cd` into a starter directory first, Bun will look for an
+unrelated `starters/<name>/.env` and silently start unauthenticated.
+
 ---
 
 ## Pick a recipe — diagnostic decision tree

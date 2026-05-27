@@ -160,12 +160,19 @@ bun smoke/section-25-smoke/fixture-server.ts
 # [fixture] listening on http://127.0.0.1:7325/
 ```
 
-In **terminal B**, invoke the compiled agent with a task:
+In **terminal B** (also `cd`'d to the `demos/` repo root, so
+`./.env` resolves to `demos/.env` — see [Conventions](INDEX.md#conventions)),
+invoke the compiled agent with a task:
 
 ```bash
-set -a; source .env; set +a    # exports ANTHROPIC_AUTH_TOKEN
+set -a; source .env; set +a    # loads demos/.env, exports ANTHROPIC_AUTH_TOKEN to this shell
 bun run run starters/browser -- --prompt "Click the green Submit button on the page."
 ```
+
+The explicit `source` line is belt-and-suspenders — `bun run`
+already auto-loads `./.env` — but it surfaces the credential into the
+shell so subsequent non-Bun commands in the same terminal inherit it
+too.
 
 The agent takes a `Screenshot`, calls `FindElement("the green Submit
 button")` to get a bounding box, calls `Click(x, y)` at the center,
