@@ -102,4 +102,4 @@ Each starter directory has a `crewhaus.yaml` (the spec), `README.md`, and option
 | Var | Required | Default | Purpose |
 |---|---|---|---|
 | `FACTORY_PATH` | no | `../factory` | Absolute or relative path to a crewhaus/factory checkout |
-| `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` | yes for `run:*` | — | Required to actually run compiled agents |
+| `ANTHROPIC_AUTH_TOKEN` / `ANTHROPIC_API_KEY` | yes for `run:*` | — | Required to actually run compiled agents. Put it in `demos/.env` (Bun auto-loads `./.env` on every `bun run`, so run all walkthrough commands from the repo root) or export it in your shell. |
