@@ -244,16 +244,23 @@ This is the cheap way to fan out exploration. For 30 sub-questions,
 use a [batch worker](08-batch-worker.md) — sub-agents are best below
 ~10 in parallel.
 
-## Running the smoke
+## Verifying the runtime behaviour
+
+A dedicated end-to-end smoke for sub-agents is not shipped under
+`demos/smoke/` yet. Until it lands, the authoritative tests live in
+the factory packages that own the behaviour — run them from a
+sibling `../factory/` checkout:
 
 ```bash
-bun run smoke:section-13
+cd ../factory
+bun test packages/sub-agent-spawner          # spawn / abort / permission inheritance
+bun test packages/agent-context-isolation    # isolation (parent context not visible in child)
 ```
 
-Spawns a parent CLI agent that calls `Task` against a `code-reviewer`
-sub-agent definition. Validates isolation (parent context not visible
-in child), abort cascade (SIGINT from parent stops the child), and
-permission inheritance.
+Both suites exercise the invariants a Recipe-level smoke would
+cover: isolation (parent context not visible in child), abort
+cascade (SIGINT from parent stops the child), and permission
+inheritance.
 
 ## Things that look like sub-agents but aren't
 

@@ -1,6 +1,6 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): 22 copy-pasteable [starters](./starters/) covering every target shape, 55 task-oriented [walkthroughs](./walkthroughs/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): copy-pasteable [starters](./starters/) covering every target shape, 55 task-oriented [walkthroughs](./walkthroughs/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## Showcase demos
 
@@ -67,7 +67,7 @@ demos/
   walkthroughs/                     55 task-oriented walkthrough docs
     01-cli-coding-agent.md
     …
-    55-meta-cross-references.md
+    55-egress-fabric.md
     INDEX.md                   decision tree for picking a recipe
   smoke/                       contributor-facing per-section regression tests
     section-12-smoke/          single-file smokes (smoke.ts entry)
@@ -87,8 +87,8 @@ demos/
     compile.ts                 parameterized: bun run compile <starter>
     run.ts                     parameterized: bun run run <starter>
     list.ts                    enumerates starters with target + README status
-    test-recipes.ts            static recipe validator (links, scripts, specs)
-    smoke-recipes.ts           runtime recipe smoke (compile + optional run)
+    test-walkthroughs.ts       static walkthrough validator (links, scripts, specs)
+    smoke-walkthroughs.ts      runtime walkthrough smoke (compile + optional run)
   .github/workflows/
   package.json
   tsconfig.json
