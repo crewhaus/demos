@@ -245,23 +245,16 @@ Reflexive recipes — CrewHaus designing itself. The system general enough that 
 | 50 | [Pro-grade Chat](50-prochat.md)                                 | ChatGPT / Claude.ai     | complete |
 | 51 | [Multi-channel Personal Assistant](51-multichat.md)             | OpenClaw                | complete |
 
-## Part K — Pillar extensions
+## Part K — Pillar extensions & corpus integration
 
-Deeper cuts on the Pillar 2 (active eval) and Pillar 3 (security fabric) invariants from [`CLAUDE.md`](https://github.com/crewhaus/factory/blob/main/CLAUDE.md). Read alongside the foundational Pillar recipes in Part G.
+Deeper cuts on the Pillar 2 (active eval) and Pillar 3 (security fabric) invariants from [`CLAUDE.md`](https://github.com/crewhaus/factory/blob/main/CLAUDE.md) (read alongside Part G), plus recipes that integrate external corpora (codebases, document stores) into the agent's context.
 
-| #  | Recipe                                                          | Pillar                  | Status   |
-| -- | --------------------------------------------------------------- | ----------------------- | -------- |
-| 52 | [Active Context Curation](52-context-curation.md)               | Pillar 2 — active       | complete |
-| 53 | [Justification Gates](53-justification-gates.md)                | Pillar 3 — intent       | complete |
-| 55 | [Egress Fabric](55-egress-fabric.md)                            | Pillar 3 — sink side    | complete |
-
-## Part L — Corpus integration
-
-Recipes that integrate external corpora (codebases, document stores) into the agent's context.
-
-| #  | Recipe                                                          | Integrates                       | Status   |
-| -- | --------------------------------------------------------------- | -------------------------------- | -------- |
-| 54 | [Codegraph Tool](54-codegraph-tool.md)                          | `@colbymchenry/codegraph`        | complete |
+| #  | Recipe                                                          | Theme                                  | Status   |
+| -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
+| 52 | [Active Context Curation](52-context-curation.md)               | Pillar 2 — active                       | complete |
+| 53 | [Justification Gates](53-justification-gates.md)                | Pillar 3 — intent                       | complete |
+| 54 | [Codegraph Tool](54-codegraph-tool.md)                          | Corpus — `@colbymchenry/codegraph`      | complete |
+| 55 | [Egress Fabric](55-egress-fabric.md)                            | Pillar 3 — sink side                    | complete |
 
 ---
 
@@ -288,7 +281,7 @@ a known scenario:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 55            | Total (01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions 52, 53, 55 + corpus tools 54) |
+| 55            | Total (01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55) |
 | 55            | Walkthrough complete    |
 | 0             | Stub                    |
 

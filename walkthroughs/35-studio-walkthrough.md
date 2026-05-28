@@ -33,14 +33,19 @@ and
 
 ## Starting Studio
 
+Studio lives in the sibling [`crewhaus/utilities`](https://github.com/crewhaus/utilities)
+checkout (`bun install` it once if you haven't):
+
 ```bash
+cd ../utilities       # from demos/; adjust if your layout differs
 bun run studio
 ```
 
-Default port 4187. Override:
+Default UI port is 4243 (backend on 4242). Override either:
 
 ```bash
-STUDIO_PORT=8080 bun run studio
+PORT=8080 bun run studio          # UI port (default 4243)
+STUDIO_PORT=9090 bun run studio   # backend port (default 4242)
 ```
 
 Workspace defaults to `<cwd>/.crewhaus/studio-specs/` — every spec
@@ -50,7 +55,7 @@ authored in Studio lives here. Override:
 STUDIO_WORKSPACE=/path/to/my/specs bun run studio
 ```
 
-Open `http://localhost:4187/` in a browser. The landing page shows
+Open `http://localhost:4243/` in a browser. The landing page shows
 the Specs tab.
 
 ## The Specs tab
