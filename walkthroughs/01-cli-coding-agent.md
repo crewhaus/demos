@@ -45,8 +45,9 @@ agent:
 ```
 
 Twenty-seven lines of TypeScript out — the contents of
-[`starters/cli/dist/agent.ts`](../starters/cli/dist/agent.ts) after
-running `bun run compile starters/cli`:
+`starters/cli/dist/agent.ts` after running `bun run compile starters/cli`
+(the file is generated, so it's gitignored — compile it to see the
+same bytes on your machine):
 
 ```ts
 #!/usr/bin/env bun
