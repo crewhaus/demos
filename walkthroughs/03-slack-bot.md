@@ -168,7 +168,20 @@ to `https://<your-tunnel>/slack/events`.
 The first request Slack sends will be a `url_verification` challenge
 — the gateway responds automatically, and Slack confirms the URL.
 After that, mentions of your bot or messages in subscribed channels
-flow into the daemon.
+flow into the daemon. A mention round-trip looks like this:
+
+```
+[10:32 AM] @you: @hello-channel what's in this directory?
+[10:32 AM] hello-channel: README.md, src/, package.json, tsconfig.json
+                          — looks like a TypeScript project.
+```
+
+End-to-end: Slack signs and POSTs the event, the gateway verifies the
+HMAC, the session router derives `sess_<sha256(threadTs)[:16]>`, the
+runtime resumes that session and runs one single-turn
+`runChatLoop` — which calls `Bash(ls)`, receives the listing as a tool
+result, and replies in-thread via `chat.postMessage`. The four files
+that implement each step are next.
 
 ## Step 5 — What the daemon actually does
 

@@ -115,6 +115,39 @@ bun run compile starters/eval
 ls starters/eval/dist/   # agent.ts
 ```
 
+## Step 1.5 — Run the bundled eval end-to-end
+
+Before unpacking datasets and graders, prove the runtime is wired by
+running the in-process eval probe — five fixtures that exercise the
+dataset registry, grader registry, regression runner, and prompt
+optimizer with no model calls or credentials:
+
+```bash
+bun run smoke:section-29
+# Five probes pass in under 2 seconds.
+```
+
+Then run the bundled math eval against the dev split, with the
+`exact_match` grader scoring each sample:
+
+```bash
+bun apps/cli/src/index.ts eval starters/eval/crewhaus.yaml \
+  --dataset .crewhaus/datasets/starters/eval/v1.json \
+  --graders starters/eval/graders.yaml \
+  --concurrency 2 --seed 42 \
+  -o .crewhaus/evals/run-1
+# ✓ d1  exact_match  7  (pass)
+# ✓ d2  exact_match  5  (pass)
+# pass_rate=1.00  mean_score=1.00  samples=2  → report .crewhaus/evals/run-1/report.html
+```
+
+Per-sample artifacts land at
+`.crewhaus/evals/run-1/<sampleId>/{transcript.jsonl, events.jsonl, grades.json}`.
+That's the whole loop end-to-end. The sections below explain each
+piece: dataset authoring (Step 2), the grader families that drive the
+pass/fail decision (Step 3), the runner CLI in full (Step 4), and how
+diff mode, custom graders, and canary rollouts compose on top.
+
 ## Step 2 — Authoring a dataset
 
 The runner reads from a `dataset-registry` keyed by `(name, version, split)`.

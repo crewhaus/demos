@@ -123,6 +123,56 @@ output line prints the auto-generated JWT secret — copy it. (For
 production, set `CREWHAUS_GATEWAY_JWT_SECRET=<at least 16 chars>`
 explicitly.)
 
+## Drive one request end-to-end
+
+In a second terminal, mint a JWT for `tenant-a` against the secret the
+daemon printed, then call `runs.create`:
+
+```bash
+# Mint a 1-hour JWT for tenant-a.
+SECRET="paste-the-secret-here"
+TENANT_A_JWT=$(node -e 'console.log(require("jsonwebtoken").sign({ tenant: "tenant-a" }, process.env.SECRET, { expiresIn: "1h" }))' SECRET="$SECRET")
+
+# Start a run.
+curl -X POST http://localhost:3000/rpc \
+  -H "Authorization: Bearer $TENANT_A_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "runs.create",
+    "params": { "input": "What is the capital of France?" }
+  }'
+# → { "jsonrpc":"2.0","id":1,"result":{ "runId":"run_...","status":"running" } }
+```
+
+Live-tail the run with `runs.subscribe` (SSE) — paste the `runId` from
+the response above:
+
+```bash
+curl -N http://localhost:3000/rpc \
+  -H "Authorization: Bearer $TENANT_A_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{ "jsonrpc":"2.0","id":2,"method":"runs.subscribe","params":{"runId":"run_..."} }'
+```
+
+Each JSON-RPC call lands in a tenant-scoped, hash-chained audit log
+under `.crewhaus/hello-managed/<tenant-id>/audit/`:
+
+```bash
+ls .crewhaus/hello-managed/tenant-a/audit/
+tail -f .crewhaus/hello-managed/tenant-a/audit/$(date -u +%Y-%m-%d).jsonl
+```
+
+A second tenant has an isolated audit dir (`.../tenant-b/audit/`) —
+cross-tenant reads are impossible by construction, which is the
+multi-tenant invariant `target: managed` exists to enforce.
+
+That's the whole thing — JWT in, JSON-RPC out, audit log written. The
+sections below explain each piece: the full method surface, the JWT
+verification path, the per-tenant storage rebase that isolates the
+audit dir above, the budget enforcement, and the policy engine.
+
 ## The gateway protocol
 
 JSON-RPC 2.0 over HTTP. The methods:
@@ -137,25 +187,10 @@ JSON-RPC 2.0 over HTTP. The methods:
 | `sessions.fork`          | Branch off a prior session at a chosen turn index.     |
 | `audit.tail`             | Tail the tenant's audit log (admin-only).              |
 
-Example call:
-
-```bash
-curl -X POST http://localhost:3000/rpc \
-  -H "Authorization: Bearer $TENANT_A_JWT" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "runs.create",
-    "params": {
-      "input": "What's the capital of France?"
-    }
-  }'
-```
-
-The response carries `{ "runId": "run_abc123", "status": "running" }`.
-Subsequent `runs.subscribe(runId)` streams events (each event is one
-SSE `data:` line).
+`runs.create` returns `{ "runId": "run_abc123", "status": "running" }`
+as shown above. Subsequent `runs.subscribe(runId)` streams events
+(each event is one SSE `data:` line). `runs.continue` accepts the same
+`runId` plus a follow-up `input` to extend a multi-turn session.
 
 ## JWT authentication
 
