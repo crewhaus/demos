@@ -80,6 +80,28 @@ keying), `gateway.ts` (HTTP listener + adapter dispatch), and
 The daemon listens on `PORT` (default 3000). Point Slack's
 Event Subscriptions URL at `https://<your-ngrok>.ngrok.io/slack/events`.
 
+Once the daemon is bound and Slack is pointed at your tunnel, mention
+the bot in any channel or thread. The three intent shapes the planner
+routes between:
+
+```
+@multichat what's the weather in Tokyo right now?
+  → lookup intent: WebSearch + cite.
+
+@multichat summarise this article: https://en.wikipedia.org/wiki/Lobster
+  → task intent: dispatches the planner sub-agent, then executes.
+
+@multichat what's a good 4-step lifting workout?
+  → chat intent: answers directly, no tool theater.
+```
+
+Each thread gets its own session (`routing.sessionKey: thread`), so
+parallel conversations don't cross-contaminate; the planner sub-agent
+breaks down anything non-trivial; lookups cite their sources. That's
+the working assistant — Steps 2 through 7 below extend it (more
+channels, then session isolation, planner internals, permissions,
+skills, model swaps).
+
 ## Step 2 — Add Telegram and Discord
 
 Set additional env vars; the daemon picks them up:
