@@ -1,7 +1,7 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 55 recipes are **complete** as of 2026-05-25. Every recipe is
+> All 56 recipes are **complete** as of 2026-05-28. Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`.
@@ -63,7 +63,7 @@ problem they brought. Walk this tree from the top:
    Crew](04-multi-agent-crew.md). (Google's scaling study found
    centralized multi-agent topologies help parallelizable reasoning,
    while *hurting* sequential reasoning measurably — see the
-   architectural-context callouts in recipes 02 and 04.)
+   top-of-page "When NOT to use this" callouts in recipes 02 and 04.)
 4. **Is each step a clearly-bounded "extract → transform → format"
    stage with a single handoff?** → [Recipe 02 — Sequential
    Workflow](02-sequential-workflow.md). Determinism over flexibility.
@@ -101,10 +101,16 @@ embed crews, crews can call workflows, channels can wrap any of them.
 
 ## Security primer — read this before you ship anything
 
-Three recipes form the **Pillar 3** "security as fabric" foundation
-([CLAUDE.md](https://github.com/crewhaus/factory/blob/main/CLAUDE.md)). Read them *before* the first time you
-deploy an agent that touches a host or a network:
+The **Pillar 3** "security as fabric" foundation
+([CLAUDE.md](https://github.com/crewhaus/factory/blob/main/CLAUDE.md))
+spans four recipes. The first is a short prerequisite for every
+channel/network-exposed recipe; the other three are deeper reads when
+you start composing tools, hooks, and rules.
 
+- [Recipe 00 — Network Security Primer](00-network-security-primer.md) —
+  **prerequisite for every channel target** (Slack, Telegram, Discord,
+  WhatsApp, iMessage). The universal "authenticate, then classify"
+  pattern. Short; read this first.
 - [Recipe 14 — Hooks](14-hooks.md) — `PreToolUse` / `PostToolUse`
   policy hooks; the mechanical guardrail under every other layer.
 - [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md) —
@@ -124,6 +130,15 @@ mistake the recipe ordering used to invite. Run `crewhaus doctor
 it will fail the build if Pillar 3 has drifted.
 
 ---
+
+## Part 00 — Prerequisites (read before channel/network recipes)
+
+Cross-cutting primers that several later recipes assume as background.
+Each is shorter than the recipes that depend on it.
+
+| #  | Recipe                                                       | Required by                  | Status   |
+| -- | ------------------------------------------------------------ | ---------------------------- | -------- |
+| 00 | [Network Security Primer](00-network-security-primer.md)     | Recipes 03, 37, 38, 39, 40   | complete |
 
 ## Part A — Target shapes (one recipe per shape)
 
@@ -198,6 +213,12 @@ Topics that don't fit cleanly above but matter once you start building real syst
 | 36 | [Cloud Deploy](36-cloud-deploy.md)                                    | §32       |
 
 ## Part F — Channel adapters (one per channel; Slack covered in #3)
+
+Every channel recipe assumes [Recipe 00 — Network Security
+Primer](00-network-security-primer.md) as background — the
+authenticate-then-classify pattern is identical across channels and
+lives there, so the per-channel recipes only cover what differs per
+transport.
 
 | #  | Recipe                                                          | Catalog   |
 | -- | --------------------------------------------------------------- | --------- |
@@ -281,8 +302,8 @@ a known scenario:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 55            | Total (01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55) |
-| 55            | Walkthrough complete    |
+| 56            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55) |
+| 56            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a

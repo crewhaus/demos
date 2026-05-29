@@ -11,6 +11,24 @@ chunks, stores the vectors in a backend, and injects a `Retrieve` tool
 that the agent calls before answering — so the model can cite specific
 chunks by `[N]` and refuse questions outside the corpus.
 
+> **When NOT to use this — RAG isn't always the answer.** "RAG" is the
+> reflex when "documents" appear in the problem statement, but
+> pipeline-first only beats agent-first when retrieval quality *is* the
+> engineering challenge. If the bottleneck is elsewhere, a different
+> shape wins.
+> - If the agent needs to **explore documents autonomously** over a
+>   goal (not a fixed corpus + lookup) → [Recipe 07 — Autonomous
+>   Research](07-autonomous-research.md). Multi-step planning, not
+>   retrieve-then-answer.
+> - If you just want an **LLM to summarize one document** you already
+>   have in hand → [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md)
+>   (paste it in) or [Recipe 02 — Sequential
+>   Workflow](02-sequential-workflow.md) (extract → summarize → format).
+>   No vector store, no Retrieve tool.
+> - If the corpus is **small enough to fit in the system prompt** →
+>   inline it in `agent.instructions`; skip the embedding/index step
+>   entirely.
+
 You'd reach for `target: pipeline` when:
 
 - The agent must answer **only** from a known set of documents.

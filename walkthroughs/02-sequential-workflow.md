@@ -10,6 +10,21 @@ step's output threads forward as the next step's user message. The
 right shape when you want strict, reproducible "extract → transform →
 format" behavior instead of an emergent chat agent.
 
+> **When NOT to use this — try a different shape first.** Workflow is
+> single-turn-threaded by design; if your problem is shaped differently,
+> a different target shape will fit better with less fighting.
+> - If the task is **highly parallelizable** across specialist roles
+>   that negotiate → [Recipe 04 — Multi-Agent Crew](04-multi-agent-crew.md).
+>   (Google's agent-scaling study: centralized multi-agent topologies
+>   help on parallelizable reasoning. They hurt sequential reasoning
+>   — which is why a fixed-step pipeline belongs here, not in crew.)
+> - If you need **human approval between steps** or **crash-resumable
+>   checkpoints** → [Recipe 05 — Stateful Graph](05-stateful-graph.md).
+> - If the task is **a free-form chat** with tools but no fixed step
+>   order → [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md).
+> - If retrieval quality is the engineering problem (not reasoning) →
+>   [Recipe 06 — RAG Pipeline](06-rag-pipeline.md).
+
 You'd reach for this when:
 
 - You want predictability over agentic flexibility.

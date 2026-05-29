@@ -11,6 +11,26 @@ queries via `SendMessage`. The whole crew lives under one trace id, so
 the run renders as a single span tree regardless of how many baton
 passes happened.
 
+> **When NOT to use this — multi-agent is the wrong default.** "Crews
+> are cool" is the most common reason readers land here, and it's the
+> most common way to ship a worse product. Google's controlled
+> agent-scaling study found **multi-agent variants degrade sequential
+> reasoning measurably** compared to a single-agent baseline; they
+> help on highly parallelizable subtasks (the canonical fit for crew)
+> and hurt elsewhere. Pick crew when roles need to *negotiate*, not
+> when they just need to take turns.
+> - If your task is a **fixed step order** with single handoffs
+>   (`extract → transform → format`) → [Recipe 02 — Sequential
+>   Workflow](02-sequential-workflow.md). Lower cost, deterministic,
+>   easier to test.
+> - If you need **state across nodes plus HITL pauses** →
+>   [Recipe 05 — Stateful Graph](05-stateful-graph.md).
+> - If you want **isolated child agents** that can't see the parent's
+>   context → [Recipe 28 — Sub-agents and the Task Tool](28-sub-agents-and-task.md).
+> - If you can't articulate which role needs which peer to clarify
+>   what, prefer a single-agent baseline with stronger tool
+>   descriptions → [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md).
+
 You'd reach for `target: crew` when:
 
 - One role isn't enough, but you want **emergent** routing rather than

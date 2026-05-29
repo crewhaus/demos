@@ -16,6 +16,14 @@ storm.
 For the channel-target mental model, read [Recipe 03 — Slack Bot](03-slack-bot.md)
 first. This recipe covers only what's different for WhatsApp.
 
+> **Prerequisite — read [Recipe 00 — Network Security
+> Primer](00-network-security-primer.md) first.** Every channel
+> adapter must classify inbound text after authenticating it, and
+> the primer covers the universal `classifyBoundary` pattern this
+> recipe assumes. WhatsApp's `X-Hub-Signature-256` HMAC (Step 3
+> below) protects the envelope; the primer's `classifyBoundary` call
+> protects the message body.
+
 ## Prerequisites
 
 - [Recipe 03 — Slack Bot](03-slack-bot.md) for the channel mental model.
