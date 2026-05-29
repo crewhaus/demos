@@ -17,6 +17,14 @@ is the host-bound workaround.
 For the channel-target mental model, read [Recipe 03 — Slack Bot](03-slack-bot.md)
 first. This recipe covers only the iMessage-specific deltas.
 
+> **Prerequisite — read [Recipe 00 — Network Security
+> Primer](00-network-security-primer.md) first.** Even though
+> iMessage runs host-bound (no public Apple API; the daemon polls
+> `chat.db` locally), inbound message bodies are still
+> attacker-controllable text — anyone with your phone number can
+> send arbitrary content into the agent. The primer's
+> `classifyBoundary` pattern applies the same way.
+
 ## Prerequisites
 
 - A **Mac** running macOS with iMessage logged in.

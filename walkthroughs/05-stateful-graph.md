@@ -10,6 +10,19 @@ human review (HITL), and resume against a durable checkpoint. The
 right shape when "what runs next" depends on what came before — not
 on a fixed step order, and not on a model's free-form Handoff choice.
 
+> **When NOT to use this — graph carries weight you may not need.**
+> Durable checkpoints, conditional edges, and HITL pauses are the
+> reasons graph exists; if you don't need them, a lighter shape will
+> ship sooner with less ceremony.
+> - If the flow is a **fixed step order without HITL** (`extract →
+>   transform → format`) → [Recipe 02 — Sequential
+>   Workflow](02-sequential-workflow.md). Deterministic, single-turn,
+>   no checkpoint plumbing.
+> - If you want **emergent routing among specialist roles** with peer
+>   messaging → [Recipe 04 — Multi-Agent Crew](04-multi-agent-crew.md).
+> - If you want a **free-form chat agent** with tools and no state
+>   plumbing → [Recipe 01 — CLI Coding Agent](01-cli-coding-agent.md).
+
 You'd reach for `target: graph` when:
 
 - The flow has **conditional edges** ("if the plan needs approval, go

@@ -16,6 +16,14 @@ For the channel-target mental model — `Bun.serve` + adapter dispatch +
 session keying + per-message `runChatLoop` — read [Recipe 03 — Slack Bot](03-slack-bot.md)
 first. This recipe covers only what's different on Telegram.
 
+> **Prerequisite — read [Recipe 00 — Network Security
+> Primer](00-network-security-primer.md) first.** Every channel
+> adapter must classify inbound text after authenticating it, and
+> the primer covers the universal `classifyBoundary` pattern this
+> recipe assumes. Telegram's secret-token auth (Step 3 below)
+> protects the envelope; the primer's `classifyBoundary` call
+> protects the body.
+
 ## Prerequisites
 
 - [Recipe 03 — Slack Bot](03-slack-bot.md) for the channel mental model.
@@ -272,8 +280,11 @@ to validate the wiring.
   [Recipe 39 — WhatsApp](39-channel-whatsapp.md),
   [Recipe 40 — iMessage](40-channel-imessage.md).
 - **The channel-target mental model.** [Recipe 03 — Slack Bot](03-slack-bot.md).
-- **Inbound message classification.** [Recipe 41 — Security Fabric](41-security-fabric.md)
-  — channel text is classified before reaching the model.
+- **Inbound message classification.** [Recipe 00 — Network Security
+  Primer](00-network-security-primer.md) — the universal
+  `classifyBoundary` pattern every channel adapter shares. See
+  [Recipe 41 — Security Fabric](41-security-fabric.md) for the full
+  boundary inventory.
 
 ## Pointers to source
 

@@ -15,6 +15,14 @@ submit), and thread-vs-channel session keying via `parent_id`.
 For the channel-target mental model, read [Recipe 03 — Slack Bot](03-slack-bot.md)
 first. This recipe covers only the Discord-specific deltas.
 
+> **Prerequisite — read [Recipe 00 — Network Security
+> Primer](00-network-security-primer.md) first.** Every channel
+> adapter must classify inbound text after authenticating it, and
+> the primer covers the universal `classifyBoundary` pattern this
+> recipe assumes. Discord's Ed25519 signature (Step 3 below) proves
+> the envelope came from Discord; the primer's `classifyBoundary`
+> call protects against prompt injection from authenticated users.
+
 ## Prerequisites
 
 - [Recipe 03 — Slack Bot](03-slack-bot.md) for the channel mental model.
