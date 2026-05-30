@@ -175,15 +175,22 @@ For verified registries, `install` re-checks the signature before
 writing — defense in depth against a cache poisoned between `fetch`
 and write.
 
-## CLI surface
+## Putting the client to work
 
-```bash
-crewhaus marketplace list
-crewhaus marketplace search "slack"
-crewhaus marketplace install slack-bot
+The same three operations through the `MarketplaceClient` shown
+above:
+
+```typescript
+import { MarketplaceClient } from "@crewhaus/template-marketplace-client";
+
+const client = new MarketplaceClient({ registry: verifiedRegistry });
+
+await client.list();
+await client.search({ query: "slack" });
+await client.install("slack-bot");
 ```
 
-Same options as the JS API; `crewhaus marketplace install slack-bot --subdir agents`
+`install` takes the same options as before; `client.install("slack-bot", { subdir: "agents" })`
 writes to `./agents/slack-bot/crewhaus.yaml`.
 
 ## Publishing
@@ -208,13 +215,18 @@ is one button: it generates the draft, signs the manifest with the
 user's stored Ed25519 key, and submits the PR via the user's GitHub
 OAuth.
 
-For manual / CLI publishing:
+For manual / scripted publishing, call `draftPublish` directly, sign
+the manifest with your Ed25519 key, then hand the draft to `gh`:
 
-```bash
-crewhaus marketplace publish ./my-template/ \
-  --signing-key-env CREWHAUS_PUBLISHING_KEY \
-  --registry https://registry.example.com
-# → prints the draft + the PR command
+```typescript
+import { MarketplacePublisher } from "@crewhaus/template-marketplace-client";
+
+const publisher = new MarketplacePublisher({ signingKeyEnv: "CREWHAUS_PUBLISHING_KEY" });
+const draft = publisher.draftPublish({
+  registryName: "https://registry.example.com",
+  manifest,
+});
+// draft.title / draft.body / draft.manifestJson → submit as a PR via `gh`
 ```
 
 ## Wiring a custom registry source

@@ -70,8 +70,8 @@ crewhaus spec alias agent-name stable v3            # update an alias
 ```
 
 `pin` is the only operation that changes what production runs. Every
-pin write is **audit-logged** in the deployment audit (`crewhaus
-deploy log`).
+pin write is **audit-logged** in the deployment audit (entries of
+kind `deployment_action` under `.crewhaus/audit/`).
 
 ## Tenant overlays
 
@@ -169,42 +169,65 @@ flags.
 
 ## The canary controller
 
-A canary splits traffic between two versions:
+A canary splits traffic between two versions. It's driven
+**programmatically** by the `canary-controller` package — there's no
+CLI verb; you instantiate the controller and call it from a rollout
+script or your deploy automation:
 
-```bash
-crewhaus canary start agent-name --env prod --version v3 --weight 1
+```typescript
+import { createCanaryController } from "@crewhaus/canary-controller";
+
+const canary = createCanaryController({ registry, deploymentController });
+
+// A canary is described by a config, not imperative start/stop calls.
+const config = {
+  name: "agent-name",
+  fromVersion: "v2",   // pinned (control)
+  toVersion: "v3",     // candidate (treatment)
+  trafficPercent: 1,   // 1% of prod traffic goes to v3
+  env: "prod",
+};
 ```
 
-Means: 1% of prod traffic goes to v3; the other 99% stays on the
-pinned version (v2). Routing is **stable** by request hash:
+`canary.route(config, requestId)` decides, per request, which version
+handles it; the other 99% stays on the pinned version (v2). Routing is
+**stable** by request hash:
 
 ```
-sha256(tenantId | requestId) mod 100 < weight → canary version
-otherwise                                       → stable version
+sha256(tenantId | requestId) mod 100 < trafficPercent → toVersion
+otherwise                                              → fromVersion
 ```
 
 So the same user's requests stick to the same side. No flapping
 between versions mid-conversation.
 
-Bump weight in steps:
+Ramp by raising `trafficPercent` across steps — the config is data, so
+each step is a new config value:
 
-```bash
-crewhaus canary set agent-name --weight 10
-crewhaus canary set agent-name --weight 50
-crewhaus canary set agent-name --weight 100   # full cutover
+```typescript
+const at10  = { ...config, trafficPercent: 10 };
+const at50  = { ...config, trafficPercent: 50 };
+const at100 = { ...config, trafficPercent: 100 };   // full cutover
 ```
 
-At 100%, the controller auto-promotes (pins prod to v3) and ends the
-canary.
+At 100%, a passing `evaluate()` (below) auto-promotes — it pins prod to
+v3 and the canary ends.
 
 ## The regression gate
 
 Before each weight bump, the regression runner compares versions on
-the eval dataset:
+the eval dataset. It's the `gate()` function from
+`regression-runner` — also programmatic:
 
-```bash
-crewhaus regression-gate agent-name --prev v2 --next v3 \
-  --thresholds 'passRate>=0.95,scoreDelta>=-0.02,latencyP95Ratio<=1.2'
+```typescript
+import { gate } from "@crewhaus/regression-runner";
+
+const verdict = await gate(prevRun, nextRun, {
+  passRate: 0.95,
+  scoreDelta: -0.02,
+  latencyP95Ratio: 1.2,
+});
+// verdict is "pass" or "fail"
 ```
 
 The gate:
@@ -214,37 +237,41 @@ The gate:
 2. Computes deltas: pass rate, mean score, p95 latency.
 3. Returns `pass` if every threshold is met; `fail` otherwise.
 
-Wire this between canary weight steps:
+`canary.evaluate()` ties the config and the gate together: hand it a
+config plus a gate, and it runs the gate, then **auto-promotes** on pass
+(re-pins the env to `toVersion`) or **auto-rolls-back** on fail (re-pins
+to `fromVersion`) and audit-logs the regression reason:
 
-```bash
-crewhaus canary set agent-name --weight 10
-crewhaus regression-gate agent-name --prev v2 --next v3 --thresholds '...' \
-  || crewhaus canary abort agent-name
-crewhaus canary set agent-name --weight 50
+```typescript
+const result = await canary.evaluate(at10, {
+  intervalMs: 30 * 60_000,
+  gate: myGate,             // wraps regression-runner's gate()
+});
+// result.verdict: "pass" | "fail"
+// result.action:  "promote" | "rollback"
 ```
 
-`canary abort` rolls back the in-flight canary: the env's pin
-reverts to the pre-canary version, the canary record audits its
-abort reason. No partial cutover sticks.
+The auto-rollback reverts the env's pin to the pre-canary version and
+audits the reason — no partial cutover sticks.
 
-For full automation, the bundled rollout script does the steps + the
-gates with one command:
+For full automation, evaluate at each ramp step and stop on the first
+failure (`evaluate()` has already rolled back by then):
 
-```bash
-crewhaus canary auto-rollout agent-name --steps 1,10,50,100 --gate-thresholds '...'
+```typescript
+for (const step of [at10, at50, at100]) {
+  const { verdict } = await canary.evaluate(step, { intervalMs, gate: myGate });
+  if (verdict === "fail") break;
+}
 ```
 
 ## A worked progression
 
 ```
-T+0:    crewhaus spec put agent-name v3 ./new-spec.yaml
-T+0:    crewhaus canary start agent-name --env prod --version v3 --weight 1
-T+30m:  crewhaus regression-gate ... → pass
-T+30m:  crewhaus canary set agent-name --weight 10
-T+1h:   crewhaus regression-gate ... → pass
-T+1h:   crewhaus canary set agent-name --weight 50
-T+2h:   crewhaus regression-gate ... → pass
-T+2h:   crewhaus canary set agent-name --weight 100 → auto-promote
+T+0:    crewhaus spec put agent-name v3 ./new-spec.yaml       (CLI)
+T+0:    route(config@1%, …) splits 1% of prod traffic to v3
+T+30m:  evaluate(config@10%, { gate }) → pass → ramp to 10%
+T+1h:   evaluate(config@50%, { gate }) → pass → ramp to 50%
+T+2h:   evaluate(config@100%, { gate }) → pass → auto-promote (pin prod = v3)
 ```
 
 Total: 2h gate-by-gate ramp on real prod traffic, with a
@@ -267,16 +294,18 @@ regression gate confirms it on the next check.
 
 ## Operational checklist
 
-- **First-time setup.** `crewhaus spec init` creates `.crewhaus/specs/`
-  with an empty manifest.
-- **Audit retention.** Deploy audit lives under `.crewhaus/audit/deploy/`.
-  Volume-mount in production.
+- **First-time setup.** `crewhaus init` scaffolds the project,
+  including `.crewhaus/specs/` with an empty manifest.
+- **Audit retention.** Deploy audit lives under `.crewhaus/audit/`
+  (entries of kind `deployment_action`). Volume-mount in production.
 - **Multi-environment.** Each environment (dev/staging/prod) has its
   own registry root; they don't share `manifest.json`. To promote
   cross-env, the deploy controller copies the version file too.
-- **Drift detection.** `crewhaus deploy drift` compares the in-tree
-  manifest with the running daemons' loaded specs. Any mismatch is a
-  drift event.
+- **Deployment history.** Every promote/rollback/pin lands in
+  `.crewhaus/audit/` as a `deployment_action` entry; replay that log
+  to see who pinned what, when. Comparing the in-tree manifest with a
+  running daemon's loaded spec is then a `jq` over the audit trail,
+  not a deploy sub-verb.
 
 ## What to read next
 

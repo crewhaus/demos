@@ -166,10 +166,15 @@ On rotation:
    `kekVersion` and uses the matching key.
 
 So a rotated KEK encrypts only **new** records — old records stay
-decryptable. To re-encrypt old records under the new KEK, run:
+decryptable. To re-encrypt old records under the new KEK, call
+[`audit-encryption`](https://github.com/crewhaus/factory/blob/main/packages/audit-encryption)'s
+`rotateKek` programmatically:
 
-```bash
-crewhaus audit reencrypt --since 2026-01-01
+```typescript
+import { createAuditEncryption } from "@crewhaus/audit-encryption";
+
+const enc = createAuditEncryption({ secrets, kekName: "CREWHAUS_AUDIT_KEK" });
+await enc.rotateKek(newKekValue, "kek:CREWHAUS_AUDIT_KEK:v2");   // re-wraps the data keys under the new KEK
 ```
 
 (Re-encryption is a big I/O operation; only run when the prior KEK is
@@ -233,11 +238,17 @@ hold from the past is either a typo or pointless.
 
 ### GDPR right-to-delete
 
-```bash
-crewhaus retention purge --tenant tenant-a
+The [`data-retention-engine`](https://github.com/crewhaus/factory/blob/main/packages/data-retention-engine)
+exposes this as a programmatic `purge`:
+
+```typescript
+import { createDataRetentionEngine } from "@crewhaus/data-retention-engine";
+
+const engine = createDataRetentionEngine({ store });
+await engine.purge("tenant-a");
 ```
 
-Walks every kind under tenant-a's storage:
+It walks every kind under tenant-a's storage:
 
 1. For each kind, compute the cutoff = now - retentionDays.
 2. Skip any record covered by an active audit window.
@@ -255,8 +266,12 @@ retention, which is the longest window in the system.)
 
 ### GDPR right-to-export
 
-```bash
-crewhaus retention export --tenant tenant-a --format ndjson --out tenant-a-export.ndjson
+The engine's companion `export` operation:
+
+```typescript
+// reuse the same `engine` from above
+const ndjson = await engine.export("tenant-a", { format: "ndjson" });
+await Bun.write("tenant-a-export.ndjson", ndjson);
 ```
 
 Walks all of tenant-a's storage (subject to read permissions) and
@@ -270,9 +285,9 @@ writes:
 
 Format options: `json` (single array), `ndjson` (newline-delimited).
 
-`--kinds session,audit` restricts to specific kinds. `--mask-other-tenants`
-double-checks that no record references another tenant's id (defense
-in depth against a misclassified record).
+`kinds: ["session", "audit"]` restricts to specific kinds.
+`maskOtherTenants: true` double-checks that no record references
+another tenant's id (defense in depth against a misclassified record).
 
 ## Cross-tenant guards
 
@@ -309,8 +324,8 @@ Each smoke runs without external services.
 - **Backup the KEK.** Lose the KEK and all encrypted audit is
   permanently unreadable. Store KEK backups in a separate, longer-
   retained secret backend.
-- **Run `crewhaus audit reencrypt` after a KEK rotation** only if the
-  prior KEK is suspected compromised.
+- **Call `audit-encryption`'s `rotateKek` after a KEK rotation** only
+  if the prior KEK is suspected compromised.
 
 ## Things that look like PII protection but aren't
 

@@ -92,4 +92,4 @@ Tool names in the `tools:` list use the lowercase registration name (`evmSimulat
 
 ## Pillar 2 — what's optimizable
 
-`OPTIMIZABLE_PATHS` ([packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)) lists `chains` and `transaction_policy` as tunable for `workflow`. `crewhaus optimize` against a labelled dataset can adjust `transaction_policy.maxValueUsd`, `chains[*].finality.count`, and `simulationRequired` without rewriting prompts.
+`OPTIMIZABLE_PATHS` ([packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)) lists `chains` and `transaction_policy` as tunable for `workflow`: `transaction_policy.maxValueUsd`, `chains[*].finality.count`, and `simulationRequired` are all entries the optimizer can reach. Today `crewhaus optimize` only runs on `target: cli` specs (it exits with an error on any other target), so the optimizer reaches these paths only when the spec is a cli target — or in a future release that extends optimize to other shapes. For the `workflow` spec here, tune these knobs by hand.

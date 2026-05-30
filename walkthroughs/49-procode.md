@@ -33,7 +33,7 @@ understand each decision.
 Recipe 01 builds the smallest possible CLI agent — five lines of YAML.
 This recipe is the *full power* version of that same `cli` shape: same
 runtime, same compiler, same security model — but every primitive
-(sub-agents from recipe 28, hooks from 14, skills from 15, slash
+(sub-agents from recipe 28, skills from 15, slash
 commands from 16, permission tiers from 29) wired into a single
 coherent spec that mirrors a tier-one production harness.
 
@@ -219,8 +219,9 @@ Recompile after every spec edit.
   sub-agent dispatch model
 - [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md) —
   tier order, pattern grammar, mode invariants
-- [Recipe 14 — Hooks](14-hooks.md) — the pre-tool hook this demo uses
-  as defense-in-depth on top of permissions
+- [Recipe 14 — Hooks](14-hooks.md) — pre-tool hooks as an optional
+  defense-in-depth layer on top of permissions. This demo doesn't wire
+  one in; its defense-in-depth is the permission ruleset (recipe 29).
 - [Recipe 15 — Skills](15-skills.md) — skill discovery and the trust
   origin of skill bodies (Pillar 3)
 - [Recipe 41 — Security Fabric](41-security-fabric.md) — every boundary

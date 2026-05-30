@@ -49,20 +49,23 @@ line is one event with a `prevHash` field forming an immutable chain:
 { "ts": "2026-05-11T08:00:08Z", "kind": "run_ended", "runId": "r1", "prevHash": "0234..." }
 ```
 
-Verify:
+Verify programmatically — the [`audit-log`](https://github.com/crewhaus/factory/blob/main/packages/audit-log)
+package re-walks the chain stored under `.crewhaus/audit/<tenant>/`:
 
-```bash
-crewhaus audit verify <tenant>
+```typescript
+import { verify } from "@crewhaus/audit-log";
+
+const result = await verify(`.crewhaus/audit/${tenant}`);
 ```
 
-Re-walks every event, recomputes `sha256(prev event)`, and reports
-the first broken link if any. Output:
+It re-walks every event, recomputes `sha256(prev event)`, and reports
+the first broken link if any. A clean log resolves to:
 
 ```
 audit verified: 4823 events across 7 segments, no broken links
 ```
 
-or:
+a tampered one to:
 
 ```
 audit BROKEN at 2026-05-11/0042: expected prevHash abc1..., got def4...
@@ -227,15 +230,23 @@ years, per SOC 2 default) are NOT automatically deleted — the runtime
 won't garbage-collect compliance evidence. To rotate, archive offline
 or move to compliant cold storage.
 
-To check retention compliance:
+To enforce and inspect retention, use the
+[`data-retention-engine`](https://github.com/crewhaus/factory/blob/main/packages/data-retention-engine)
+programmatically:
 
-```bash
-crewhaus audit retention-check
+```typescript
+import { createDataRetentionEngine } from "@crewhaus/data-retention-engine";
+
+const engine = createDataRetentionEngine({ store });
+engine.listRetention();                 // the configured per-tenant / per-kind policies
+const result = await engine.sweep();    // walk all records, delete anything past its window
 ```
 
-Reports the oldest audit segment per tenant and whether each tenant's
-retention policy is met. Failing tenants need either older segments
-restored from backup or a documented policy change.
+`sweep()` skips any record inside an active audit window and deletes the
+rest; `listRetention()` / `listAuditWindows()` expose the configured
+policies so you can confirm each tenant has one. A tenant missing a
+policy needs either a documented policy added or older segments restored
+from backup.
 
 ## Things that look like audit but aren't
 

@@ -29,7 +29,7 @@ unrelated `starters/<name>/.env` and silently start unauthenticated.
 
 ## Pick a recipe — diagnostic decision tree
 
-The 55 recipes cover a lot of ground. Most readers don't need to scan
+The 56 recipes cover a lot of ground. Most readers don't need to scan
 the table of contents; they need to find the shape that matches the
 problem they brought. Walk this tree from the top:
 
@@ -297,6 +297,96 @@ a known scenario:
 - **Pillar 3 hardening (defense-in-depth).** 29 → 41 → 53 → 55.
 - **Forking a tier-1 harness.** 49 (procode) or 50 (prochat) or 51 (multichat) → fork the matching showcase.
 - **Designing a new harness from intent.** 48 → (the recipe for the shape it picks) → 12 → 42.
+
+## Module coverage
+
+> **Claim:** every *shipped* (✅) module in the
+> [Module Catalog](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md)
+> is exercised by at least one recipe above or introduced in
+> [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+> Unbuilt / experimental modules (the catalog's 🟡 / 🔴 long-tail) are
+> reference-only by design — you can't walk through code that doesn't
+> ship yet — and are inventoried in
+> [MODULE-CATALOG-STATUS.md → Unbuilt module inventory](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG-STATUS.md#unbuilt-module-inventory).
+
+The catalog groups the runtime's ~290 modules into 25 layers (F1–F5
+factory-level, R1–R20 runtime). Each layer below names the recipe(s)
+that exercise it; **GS** = GETTING-STARTED.md. This table is the inverse
+of the per-recipe `Catalog` columns in the Part tables above, and is the
+thing to check when asking "is module X covered anywhere?".
+
+### Factory-level layers (the meta-harness itself)
+
+| Layer | What it is | Covered by |
+| ----- | ---------- | ---------- |
+| **F1** | Spec & IR | GS · 01–12 (every shape compiles a spec) · 42 (`spec-patch`) · 48 |
+| **F2** | Compiler & Codegen | GS (the 60-second YAML→TS proof) · 01–12 (one target emitter each) · 48 |
+| **F3** | Deployment & Operations | 11 · 21 · 24 · 36 |
+| **F4** | Studio & Authoring UX | 25 · 26 · 35 · 48 |
+| **F5** | Plugin SDK & Extension | 26 · 35 |
+
+### Runtime layers (the building blocks wired into the bundle)
+
+| Layer | What it is | Covered by |
+| ----- | ---------- | ---------- |
+| **R1** | Runtime Core (agent loop) | GS (run-time, one turn) · 01 · 31 |
+| **R2** | Model Layer | GS · 18 · 32 · 33 |
+| **R3** | Tool Layer (core) | GS · 01 · 28 |
+| **R4** | Built-in Tools | 01 · 09 · 10 · 30 · 50 · 54 |
+| **R5** | MCP & Protocol Hosts | 13 · 27 · 43–47 |
+| **R6** | Context & Memory | GS (compaction) · 07 · 52 |
+| **R7** | State, Sessions, Persistence | GS (the `.crewhaus/` directory) · 05 · 31 |
+| **R8** | Permission, Policy, Safety | 00 · 23 · 29 · 30 · 41 · 46 · 53 · 55 |
+| **R9** | Hooks, Skills, Slash Commands | 14 · 15 · 16 |
+| **R10** | Multi-Agent / Coordination | 04 · 27 · 28 |
+| **R11** | Workflow / Graph / Pipeline Engines | 02 · 05 · 06 |
+| **R12** | RAG / Retrieval / Knowledge | 06 · 07 |
+| **R13** | Channels & Messaging | 00 · 03 · 37–40 · 51 |
+| **R14** | Scheduling & Background | 08 · 19 · 51 |
+| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 |
+| **R16** | UI / TUI / Voice / Media | 09 · 11 · 35 |
+| **R17** | Infrastructure & Cross-Cutting | GS · 11 · 20 · 22 |
+| **R18** | Specialized / Advanced | 10 · 30 · 54 |
+| **R19** | Research-Agent Specific | 07 |
+| **R20** | Batch-Worker Specific | 08 |
+
+Every layer resolves to at least one recipe, so no catalog layer is
+walkthrough-dark.
+
+### Naming note — brief slug vs catalog/package name
+
+A handful of [module briefs](https://github.com/crewhaus/docs/blob/main/module-briefs/README.md)
+use the original planning slug while the current catalog/package ships
+under a different name. They're the same module, covered under the
+catalog name:
+
+| Brief slug | Catalog / package name | Covered by |
+| ---------- | ---------------------- | ---------- |
+| `embedding-adapter` | `embedder` | 06 |
+| `research-planner` | `planner` | 07 |
+| `report-synthesizer` | `report-writer` | 07 |
+| `idempotency-store` | `idempotency-keys` | 08 |
+| `tool-web-fetch` / `tool-web-search` | `WebFetch` / `WebSearch` (in `tool-web`) | 01 · 50 |
+| `tool-team` / `tool-agent` | folded into `tool-task` + `crew-orchestrator` | 04 · 28 |
+
+### Reference-only (no dedicated walkthrough, by design)
+
+- **Unbuilt secondary channel adapters** — `channel-{signal,bluebubbles,email,sms,web}`
+  and `channel-imessage-native` are the v1.3 §45 long-tail (🟡 unbuilt).
+  The authenticate-then-classify pattern every adapter shares lives in
+  [Recipe 00](00-network-security-primer.md); the iMessage host-bridge
+  approach is in [Recipe 40](40-channel-imessage.md).
+- **§55–§59 integration batch** — `failure-taxonomy`, `meta-harness-optimizer`
+  (opt-in / experimental), `contract-compiler`, `specialization-registry`,
+  `target-claude-plugin`, and `rules-engine` shipped after the v0.1 recipe
+  set. They're documented in
+  [MODULE-CATALOG-STATUS.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG-STATUS.md#implementation-summary)
+  and are candidates for future recipes.
+- **The ~53 unbuilt catalog rows** (R1–R20 🟡 / 🔴) — inventoried in
+  [MODULE-CATALOG-STATUS.md → Unbuilt module inventory](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG-STATUS.md#unbuilt-module-inventory).
+  None block a shipped target shape.
+
+---
 
 ## Status
 

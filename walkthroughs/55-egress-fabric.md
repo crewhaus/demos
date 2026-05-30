@@ -25,7 +25,7 @@ That stops the source. It does **not** stop the agent from later transmitting th
 No standalone egress-fabric demo ships yet — `classifyEgress` and the
 `scope: "internal" | "external"` tool field are exercised by the
 package tests at
-[`factory/packages/egress-fabric`](https://github.com/crewhaus/factory/blob/main/packages/egress-fabric).
+[`factory/packages/egress-classifier`](https://github.com/crewhaus/factory/blob/main/packages/egress-classifier).
 To see a sink-block fire: mark a tool `scope: "external-dynamic"` and
 inject `dataLineage` tags via the source-side classifier (recipe 41)
 — the next outbound call carrying tainted lineage is blocked. A

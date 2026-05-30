@@ -320,9 +320,10 @@ the CLI decides whether to invoke the pipeline as a sub-agent.
 
 ## Production knobs
 
-- **Re-indexing.** Currently a full recompile. If your corpus changes
-  often, run `crewhaus index` (a separate command) which only updates
-  the vector store, leaving the codegen bundle untouched.
+- **Re-indexing.** Currently a full recompile. There is no separate
+  incremental `index` command yet — indexing happens at compile time,
+  so any corpus change means recompiling (`crewhaus compile`) to
+  re-embed and re-bake the vectors.
 - **Embed-only call budget.** The semantic chunker is the only path
   that calls embedding APIs at compile time. Set
   `CREWHAUS_INDEX_BUDGET_USD=...` to fail loudly if compilation would

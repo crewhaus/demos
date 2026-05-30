@@ -136,6 +136,6 @@ That event flows through `trace-event-bus` to OpenTelemetry exporters (`otel-exp
 
 ## Why this is a fabric, not a perimeter
 
-A perimeter check assumes content crosses one trust boundary on the way in. A fabric check assumes content can enter at any of N boundaries and re-verifies at each. The shift matters because in a meta-harness with 12 target shapes, sub-agents, MCP servers, multi-channel inbound, and federation, "the perimeter" is meaningless — there's no single point of entry to defend. The fabric makes the security property local to each boundary: a new boundary site that doesn't classify is a security regression that `crewhaus doctor --philosophy-alignment` will catch.
+A perimeter check assumes content crosses one trust boundary on the way in. A fabric check assumes content can enter at any of N boundaries and re-verifies at each. The shift matters because in a meta-harness with many target shapes, sub-agents, MCP servers, multi-channel inbound, and federation, "the perimeter" is meaningless — there's no single point of entry to defend. The fabric makes the security property local to each boundary: a new boundary site that doesn't classify is a security regression that `crewhaus doctor --philosophy-alignment` will catch.
 
 See [/CLAUDE.md §Pillar-3](https://github.com/crewhaus/factory/blob/main/CLAUDE.md) for the contributor invariants this recipe is the user-facing companion of.

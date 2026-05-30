@@ -312,16 +312,22 @@ shouldn't cause large score swings.
 ## Using a grader as a canary gate
 
 The regression runner ([Recipe 21](21-deployment-and-canary.md))
-uses graders as the auto-rollback signal:
+uses graders as the auto-rollback signal via its `gate()` API — the
+canary-gate source of truth in
+[`packages/regression-runner`](https://github.com/crewhaus/factory/blob/main/packages/regression-runner):
 
-```bash
-crewhaus regression-gate agent-name \
-  --prev v2 \
-  --next v3 \
-  --thresholds 'passRate>=0.95,scoreDelta>=-0.02'
+```typescript
+import { gate } from "@crewhaus/regression-runner";
+
+const result = await gate({
+  agent: "agent-name",
+  prev: "v2",
+  next: "v3",
+  thresholds: { passRate: 0.95, scoreDelta: -0.02 }
+});
 ```
 
-Reads the eval-runner's per-version results, computes the deltas,
+It reads the eval-runner's per-version results, computes the deltas,
 and gates on the thresholds. A grader that returns useful score
 gradients (not just 0/1) is much more useful here than a binary
 gate — it lets the canary detect quality regression before it becomes

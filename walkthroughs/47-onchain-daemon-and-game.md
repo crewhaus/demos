@@ -149,7 +149,7 @@ Both targets call `classifyBoundary({origin: "chain"})` on event payloads (`onch
 
 ## Pillar 2 — what's optimizable
 
-`OPTIMIZABLE_PATHS` ([packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)) lists for `onchain`: `agent.instructions`, `chains`, `triggers`, `transaction_policy`, `idempotencyWindowMs`. For `onchain-game`: `agent.instructions`, `game` (including `moveTimeoutMs`), `transaction_policy`. `crewhaus optimize` can tune the cadence of `block`-kind triggers, the value cap, the move timeout for real-time games, etc.
+`OPTIMIZABLE_PATHS` ([packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)) lists for `onchain`: `agent.instructions`, `chains`, `triggers`, `transaction_policy`, `idempotencyWindowMs`. For `onchain-game`: `agent.instructions`, `game` (including `moveTimeoutMs`), `transaction_policy`. The cadence of `block`-kind triggers, the value cap, the move timeout for real-time games, etc. are all optimizable paths — reachable once `crewhaus optimize` supports these shapes. Today optimize only runs on `target: cli` specs (it exits with an error on any other target), so tune these knobs by hand for an `onchain` / `onchain-game` spec.
 
 ## Verification
 

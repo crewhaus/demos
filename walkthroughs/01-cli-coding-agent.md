@@ -104,7 +104,7 @@ directly onto the OpenAI Agents SDK pattern (agent + tools + sessions +
 tracing) which is the field's de-facto baseline for a single tool-using
 agent. Every other shape in this manual lowers to the same
 `runChatLoop` from [packages/runtime-core](https://github.com/crewhaus/factory/blob/main/packages/runtime-core);
-mastering it once means the other 11 target shapes are *spec
+mastering it once means the other target shapes are *spec
 variations*, not new runtimes to learn.
 
 </details>
@@ -197,7 +197,7 @@ tools:
 
 Note that `tools:` lives at the top level of the spec, not nested
 under `agent:` — for CLI specs the agent block carries the model and
-instructions; everything else is sibling-level. The eleven canonical
+instructions; everything else is sibling-level. The most common
 tool names you can put in `tools:`:
 
 | Spec name    | Model-facing name | What it does                                                 |
@@ -213,6 +213,13 @@ tool names you can put in `tools:`:
 | `webSearch`  | `WebSearch`       | Provider-backed web search (configurable).                   |
 | `readImage`  | `ReadImage`       | Read an image file, return an Anthropic image block.         |
 | `fetch`      | `Fetch`           | Generic HTTP with fail-closed allow-list and SSRF defenses.  |
+
+These are the ones you'll reach for most; the `cli` target's default
+catalog wires more than this. Beyond the eleven above it also includes
+`imageGenerate` (image generation), `ingestDocument` (document
+ingest), and four `codegraph*` tools (`codegraphSearch`,
+`codegraphCallers`, `codegraphCallees`, `codegraphImpact`) — 17 tool
+functions in total.
 
 Compile and run:
 

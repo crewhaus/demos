@@ -206,8 +206,9 @@ The recovery engine maps federation errors to actions:
 | Unknown                                  | `fail`      | Surface the error; let the agent handle it.       |
 
 Tombstones unblock by setting `federation.tombstones.<deployment>` =
-false in `.crewhaus/federation/state.json` (CLI: `crewhaus federation
-unmark <deployment>`).
+false in `.crewhaus/federation/state.json` — either by editing that
+discovery-state file directly, or through the `federation-router`
+API (there's no CLI verb for it; `federation` only does `discover`).
 
 ## Spec integration
 

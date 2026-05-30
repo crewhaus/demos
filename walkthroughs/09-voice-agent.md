@@ -106,7 +106,7 @@ The shape:
 - **`bargeInTriggerFrames` / `bargeInWindowMs`** — barge-in
   hysteresis: 4 frames of speech in 200ms cuts off the agent's TTS.
 
-Build the smoke smoke target to validate the bundle wiring without
+Build the smoke target to validate the bundle wiring without
 needing a real audio source:
 
 ```bash
@@ -123,7 +123,7 @@ realtime adapter handles upsampling/downsampling if your hardware
 delivers something else (8 kHz from a SIP trunk, 48 kHz from a
 browser mic).
 
-Frames are 20ms = 480 samples = 960 bytes. The VAD operates frame-by-frame;
+Frames are 30ms = 720 samples = 1440 bytes. The VAD operates frame-by-frame;
 barge-in detection counts frames within `bargeInWindowMs`.
 
 ## VAD — voice activity detection
@@ -158,7 +158,7 @@ controller:
    becomes a partial assistant turn in the transcript.
 4. The user's new utterance starts a new turn.
 
-The defaults (4 frames in 200ms = 80ms of speech) are tuned for
+The defaults (4 frames in 200ms = 120ms of speech) are tuned for
 conversational interruption while ignoring brief noises (cough,
 keyboard click, breath). Tune higher (`bargeInTriggerFrames: 8`,
 `bargeInWindowMs: 400`) for noisy environments; tune lower

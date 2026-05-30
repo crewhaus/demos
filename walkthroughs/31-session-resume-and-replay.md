@@ -159,26 +159,30 @@ checkpoint onward. So you can:
 - Run an eval that produces side-by-side comparisons for the same
   prefix.
 
-`crewhaus diff run_<id> run_<branchedId>` shows which state keys
-diverged and at which checkpoint.
+`branch-history.diff(store, run_<id>, run_<branchedId>)` (programmatic)
+shows which state keys diverged and at which checkpoint. There's no
+top-level `crewhaus diff`; `crewhaus eval-report diff` exists only for
+comparing eval runs.
 
 ## Eviction
 
 Sessions older than **30 days** (mtime-based) are evicted on the
-next `list()` call. This is the runtime's only automatic deletion —
+next `list()` call the runtime makes (e.g. when resolving a session
+to resume). This is the runtime's only automatic deletion —
 nothing else garbage-collects sessions.
 
-To force eviction:
+To force eviction, age the files and trigger a runtime listing (any
+`--resume`/`--continue` does one):
 
 ```bash
 touch -t 202001010000 .crewhaus/sessions/sess_*.json
-crewhaus sessions list   # this triggers the eviction check
+crewhaus run starters/cli/crewhaus.yaml --continue   # runtime list → eviction check
 ```
 
-To extend retention beyond 30 days:
+To extend retention beyond 30 days, set the env var on a run:
 
 ```bash
-CREWHAUS_SESSION_RETENTION_DAYS=180 crewhaus sessions list
+CREWHAUS_SESSION_RETENTION_DAYS=180 crewhaus run starters/cli/crewhaus.yaml --continue
 ```
 
 Or volume-mount `.crewhaus/sessions/` and rely on storage-tier
@@ -221,14 +225,25 @@ The viewer renders:
 - **Errors** highlighted in red.
 - **Compaction events** as gray bars.
 
-## CLI surface
+## Working with sessions
+
+There's no `sessions` subcommand — sessions are just files under
+`.crewhaus/sessions/`, so the shell is the interface:
 
 ```bash
-crewhaus sessions list           # show all sessions with metadata
-crewhaus sessions show <id>      # pretty-print the JSONL log
-crewhaus sessions purge <id>     # delete one session
-crewhaus sessions purge --before 2026-04-01  # bulk purge by date
-crewhaus sessions export <id> > export.jsonl  # dump for archival
+ls -t .crewhaus/sessions/sess_*.json            # list, newest first
+jq . .crewhaus/sessions/sess_<id>.json          # inspect metadata
+jq -c . .crewhaus/sessions/sess_<id>.jsonl      # walk the event log
+rm .crewhaus/sessions/sess_<id>.{json,jsonl}    # purge one session
+find .crewhaus/sessions -name 'sess_*' -newermt 2026-04-01 -prune -o -name 'sess_*' -delete   # bulk purge by date
+cp .crewhaus/sessions/sess_<id>.jsonl export.jsonl   # dump for archival
+```
+
+To resume a session, hand its id back to `run`:
+
+```bash
+crewhaus run starters/cli/crewhaus.yaml --resume sess_<id>   # by id
+crewhaus run starters/cli/crewhaus.yaml --continue           # most-recent session
 ```
 
 ## Reading the JSONL log
@@ -273,7 +288,7 @@ JSONL and the result store.
 | ---------------------------------------------------------------- | ------------------------------------------------- |
 | Want to **re-run** a session from scratch with deterministic same output. | Set `temperature: 0` in spec + replay user messages. |
 | Want to **fork** a session mid-conversation.                     | Graph branching (`--branch-from`) for graph targets only. |
-| Want to share a session with a coworker.                          | `crewhaus sessions export <id>` + import the JSONL.  |
+| Want to share a session with a coworker.                          | Copy `.crewhaus/sessions/sess_<id>.jsonl` over; they drop it in and `--resume`. |
 | Want to keep an audit trail.                                       | Audit log ([Recipe 22](22-compliance-and-audit.md)). |
 
 ## What to read next
