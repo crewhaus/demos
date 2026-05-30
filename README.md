@@ -16,21 +16,23 @@ All three default to Claude but the `model:` field accepts any provider (GPT-4o,
 
 `crewhaus-demos` is its own repo, but the examples only make sense alongside the `@crewhaus/*` packages — they're compiled by `@crewhaus/cli` and the compiled `dist/` outputs import `@crewhaus/runtime-core` and friends.
 
-**Default path (post-v0.1.0):** `bun install` pulls `@crewhaus/cli` and the runtime packages from npm. The compile scripts shell out to `bun x crewhaus` and the compiled bundles resolve their `@crewhaus/*` imports the normal way.
+This repo deliberately keeps no `@crewhaus/*` runtime in its own `package.json` — `bun install` only pulls `@types/bun` and `typescript`. The compile scripts find the CLI via this precedence:
 
-```
-demos/         ← bun install pulls @crewhaus/* from npm
-```
+1. `FACTORY_PATH` env or a `../factory` sibling checkout → contributor / dual-checkout mode (changes in `factory/` flow into demo runs without republishing). **CI uses this path.**
+2. `node_modules/@crewhaus/cli` — if you ran `bun add -d @crewhaus/cli` yourself in this repo.
+3. `bun x crewhaus` — falls back to a globally installed binary.
 
-**Contributor / dual-checkout path:** if you also have [crewhaus/factory](https://github.com/crewhaus/factory) checked out as a sibling and want demos to use that working tree (so changes in `factory/` flow into demo runs without a republish), set `FACTORY_PATH=../factory bun run compile <demo>` — the scripts and `tsconfig.json` `paths` block fall through to the sibling.
+**Default path for users following the docs:** `bun add -d @crewhaus/cli` after cloning, then `bun run compile <demo>` shells out to the npm-installed binary. During the v0.1.1 private-scope window, `bun add` requires `npm login` with scope access; see [factory/PACKAGES.md](https://github.com/crewhaus/factory/blob/main/PACKAGES.md) for the access flip plan.
+
+**Contributor / dual-checkout path:** clone [crewhaus/factory](https://github.com/crewhaus/factory) as a sibling — no extra install needed, the scripts and `tsconfig.json` `paths` block pick it up.
 
 ```
 parent-dir/
-  factory/         ← optional sibling checkout
-  demos/           ← FACTORY_PATH=../factory uses the sibling
+  factory/         ← sibling checkout (CI also uses this)
+  demos/           ← this repo
 ```
 
-Factory has zero references back to this repo — the dependency is one-way (demos → factory). During the v0.1.0 private-scope window, the npm install requires `npm login` with scope access; see [factory/PACKAGES.md](https://github.com/crewhaus/factory/blob/main/PACKAGES.md) for the access flip plan.
+Factory has zero references back to this repo — the dependency is one-way (demos → factory).
 
 ## Run
 
