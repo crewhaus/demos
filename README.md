@@ -65,7 +65,7 @@ Adding a new starter: drop a directory under `starters/` with a `crewhaus.yaml`,
 ```
 demos/
   starters/                    user-facing: every dir is a copy-pasteable spec
-    cli/                       first agent — pick any of the 12 target shapes
+    cli/                       first agent — pick any of the target shapes
     workflow/
     channel/                   the generic channel adapter (Slack reference)
     crew/  graph/  rag/  research/  batch/  voice/  browser/

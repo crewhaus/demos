@@ -25,7 +25,7 @@ schema is enough.
 
 Both plugins consume the same JSON Schema (Draft-07) at
 [`packages/vscode-extension/schemas/spec.json`](https://github.com/crewhaus/utilities/blob/main/vscode-extension/schemas/spec.json).
-The schema covers all 12 target shapes via a `discriminator: target`
+The schema covers all target shapes via a `discriminator: target`
 union.
 
 This is the source of truth for editor validation — when the spec

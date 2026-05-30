@@ -104,7 +104,7 @@ directly onto the OpenAI Agents SDK pattern (agent + tools + sessions +
 tracing) which is the field's de-facto baseline for a single tool-using
 agent. Every other shape in this manual lowers to the same
 `runChatLoop` from [packages/runtime-core](https://github.com/crewhaus/factory/blob/main/packages/runtime-core);
-mastering it once means the other 11 target shapes are *spec
+mastering it once means the other target shapes are *spec
 variations*, not new runtimes to learn.
 
 </details>
