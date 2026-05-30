@@ -22,6 +22,8 @@ By the end you'll have a daemon that:
   in your Discord cannot run `Bash` on your laptop.
 - Auto-loads three skills (`assistant-tone`, `heartbeat-decide`,
   `approval-workflow`) from `.crewhaus/skills/`.
+- Fires a scheduled **heartbeat** every 2h (default-silent) and exposes
+  a **control-UI gateway** on `:19001` for daemon health.
 
 Time: ~10 minutes to run if you already have channel credentials;
 ~30 minutes to obtain credentials from scratch.
@@ -41,12 +43,12 @@ one spec** (see [`packages/spec/src/index.ts`](https://github.com/crewhaus/facto
 `channelsBlock`). That's the half of OpenClaw's value proposition that
 comes for free.
 
-The other half — heartbeats, status emoji reactions, the gateway
-control UI, additional channel adapters (Matrix, Signal, IRC, Nostr,
-WeChat) — is **out of scope for this recipe** and tracked in the
-heavy-hitter plan as Phase 3 §3.1–§3.4. The deferred items are
-explicit in the spec via commented-out blocks at the top of
-[`starters/showcases/multichat/crewhaus.yaml`](../starters/showcases/multichat/crewhaus.yaml).
+The other half of OpenClaw's value proposition — heartbeats, status
+emoji reactions, and the gateway control UI — is **now wired into the
+spec** (Phase 3 §3.1–§3.4; see Step 8 below). What remains out of scope
+is additional channel adapters (Matrix, Signal, IRC, Nostr, WeChat) and
+the optional MCP integrations, left as commented-out blocks at the top
+of [`starters/showcases/multichat/crewhaus.yaml`](../starters/showcases/multichat/crewhaus.yaml).
 
 </details>
 
@@ -216,15 +218,15 @@ Three skills ship with the demo:
 
 - **`assistant-tone`** (loads on every reply) — defines 🦞's voice:
   warm/brief/verb-first; words to avoid; channel-aware formatting.
-- **`heartbeat-decide`** (forward-compatible with Phase 3 §3.1) —
-  defines "when nothing happened, stay silent."
+- **`heartbeat-decide`** — the decision framework the live heartbeat
+  uses (Step 8): "when nothing happened, stay silent."
 - **`approval-workflow`** — explicit y/n confirmation for any
   side-effecting tool call.
 
-The `approval-workflow` skill is the closest you'll get to OpenClaw's
-chat-thread approval prompts until per-tool reactive UI is built into
-the channel adapters (Phase 3 §3.2). For now, the agent asks in-text,
-and you reply y or n in the same thread.
+The Slack adapter now shows progress with emoji reactions (👀/✅/⚠️;
+Step 8), but the in-thread `approval-workflow` is still how the agent
+confirms a side-effecting action: it asks in-text, and you reply y or n
+in the same thread.
 
 ## Step 7 — Swap the model
 
@@ -232,22 +234,57 @@ Same recipe as 49 and 50. `claude-sonnet-4-6` is a good default — a
 multi-channel daemon is verbose enough that Sonnet's price/perf is
 better than Opus for the cost.
 
-## What's deferred (and why)
+## Step 8 — Heartbeat and the control-UI gateway
 
-This demo deliberately ships *without* the following OpenClaw
-features, all tracked in the heavy-hitter plan's Phase 3:
+Two always-on features ship live in the spec — no flags to flip:
 
-| Feature | Why deferred |
+**Heartbeat** (`heartbeat:` block). Every 2h a fresh synthetic session
+fires with the heartbeat instructions; the `heartbeat-decide` skill
+encodes the decision framework, and the default verdict is **silence**
+(most ticks log `heartbeat_tick: silent` and exit). Shorten `every: 2h`
+to `every: 5m` while testing, then bump it back:
+
+```yaml
+heartbeat:
+  every: 2h
+  instructions: |
+    🦞 Heartbeat tick. Read HEARTBEAT.md if present, decide what's
+    actually useful right now, and take AT MOST one small action.
+```
+
+**Control-UI gateway** (`gateway:` block). Alongside the channel
+listeners, the daemon stands up an operator dashboard — daemon health,
+channel status, turn counts, heartbeat ticks. Visit
+`http://localhost:19001/` for the HTML view or `/status` for raw JSON:
+
+```yaml
+gateway:
+  port: 19001
+  ui: true
+```
+
+**Status emoji reactions** (👀 / ✅ / ⚠️). The Slack adapter reacts to
+inbound messages to show progress; Telegram, Discord, WhatsApp, and
+iMessage reactions are pending adapter-level support.
+
+## Now enabled — and what's still out of scope
+
+Earlier revisions of this demo shipped *without* heartbeat, reactions,
+the CLI banner, and the gateway control-UI. All four are **now wired in**
+(Phase 3 §3.1–§3.4 — see Step 8):
+
+| Feature | Status |
 |---|---|
-| Heartbeat (`every: 2h`) | New spec field + IR + runtime tick loop. ~2-3 days of work. See plan §3.1. |
-| Status emoji reactions (👀/✅/⚠️) | Each channel adapter needs a `react(messageId, emoji)` API. ~1 day per channel × 5. Plan §3.2. |
-| CLI banner with tagline rotation | Spec field + target-cli emitter touch-up. ~1 day. Plan §3.3. |
-| Gateway control-UI dashboard | Reuses existing `gateway-server` + `studio-ui` packages — just needs wiring on the channel target. ~1-3 days. Plan §3.4. |
-| Additional channel adapters (Matrix, Signal, IRC, Nostr, WeChat, …) | Out of scope; ~1 week per platform. |
+| Heartbeat (`every: 2h`) | ✅ live (`heartbeat:` block) |
+| Status emoji reactions (👀/✅/⚠️) | ✅ live on Slack; Telegram / Discord / WhatsApp / iMessage pending adapter support |
+| CLI banner with tagline rotation | ✅ live (applies to `target: cli`; channel daemons announce via `[daemon]` log lines) |
+| Gateway control-UI dashboard | ✅ live (`gateway: { port: 19001, ui: true }`) |
+| Additional channel adapters (Matrix, Signal, IRC, Nostr, WeChat, …) | ⏳ out of scope — ~1 week per platform |
+| MCP integrations (calendar, email, todo) | optional — uncomment the `mcp_servers:` block at the top of the spec |
 
-When those land, the corresponding YAML blocks (commented out at the
-top of [`crewhaus.yaml`](../starters/showcases/multichat/crewhaus.yaml)) get
-enabled.
+Only the additional channel adapters remain genuinely out of scope; the
+MCP blocks are commented out in the spec and enable with a single
+uncomment.
 
 ## What makes it feel pro-grade (OpenClaw-style)
 
@@ -261,6 +298,9 @@ enabled.
    "competent teammate" register. No fluff, no preambles.
 5. **Plan-then-act** — multi-step tasks dispatch the `planner`
    sub-agent first. Mirrors OpenClaw's tool-planner philosophy.
+6. **Always-on and observable** — a scheduled heartbeat (default-silent)
+   plus a control-UI gateway on `:19001` make it a real daemon, not just
+   a request/response bot.
 
 ## Further reading
 

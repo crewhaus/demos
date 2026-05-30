@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "User-facing CrewHaus demos: hello-* example specs + 55 walkthroughs + section-* example smokes. Depends on a sibling ../factory/ checkout for the compiler and CLI. Studio + IDE tooling moved to the sibling ../utilities/ checkout (crewhaus/utilities).",
+  "description": "User-facing CrewHaus demos: hello-* example specs + 56 walkthroughs + section-* example smokes. Depends on a sibling ../factory/ checkout for the compiler and CLI. Studio + IDE tooling moved to the sibling ../utilities/ checkout (crewhaus/utilities).",
   "workspaces": ["smoke/*"],
   "scripts": {
     "compile": "bun scripts/compile.ts",

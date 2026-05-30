@@ -249,20 +249,23 @@ Generate a standup update for me:
 
 ## Debugging slash commands
 
-To list what the runtime discovered:
+Slash commands are file-discovered, so listing the directories is how
+you see what the runtime found:
 
 ```bash
-crewhaus commands list
+ls .crewhaus/commands/        # project commands (highest priority)
+ls ~/.crewhaus/commands/      # user commands
 ```
 
-If a project command isn't winning, check the precedence with:
+If a project command isn't winning, inspect the resolved body
+directly:
 
 ```bash
-crewhaus commands show <name>
+cat .crewhaus/commands/<name>.md
 ```
 
-Prints the resolved file path. Useful when a user-level command is
-shadowing a project-level one due to a typo.
+Useful when a user-level command is shadowing a project-level one due
+to a typo — compare the filenames across both layers.
 
 To see expansions live:
 

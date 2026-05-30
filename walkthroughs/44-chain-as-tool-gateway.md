@@ -79,7 +79,7 @@ return JSON.stringify({
 });
 ```
 
-The §41 `citation-tracker` integration treats this envelope as a citation; the §47 `tool-evm` read path already classifies the chain payload, so the resulting artifact is provenance-tagged.
+The §23 `citation-tracker` integration treats this envelope as a citation; the §47 `tool-evm` read path already classifies the chain payload, so the resulting artifact is provenance-tagged.
 
 ## Multi-chain (Shape 5)
 

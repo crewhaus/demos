@@ -34,16 +34,17 @@ The entry point that picks reasonable defaults per provider:
 ```typescript
 import { defaultCloudConfig } from "@crewhaus/crewhaus-cloud";
 
-const config = defaultCloudConfig({
-  provider: "aws",      // "aws" | "gcp" | "azure" | "aws-localstack"
-  region: "us-east-1",
-  tier: "default"
-});
+const config = defaultCloudConfig("aws", "us-east-1");   // tier defaults to "default"
+// providers: "aws" | "gcp" | "azure" | "aws-localstack"
+
+// override any field — e.g. a higher tier:
+const prodConfig = { ...config, tier: "production" };
 ```
 
-Returns a fully-formed config that downstream functions consume.
-Override any field directly — `defaultCloudConfig` is the starting
-point, not the only path.
+`defaultCloudConfig(provider, region)` returns a fully-formed
+`CloudConfig` (`provider` / `region` / `tier` / `clusterName` /
+`imageTag`) that downstream functions consume. It's the starting point,
+not the only path — spread it and override any field.
 
 ## The three tiers
 
@@ -53,14 +54,12 @@ point, not the only path.
 | `default`    | managed gateway + batch worker          | 2 + 2                        | Production-ish. |
 | `production` | Full multi-shape (channel + managed + batch + voice...) | 3 each | Full multi-AZ. |
 
-`tierShapes(tier)` returns the list of shapes for a tier; `tierReplicas(tier)`
-returns the per-shape replica counts. Custom tiers via:
-
-```typescript
-config.tier = "custom";
-config.shapes = ["managed", "batch"];
-config.replicas = { managed: 5, batch: 10 };
-```
+`tierShapes(tier)` returns the shapes for a tier, each carrying its own
+replica count (the `TierShape` records). The three tiers above are the
+full set — `TIERS = ["dev", "default", "production"]`; there's no
+free-form "custom" tier. To size differently, edit the replica patches
+in the rendered Kustomize overlay (next section) after
+`renderKustomizeOverlay(config)`.
 
 ## Terraform module rendering
 
@@ -152,8 +151,10 @@ const result = await deployCloud({
 Steps:
 
 1. **`terraform init`** — install provider plugins, configure backend.
-2. **`terraform plan`** — show the diff. Aborts if `--auto-approve` not set.
-3. **`terraform apply`** — provision infra.
+2. **`terraform plan`** — compute the diff.
+3. **`terraform apply -auto-approve`** — provision infra. The deploy is
+   non-interactive by design (it always passes `-auto-approve`), so run
+   it from automation rather than as a prompt-driven step.
 4. **`terraform output`** — fetch cluster credentials, DB endpoint, etc.
 5. **`kubectl apply -k .`** — apply the kustomize overlay.
 
@@ -194,9 +195,9 @@ Standard flags:
 | ------------------- | ------------------------------------------------------ |
 | `--provider`         | required                                                |
 | `--region`           | required                                                |
-| `--tier`             | `default`                                                |
-| `--auto-approve`     | false (require interactive confirmation)                 |
-| `--state-backend`    | `s3` for AWS, `gcs` for GCP, `azurerm` for Azure         |
+| `--tier`             | `default` (`dev` \| `default` \| `production`)           |
+| `--image-tag`        | `latest`                                                 |
+| `--working-dir`      | temp dir — where the rendered Terraform + overlay land   |
 
 ## State management
 
@@ -208,14 +209,10 @@ Terraform state lives in the cloud bucket / blob storage:
 | GCP      | GCS bucket `crewhaus-tfstate-<project>-<region>`.                  |
 | Azure    | Azure Blob `crewhaus-tfstate-<subscription>-<region>`.             |
 
-The bootstrap (creating the state bucket itself) is a one-time manual
-step. `crewhaus cloud bootstrap` automates it:
-
-```bash
-crewhaus cloud bootstrap --provider aws --region us-east-1
-```
-
-Creates the state bucket / lock table / RBAC for subsequent deploys.
+The bootstrap (creating the state bucket / lock table / RBAC itself) is
+a one-time manual step. `cloud` only exposes `deploy` and `teardown`, so
+create the backend bucket with your cloud CLI — or a small bootstrap
+Terraform module — before the first `crewhaus cloud deploy`.
 
 ## Multi-environment deploys
 
@@ -272,12 +269,14 @@ structural validation, not a live deploy.
 
 ## Operating tips
 
-- **Bootstrap once per account.** Re-running `crewhaus cloud bootstrap`
-  is idempotent — the state bucket creation is `IfNotExists`.
+- **Bootstrap once per account.** Create the Terraform state bucket /
+  lock table once per account + region (see State management above)
+  before your first deploy.
 - **Lock contention.** Terraform's lock prevents concurrent applies.
   If your CI parallelizes deploys, serialize them on the state lock.
-- **Drift detection.** `crewhaus cloud plan` (under the hood
-  `terraform plan`) shows what would change. Useful before applying.
+- **Drift detection.** Run `terraform plan` in the rendered
+  `--working-dir` to see what would change before applying. There's no
+  `crewhaus cloud plan` verb.
 - **Secrets.** Anthropic credentials go through the provider's
   secrets store (AWS Secrets Manager, GCP Secret Manager, Azure
   Key Vault). Helm values reference the secret by ARN/ID.

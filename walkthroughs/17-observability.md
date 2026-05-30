@@ -19,7 +19,7 @@ Every meaningful runtime event flows through an in-process
 output — every observability surface is opt-in by env var, so you only
 pay for what you turn on.
 
-This recipe covers the five layers, in order from "I want to see what
+This recipe covers the six layers, in order from "I want to see what
 my agent is doing right now" to "I want every event in Datadog with
 gen_ai/* semantic conventions."
 
@@ -39,7 +39,7 @@ collector and asserts spans/metrics/logs land with the right
 the observability pipeline end-to-end without a real
 Datadog/Honeycomb/New Relic/Splunk endpoint.
 
-## The five layers
+## The six layers
 
 | Layer                | What it does                                              | Cost   | Opt in via                                                |
 | -------------------- | --------------------------------------------------------- | ------ | --------------------------------------------------------- |
@@ -110,7 +110,8 @@ One JSON object per event on stdout. This format is stable and meant
 to be consumed by your own tooling — pipe it into a tail aggregator, a
 log shipper, or your local development dashboard.
 
-The bus emits 15 event kinds beyond what the JSONL persists:
+The bus emits a discriminated union of event kinds beyond what the
+JSONL persists, including:
 
 - `turn_start`, `turn_end`
 - `model_request`, `model_stream_token`, `model_response`
