@@ -47,6 +47,7 @@
     "smoke:hello-prochat": "bun smoke/hello-prochat-smoke/smoke.ts"
   },
   "devDependencies": {
+    "@crewhaus/cli": "^0.1.1",
     "@types/bun": "^1.2.0",
     "typescript": "^5.7.0"
   },
