@@ -200,11 +200,13 @@ for one) and rotates. Subscribers receive the rotation event. Not
 supported for env-var (env vars are immutable in-process).
 
 ```bash
-crewhaus secrets list
+crewhaus secrets doctor
 ```
 
-Lists all secrets the backend knows about. **Does not print values**
-— the list is metadata only (name, backend, last-rotation-time).
+Besides the per-spec availability check above, `doctor` lists every
+secret the configured backend knows about and reports backend health.
+**It does not print values** — the listing is metadata only (name,
+backend, last-rotation-time, status).
 
 ## Wiring secrets into spec `$VAR_NAME`
 
@@ -252,7 +254,7 @@ For audit-log encryption ([Recipe 23](23-pii-redaction-and-encryption.md)),
 the KEK rotates via:
 
 ```bash
-crewhaus secrets rotate CREWHAUS_AUDIT_ENCRYPTION_KEK
+crewhaus secrets rotate CREWHAUS_AUDIT_KEK
 ```
 
 The audit-log writer's `onRotation` handler:

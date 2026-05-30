@@ -245,4 +245,4 @@ That prints each step's terminal text on a separate line.
 - **Spec schema:** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search for `workflowSchema`).
 - **Codegen:** [`packages/target-workflow`](https://github.com/crewhaus/factory/blob/main/packages/target-workflow).
 - **Runtime entry per step:** `runChatLoop({ singleTurn: true, seedMessages })` from [`packages/runtime-core/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/runtime-core/src/index.ts).
-- **Module catalog reference:** PR #11 row in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md), under "Implemented".
+- **Module catalog reference:** §6 (workflow target) in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).

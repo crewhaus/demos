@@ -70,7 +70,7 @@ in the *driver*: a queue instead of a static step list.
 ## The smallest spec
 
 The bundled example [`starters/batch/crewhaus.yaml`](../starters/batch/crewhaus.yaml)
-is one agent, one in-memory queue, eight seeded jobs:
+is one agent, one in-memory queue, four seeded jobs:
 
 ```yaml
 name: starters/batch
@@ -116,7 +116,7 @@ bun run compile starters/batch
 bun run run starters/batch
 ```
 
-You'll see eight `job_start` / `job_end` event pairs interleaved (4 at
+You'll see four `job_start` / `job_end` event pairs interleaved (4 at
 a time), then a `worker_idle` event when the queue drains, then the
 worker exits.
 

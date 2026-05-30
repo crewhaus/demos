@@ -122,7 +122,7 @@ into the JetBrains YAML plugin's JSON Schema integration:
 | Surface                 | Behavior                                                              |
 | ----------------------- | --------------------------------------------------------------------- |
 | Schema provider          | `CrewhausSpecSchemaProviderFactory` registers `spec.json` for `*/crewhaus.yaml`. |
-| Run configurations       | `RunSpec`, `RunEval`, `RunCanary` (three types).                       |
+| Run configurations       | `RunSpec`, `RunEval`, `RunDeploy` (three types).                       |
 | Tool window              | `CrewHaus Spec Registry` browses `.crewhaus/specs/`.                   |
 | Action: Run Spec         | Right-click → CrewHaus → Run Spec.                                     |
 | Action: Open Trace       | Right-click on a `sess_*.jsonl` → CrewHaus → Open Trace.               |
@@ -157,7 +157,7 @@ Three configuration types:
 | ------------ | ----------------------------------------------- | ------------------------------------------- |
 | `RunSpec`    | `crewhaus compile <spec> && crewhaus run <spec>` | Spec path, env vars                          |
 | `RunEval`    | `crewhaus eval <spec> --dataset <name>`          | Spec path, dataset name, concurrency        |
-| `RunCanary`  | `crewhaus canary auto-rollout <name> --steps ...` | Spec name, weight steps, gate thresholds |
+| `RunDeploy`  | `crewhaus deploy promote <name> --from staging --to prod` | Spec name, from-env, to-env        |
 
 Each is template-able and persists into the project's
 `.idea/runConfigurations/*.xml`.
@@ -171,7 +171,7 @@ Both plugins open trace JSONL in a **webview** that points at Studio
 <studioUrl>/trace?session=<sessionId>
 ```
 
-Default `crewhaus.studioUrl: "http://localhost:7325"`. If you run
+Default `crewhaus.studioUrl: "http://localhost:4243"`. If you run
 Studio remote (cluster-hosted Studio), set this to the public URL.
 
 Webview vs external browser: the webview embeds Studio's React UI
@@ -215,7 +215,7 @@ VS Code `settings.json` (workspace or user):
 ```json
 {
   "crewhaus.cliPath": "/usr/local/bin/crewhaus",
-  "crewhaus.studioUrl": "http://localhost:7325",
+  "crewhaus.studioUrl": "http://localhost:4243",
   "crewhaus.runCommandPrefix": "CREWHAUS_TRACE=pretty",
   "yaml.schemas": {
     "./packages/vscode-extension/schemas/spec.json": ["**/crewhaus.yaml"]

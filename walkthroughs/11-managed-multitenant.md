@@ -251,14 +251,17 @@ chain:
 { "ts": "2026-05-11T08:00:05Z", "kind": "run_ended", "runId": "run_a", ..., "prevHash": "def4..." }
 ```
 
-Verify the chain:
+Verify the chain programmatically — the `audit-log` package's
+`verify(rootDir)` re-walks it:
 
-```bash
-crewhaus audit verify <tenant-id>
+```typescript
+import { verify } from "@crewhaus/audit-log";
+
+const result = await verify(`.crewhaus/audit/${tenantId}`);
 ```
 
 Any tampering — editing an event, deleting a line, reordering —
-breaks a hash and the verifier reports the offending line.
+breaks a hash and `verify` reports the offending segment.
 
 The audit log is the source of truth for **what the agent did**, not
 what the model output. Tool calls (with arguments), permission
@@ -327,7 +330,7 @@ block — denial at the gateway is final.
 | **Rolling restart**       | SIGTERM + restart; in-flight runs persist via session JSONL.        |
 | **Add a tenant**          | Edit spec, recompile, redeploy. New tenant lives in fresh storage.  |
 | **Remove a tenant**       | Remove from spec; **manually archive their storage** (the gateway doesn't garbage-collect). |
-| **Evidence export**       | `crewhaus audit export <tenant> --since <date>` produces a tarball. |
+| **Evidence export**       | `crewhaus compliance evidence --framework <id>` produces a signed evidence bundle. |
 | **Rate-limit tuning**     | `gateway.rateLimits.{rps, burst}` in spec.                          |
 
 ## Things that look like managed but aren't

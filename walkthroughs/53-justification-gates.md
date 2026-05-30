@@ -24,7 +24,7 @@ Cyata's "guardian agent" model and Apono's intent-based authorization both ship 
 ## Try it
 
 No standalone justification-gate demo ships yet. The package tests at
-[`factory/packages/justification-gate`](https://github.com/crewhaus/factory/blob/main/packages/justification-gate)
+[`factory/packages/permission-engine`](https://github.com/crewhaus/factory/blob/main/packages/permission-engine)
 exercise both the rule-based and LLM-backed judges with full
 sample inputs. To see a gate fire in your own spec, set
 `requireJustification: true` on any tool descriptor in a `hello-*`

@@ -440,7 +440,7 @@ Then paste any of the three dialogue intents above. Confirm:
   optimization mechanics. Especially useful if you want to understand
   what the designer just did when it auto-ran `crewhaus optimize`.
 - [Part A — Target shapes](INDEX.md#part-a--target-shapes-one-recipe-per-shape) —
-  the 14 shapes the designer picks from. Reading these makes you
+  the 12 shapes the designer picks from. Reading these makes you
   better than the designer at edge cases; the designer is good
   enough at the common ones.
 

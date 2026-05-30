@@ -215,7 +215,7 @@ A grafana panel for breaker state is one of the defaults in
 | Breaker trips on transient blips.                         | Raise `failureThreshold` or shorten `windowMs`.     |
 | Breaker stays open too long after recovery.               | Lower `cooldownMs`; raise `successThreshold`.       |
 | Fallback gets traffic during minor primary slowness.      | Tighten primary's `windowMs` so the counter resets faster. |
-| Want manual reset.                                         | `crewhaus circuits reset <model>` clears state.    |
+| Want manual reset.                                         | No CLI verb — the breaker is per-process and in-memory. It clears on daemon restart, or transitions to `half-open` automatically once `cooldownMs` elapses. |
 
 ## Things that look like fallback but aren't
 

@@ -118,8 +118,9 @@ The shape:
 - **`edges:`** is a list of `{ from, to }` pairs. They can be unconditional
   (default) or conditional (covered next).
 - **`hitl:`** turns a node into a checkpoint. The runtime invokes the
-  prompt, persists state, and waits for `--resume <runId> <decision>`
-  on the CLI before continuing.
+  prompt, persists the graph checkpoint under
+  `.crewhaus/graphs/<graphRunId>/`, and exits; you resume from that
+  checkpoint to continue.
 
 Run it:
 
@@ -210,45 +211,36 @@ in declaration order**. If none match, the run aborts with a clear
 Adding `hitl:` to a node turns it into a checkpoint. When the node
 finishes, the runtime:
 
-1. Writes the current state + node history to
-   `.crewhaus/checkpoints/run_<id>/checkpoint_<n>.json`.
+1. Writes the current state + node history to a graph checkpoint under
+   `.crewhaus/graphs/<graphRunId>/checkpoint_<n>.json`.
 2. Prints `hitl_pause` to stdout and `checkpoint_id: <ckpt>`.
 3. Exits cleanly. The process **doesn't** sit on a TTY.
 
-To resume:
-
-```bash
-bun run run starters/graph -- --resume run_<id> "approved with edits"
-```
-
-The runtime loads the checkpoint, injects your decision as
+Resuming reads that checkpoint, injects your decision as
 `state.<node>.decision`, and continues to the next edge. The decision
 string is opaque — node instructions decide what to do with it.
 
 For a richer HITL surface (Slack approval, email-with-link), you
 generally wrap the `hitl_pause` event with an external dispatcher
-that, on approval, calls `crewhaus resume --decision approved <runId>`.
+that, on approval, drives the resume from the persisted checkpoint.
 
 ## Branching — exploring two continuations
 
-From any checkpoint you can branch to compare alternatives:
-
-```bash
-bun run run starters/graph -- --branch-from run_<id> checkpoint_2
-```
-
-This forks a new run id whose initial state is checkpoint 2, sharing
-all upstream history. You can run both branches in parallel and
-compare their `summarise` outputs.
+From any checkpoint you can branch to compare alternatives. This is the
+job of the `branch-history` catalog module rather than a top-level CLI
+verb: `branchAt(graphRunId, checkpoint)` forks a new run id whose
+initial state is that checkpoint, sharing all upstream history. You can
+run both branches and compare their `summarise` outputs.
 
 The two branches share **no** in-memory state — each is a fresh process
-with its own checkpoint history. They share only the immutable
-upstream prefix. This is what makes branching safe: editing branch A's
-state never bleeds into branch B's state.
+with its own checkpoint history under `.crewhaus/graphs/<graphRunId>/`.
+They share only the immutable upstream prefix. This is what makes
+branching safe: editing branch A's state never bleeds into branch B's
+state.
 
-`branch-history` (the catalog module) keeps a diff between branches —
-`crewhaus diff run_<id> run_<branchedId>` shows which state keys
-diverged and at which checkpoint.
+`branch-history` also computes the diff between two branches —
+`diff(runA, runB)` shows which state keys diverged and at which
+checkpoint.
 
 ## Tools per node
 
@@ -318,8 +310,8 @@ them. Past that you usually want a different shape.
 
 - **Checkpoint directory.** `CREWHAUS_CHECKPOINT_DIR` env var overrides
   `.crewhaus/checkpoints/`. For multi-host deployments, point this at
-  a shared volume (NFS) or use the S3 backend (catalog module
-  `checkpoint-store-s3`, opt-in).
+  a shared volume (NFS) or use the S3-backed `checkpoint-store` adapter
+  (opt-in).
 - **Idempotency keys.** Set `--idempotency-key <key>` on a resume to
   make re-runs of the same decision a no-op. Useful when the resume is
   triggered by an at-least-once webhook delivery.

@@ -28,7 +28,7 @@ write a tool.
 ## Try it
 
 No standalone skills demo ships yet — skills are discovered from
-`~/.claude/skills/` and project `.crewhaus/skills/` at runtime, so the
+`~/.crewhaus/skills/` and project `.crewhaus/skills/` at runtime, so the
 mechanism is data, not spec. Any compiled `hello-*` CLI bundle picks
 up a skill the moment you drop a `SKILL.md` under
 `.crewhaus/skills/<name>/`. A dedicated hello-skills demo with bundled
@@ -228,15 +228,17 @@ shapes for different needs.
 
 ## Debugging skills
 
-To check what skills the runtime discovered:
+To check what skills the runtime discovered, list the files in each
+discovery layer:
 
 ```bash
-crewhaus skills list
+ls .crewhaus/skills/        # project skills (highest priority)
+ls ~/.crewhaus/skills/      # user skills
 ```
 
-Lists every skill the registry found, with its source path. Useful
-when a project skill isn't winning over a user skill (e.g. typo in
-the name).
+Skills are file-discovered, so the directory listing *is* the
+registry. Useful when a project skill isn't winning over a user skill
+(e.g. typo in the name) — compare the names across both layers.
 
 To see the system-prompt rendering:
 

@@ -197,7 +197,7 @@ tools:
 
 Note that `tools:` lives at the top level of the spec, not nested
 under `agent:` — for CLI specs the agent block carries the model and
-instructions; everything else is sibling-level. The eleven canonical
+instructions; everything else is sibling-level. The most common
 tool names you can put in `tools:`:
 
 | Spec name    | Model-facing name | What it does                                                 |
@@ -213,6 +213,13 @@ tool names you can put in `tools:`:
 | `webSearch`  | `WebSearch`       | Provider-backed web search (configurable).                   |
 | `readImage`  | `ReadImage`       | Read an image file, return an Anthropic image block.         |
 | `fetch`      | `Fetch`           | Generic HTTP with fail-closed allow-list and SSRF defenses.  |
+
+These are the ones you'll reach for most; the `cli` target's default
+catalog wires more than this. Beyond the eleven above it also includes
+`imageGenerate` (image generation), `ingestDocument` (document
+ingest), and four `codegraph*` tools (`codegraphSearch`,
+`codegraphCallers`, `codegraphCallees`, `codegraphImpact`) — 17 tool
+functions in total.
 
 Compile and run:
 

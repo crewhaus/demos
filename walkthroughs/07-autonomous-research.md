@@ -275,9 +275,10 @@ overarching question** — and you want the citation discipline.
 - **Strict-cite mode.** `--strict-cite` causes the runtime to fail
   the run if the model produces a final answer with no `CiteFact`
   calls. Use to enforce the citation discipline.
-- **Eval the citations.** The eval target has a `citation_accuracy`
-  grader (catalog §38) that verifies every cited snippet is actually
-  present in the cited source.
+- **Eval the citations.** Add a grader that verifies every cited
+  snippet is actually present in the cited source — a custom grader
+  (see [Recipe 34](34-building-custom-graders.md)) or a `contains` /
+  `json_path` check on the citation block.
 
 ## What to read next
 
