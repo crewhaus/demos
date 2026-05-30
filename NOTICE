@@ -1,0 +1,17 @@
+CrewHaus Demos
+Copyright 2026 Max Meier
+
+This product includes software developed by Max Meier
+(operating as StudioMax — https://studiomax.io) and contributors.
+
+The CrewHaus name and logo are trademarks of Max Meier. See
+the sibling factory repository's TRADEMARK.md for the use-of-marks policy:
+https://github.com/crewhaus/factory/blob/main/TRADEMARK.md
+
+================================================================
+This repository contains example specs, walkthroughs, and smoke tests
+that consume the @crewhaus/* packages published from
+https://github.com/crewhaus/factory. The example code under
+starters/, walkthroughs/, and smoke/ is licensed under Apache-2.0;
+you may copy and adapt it freely for your own projects.
+================================================================

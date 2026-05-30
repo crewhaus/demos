@@ -18,13 +18,11 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "baseUrl": ".",
-    // SWAP-WHEN-PUBLISHED: until @crewhaus/* are on npm, we resolve them from
-    // a sibling ../factory/ checkout. When the packages publish, delete this
-    // "paths" block and add the @crewhaus/* imports each example's compiled
-    // dist/ uses to a top-level package.json "dependencies". No other code
-    // change is needed — every other reference to factory in this repo is
-    // either a runtime file read (the spec source pulled by scripts) gated
-    // behind FACTORY_PATH, or a shell-out to the factory CLI.
+    // Post-v0.1.0: `@crewhaus/*` packages are on npm; default resolution goes
+    // through node_modules. The paths block below is a contributor convenience
+    // — if you also have a sibling ../factory/ or ../utilities/ checkout, bun
+    // prefers it for live edits. Remove this paths block if you want strict
+    // npm-only resolution (e.g. to reproduce what an external consumer sees).
     "paths": {
       "@crewhaus/*": ["../factory/packages/*", "../utilities/*"]
     }

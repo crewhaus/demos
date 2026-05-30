@@ -14,8 +14,22 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const REPO_ROOT = resolve(import.meta.dir, "..");
-const FACTORY_ROOT = resolve(process.env["FACTORY_PATH"] ?? join(REPO_ROOT, "..", "factory"));
-const CLI_ENTRY = join(FACTORY_ROOT, "apps", "cli", "src", "index.ts");
+
+/**
+ * Resolve the CLI invocation. Precedence:
+ *   1. FACTORY_PATH env or ../factory sibling → contributor mode (use the source CLI)
+ *   2. node_modules/@crewhaus/cli → npm-installed (default after `bun install`)
+ *   3. fall back to `bun x crewhaus` so a global install also works.
+ */
+function resolveCli(): string[] {
+  const factoryEnv = process.env["FACTORY_PATH"];
+  const factoryRoot = factoryEnv ?? join(REPO_ROOT, "..", "factory");
+  const localCli = join(factoryRoot, "apps", "cli", "src", "index.ts");
+  if (existsSync(localCli)) return ["bun", localCli];
+  const installedCli = join(REPO_ROOT, "node_modules", "@crewhaus", "cli", "src", "index.ts");
+  if (existsSync(installedCli)) return ["bun", installedCli];
+  return ["bun", "x", "crewhaus"];
+}
 
 function main(): void {
   const demo = process.argv[2];
@@ -37,7 +51,10 @@ function main(): void {
   }
   const out = join(demoDir, "dist");
 
-  const result = spawnSync("bun", [CLI_ENTRY, "compile", spec, "-o", out], { stdio: "inherit" });
+  const cli = resolveCli();
+  const result = spawnSync(cli[0]!, [...cli.slice(1), "compile", spec, "-o", out], {
+    stdio: "inherit",
+  });
   process.exit(result.status ?? 1);
 }
 

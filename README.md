@@ -14,15 +14,25 @@ All three default to Claude but the `model:` field accepts any provider (GPT-4o,
 
 ## How it relates to factory
 
-`crewhaus-demos` is its own repo, but the examples only make sense alongside a [crewhaus/factory](https://github.com/crewhaus/factory) checkout — they're compiled by factory's CLI and the compiled `dist/` outputs import `@crewhaus/*` runtime packages from factory. Until those packages ship to npm we resolve them via `tsconfig.json` `paths` pointing at a sibling `../factory/` checkout (override with `FACTORY_PATH` env in the test/smoke scripts).
+`crewhaus-demos` is its own repo, but the examples only make sense alongside the `@crewhaus/*` packages — they're compiled by `@crewhaus/cli` and the compiled `dist/` outputs import `@crewhaus/runtime-core` and friends.
+
+This repo deliberately keeps no `@crewhaus/*` runtime in its own `package.json` — `bun install` only pulls `@types/bun` and `typescript`. The compile scripts find the CLI via this precedence:
+
+1. `FACTORY_PATH` env or a `../factory` sibling checkout → contributor / dual-checkout mode (changes in `factory/` flow into demo runs without republishing). **CI uses this path.**
+2. `node_modules/@crewhaus/cli` — if you ran `bun add -d @crewhaus/cli` yourself in this repo.
+3. `bun x crewhaus` — falls back to a globally installed binary.
+
+**Default path for users following the docs:** `bun add -d @crewhaus/cli` after cloning, then `bun run compile <demo>` shells out to the npm-installed binary. During the v0.1.1 private-scope window, `bun add` requires `npm login` with scope access; see [factory/PACKAGES.md](https://github.com/crewhaus/factory/blob/main/PACKAGES.md) for the access flip plan.
+
+**Contributor / dual-checkout path:** clone [crewhaus/factory](https://github.com/crewhaus/factory) as a sibling — no extra install needed, the scripts and `tsconfig.json` `paths` block pick it up.
 
 ```
 parent-dir/
-  factory/         ← github.com/crewhaus/factory checkout (provides the CLI + @crewhaus/* packages)
+  factory/         ← sibling checkout (CI also uses this)
   demos/           ← this repo
 ```
 
-Factory has zero references back to this repo — the dependency is one-way (demos → factory). When factory's `@crewhaus/*` packages publish to npm, the swap is a single-file change: delete the `paths` block in [`tsconfig.json`](./tsconfig.json) and add the `@crewhaus/*` packages each example's compiled `dist/` uses to `package.json` `dependencies`. See the `SWAP-WHEN-PUBLISHED` comment in `tsconfig.json` for the exact diff.
+Factory has zero references back to this repo — the dependency is one-way (demos → factory).
 
 ## Run
 
