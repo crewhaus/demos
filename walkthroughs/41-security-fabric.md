@@ -56,13 +56,15 @@ return externalContent;
 | Direct CLI input | `"user"` | (the developer typing) | `pass` |
 | MCP tool responses | `"mcp"` | [packages/tool-mcp/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/tool-mcp/src/index.ts) | `block` |
 | Sub-agent `finalMessage` | `"subagent"` | [packages/sub-agent-spawner/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/sub-agent-spawner/src/index.ts) | `block` |
-| Inbound channel text | `"channel"` | `packages/channel-adapter-*` (follow-up — see "Adding a new boundary" below) | `block` |
-| Federation peer payloads | `"federation"` | [packages/federation-router](https://github.com/crewhaus/factory/blob/main/packages/federation-router) (follow-up) | `block` |
+| Inbound channel text | `"channel"` | [packages/channel-adapter-base/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-base/src/index.ts) (via the generated channel-bot `runTurn`) | `block` |
+| Federation peer payloads | `"federation"` | [packages/federation-router/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/federation-router/src/index.ts) | `block` |
 | Skill bodies on disk | `"skill"` | [packages/skills-registry/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/skills-registry/src/index.ts) | `block` |
 | Compaction summaries | `"compaction"` | [packages/compaction-autocompact/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/compaction-autocompact/src/index.ts) | `block` |
 | Tool results (the §18 path) | `"tool"` | [packages/runtime-core/src/index.ts:867](https://github.com/crewhaus/factory/blob/main/packages/runtime-core/src/index.ts) | `block` |
 
 The `"user"` origin defaults to `pass` because in a CLI context the user IS the developer. SaaS deployments accept user input via `"channel"` instead, so the strict path applies to externally-typed text without weakening direct CLI usage.
+
+Both `"channel"` and `"federation"` are now wired live (they were policy-defined but unwired before): every inbound channel message is classified in the generated channel-bot's `runTurn` before it seeds a model turn, and every federation peer `reply` is classified in `federation-router`'s `call()` after the mTLS / cert-pin handshake. Operators should note that inbound redaction is therefore active on the channel path — a message classified malicious is replaced by the redaction notice before the model ever sees it, so an adversarial DM is screened the same way a malicious MCP response or sub-agent return already was. A merely *suspicious* inbound is kept and logged (warn), matching the per-origin severity policy.
 
 ## What an attacker sees
 

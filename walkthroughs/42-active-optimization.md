@@ -86,12 +86,40 @@ Calls a Claude model with the current prompt and a sample of dev-set failures, a
 crewhaus optimize <spec> --mutator claude --iterations 10
 ```
 
-Requires `ANTHROPIC_AUTH_TOKEN` (Claude Max OAuth) or `ANTHROPIC_API_KEY`. Cost-gated via `cost-tracker` integration — set `--budget-usd N` (follow-up; v0 ships without the budget cap).
+Requires `ANTHROPIC_AUTH_TOKEN` (Claude Max OAuth) or `ANTHROPIC_API_KEY`. Cost-gated via `cost-tracker`: pass `--budget-usd N` to bound the run by a dollar ceiling (see [Bounding cost](#bounding-cost) below).
 
 ### When to use which
 
 - **Rule-based** when you want a deterministic CI gate, a fast probe of "does the prompt have obvious room to improve", or you don't have Claude credentials.
 - **Claude** when the prompt is the bottleneck (failures look like instruction-following issues, not skill issues) and you can spend real model dollars.
+
+## Bounding cost
+
+A model-driven run issues one Claude call per iteration, so its expense scales with `--iterations`. By default the only rail is that iteration count; spend within it is unbounded. Pass `--budget-usd <amount>` to add a **dollar ceiling**:
+
+```bash
+crewhaus optimize crewhaus.yaml --mutator claude --budget-usd 2.00 --iterations 20 --write-back
+# runs until the last full iteration that fits under $2.00, then stops with the best patch so far
+```
+
+How the gate works — **estimate-before, record-after**:
+
+1. **Before** each mutation call, the orchestrator computes a worst-case cost for the upcoming call (a `chars/4` token estimate of the model-driven provider's *full serialized input* — the system block plus the rendered dev-set failure window it will actually transmit, not just the candidate prompt — priced at the model's input rate, plus the full `maxTokens` output ceiling at the output rate) using the same versioned `cost-tracker` pricing table that meters the rest of the system. The Claude provider exposes the exact input length via an `estimateInputChars` hook; providers that don't fall back to the prompt length plus a fixed overhead margin.
+2. If `spent-so-far + that estimate` would exceed `--budget-usd`, the run **stops before issuing the call** — it never spends past the budget on a call it could have skipped. It returns the best candidate found so far with `stopped: budget-reached`.
+3. **After** a call completes, its *actual* token usage (from the response) is folded into the running total.
+
+The estimate is conservative-high on **both** cost axes: the output side uses the `maxTokens` ceiling (the dominant axis), and the input side prices the full serialized meta-prompt, so a wide dev-sample window cannot let a gate-passing call exceed the budget after the fact. A call that clears the pre-call gate cannot blow the budget.
+
+The gate **composes with `--iterations`**: whichever bound is hit first ends the run. Omit `--budget-usd` and you get exactly today's behavior (iterations cap only).
+
+The `crewhaus optimize` command threads a trace bus into the run, so the orchestrator publishes one `cost_accrual` event per model call **plus** a terminal aggregate accrual (`summary: true`) carrying the run total — the spend lands on the standard observability bus, not only in `report.json`. The run-total `$` also prints to stdout; set `CREWHAUS_TRACE_COST=1` to echo each bus cost event to stderr:
+
+```
+[optimize] score: 0.450 → 0.780 (Δ +0.330)
+[optimize] spend: $1.8600 over 3 model call(s) (stopped: budget reached, $2.00 cap)
+```
+
+> **Rule-based runs are always `$0`.** The rule-based provider makes no model calls, so it reports zero cost and ignores `--budget-usd` — passing the flag on a rule-based run is harmless and the run completes under the iterations cap. (An unmapped/brand-new model id that `cost-tracker` cannot price also degrades to iterations-cap, since an unpriceable call cannot be gated.)
 
 ## Output
 

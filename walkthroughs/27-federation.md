@@ -254,12 +254,26 @@ pilot ([`starters/federation/README.md`](../starters/federation/README.md)).
 ## Boundary classification
 
 Every federated call's `reply` is **untrusted external content**.
-The receiver classifies it via `classifyBoundary(reply, { origin:
-"federation" })` before the reply reaches the caller's model
+The router classifies it on the calling side, in
+[`packages/federation-router/src/index.ts`](../../factory/packages/federation-router/src/index.ts)
+`call()`: right after the response body is decoded and the `reply`
+field validated — and strictly *after* the mTLS / cert-pin / version
+checks have authenticated *who* the peer is — it runs
+`classifyBoundary(reply, { origin: "federation" })` before the reply
+is returned into deployment-a's model context
 ([Recipe 41 — Security Fabric](41-security-fabric.md)).
 
-A malicious deployment-b can't slip prompt injections into
-deployment-a's model context without the classifier seeing them.
+On a malicious verdict (origin `"federation"` defaults to `block`)
+the raw reply is replaced by a redaction notice; on a pass/warn
+verdict the reply is returned verbatim and, when the caller threaded
+a `RunContext` into the router config, tagged into
+`runContext.dataLineage` under `"federation"` so the egress fabric
+sees it on any later external-tool call.
+
+A malicious deployment-b therefore can't slip prompt injections into
+deployment-a's model context without the classifier seeing them —
+authentication proves the envelope came from the pinned peer, but the
+content is screened independently of who sent it.
 
 ## Operational checklist
 
