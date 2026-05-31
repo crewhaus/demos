@@ -124,38 +124,17 @@ Suitable for tests and low-stakes deployments. It catches the egregious failures
 
 ## LLM-backed judge for production
 
-Pass `justificationJudge` to `runChatLoop`:
+The model-backed judge ships as `@crewhaus/justification-judge-claude`. It asks a model whether the justification is *genuinely* consistent with the session goal — not merely keyword-overlapping — which is exactly the rule-based judge's weakness (an attacker who pads a justification with goal vocabulary defeats token overlap). You no longer hand-roll the judge; construct it and pass it to `runChatLoop`:
 
 ```typescript
 import { runChatLoop } from "@crewhaus/runtime-core";
-import { resolveModel } from "@crewhaus/model-router";
-import type { JustificationJudge } from "@crewhaus/permission-engine";
+import { createAnthropicAdapter } from "@crewhaus/adapter-anthropic";
+import { createClaudeJustificationJudge } from "@crewhaus/justification-judge-claude";
 
-const judgeModel = resolveModel("claude-haiku-4-5");
-
-const justificationJudge: JustificationJudge = async (input) => {
-  const reply = await judgeModel.stream({
-    model: "claude-haiku-4-5",
-    system: [{
-      type: "text",
-      text:
-        "You are a security judge. Decide whether the agent's stated " +
-        "justification for a tool call is consistent with the session's " +
-        "declared goal. Respond with JSON: { allow: boolean, reason: string }.",
-    }],
-    messages: [{
-      role: "user",
-      content:
-        `Session goal:\n${input.sessionGoal}\n\n` +
-        `Tool: ${input.toolName}\n` +
-        `Justification: ${input.justification}\n\n` +
-        `Tool input: ${JSON.stringify(input.input)}`,
-    }],
-    maxTokens: 256,
-  });
-  // ... parse JSON ...
-  return { allow, reason, confidence: 0.9, judgeModel: "claude-haiku-4-5" };
-};
+const justificationJudge = createClaudeJustificationJudge({
+  adapter: createAnthropicAdapter(),
+  model: "claude-haiku-4-5",
+});
 
 await runChatLoop({
   // ... rest of opts ...
@@ -163,11 +142,45 @@ await runChatLoop({
 });
 ```
 
+`createClaudeJustificationJudge` returns a value satisfying the same `JustificationJudge` interface the rule-based default implements, so nothing else changes — `evaluateJustification`'s signature is untouched. The judge stamps each verdict's `judgeModel` with the configured model id, so the audit/trace surface records *who* judged.
+
 The judge model should be cheaper than the agent's primary model — `claude-haiku-4-5` is the canonical choice. The TDS evaluation harness paper warns against using the *same* model family for both generation and judging (inflated scores); the rule applies here too.
+
+**Fails closed.** Unlike the prompt-optimizer's model provider (which falls back to the current-best prompt on a model outage — safe for an optimizer), the security judge **denies** the justification-gated call on any model error, malformed output, or schema-invalid verdict. A degraded model must never open a guardrail. Denied-on-error verdicts carry `judgeModel: "<model> (error)"` so the audit trail distinguishes a model-error denial from a model-reasoned one.
+
+## Enabling in production
+
+Two ways to switch the judge on without editing code:
+
+**Declaratively, in the spec** (cli target) — the compiler lowers this into the IR and the `crewhaus run` path wires the judge:
+
+```yaml
+name: support-agent
+target: cli
+agent:
+  model: claude-sonnet-4-6
+  instructions: Acknowledge support tickets the user points you at.
+security:
+  justification:
+    judge: claude            # rule-based (default) | claude
+    model: claude-haiku-4-5  # optional; defaults to a haiku-class judge
+```
+
+**Ad hoc, on the command line** — the `--justification-judge` flag overrides the spec for a single run:
+
+```bash
+crewhaus run support-agent.yaml --justification-judge claude
+```
+
+Precedence is flag > spec `security.justification.judge` > `rule-based`. With neither set, the run stays on `ruleBasedJustificationJudge` — the deterministic default for tests and offline runs.
 
 ## Audit trail
 
-Every call to a `requireJustification: true` tool emits a `permission_decision` trace event with the justification, the verdict, the reason, and the judge identifier. The `audit-log` records:
+The gate writes to **two surfaces**, and they are not the same thing:
+
+1. **Ephemeral — the trace bus.** Every call to a `requireJustification: true` tool (allow OR deny) publishes a `permission_decision` trace event. The judge identity and confidence are first-class fields on it (`judgeModel`, `justificationConfidence`), not just embedded in `reason`, so the observability stack (otel/metrics/printer) records *who* judged. This event is in-memory and lives only for the run.
+
+2. **Durable — the hash-chained `audit-log`.** When a `justificationAuditSink` is wired into `runChatLoop`, the gate also appends a tamper-evident `permission_justification_evaluated` record to `@crewhaus/audit-log`. **The `crewhaus run` (and browser) path opens this sink by default**, rooted at `.crewhaus/audit/<YYYY-MM-DD>.jsonl`; pass `--no-justification-audit` to skip it for ephemeral/offline runs. Denials are recorded too — the audit trail must capture blocked attempts, not only allowed ones.
 
 ```json
 {
@@ -183,7 +196,7 @@ Every call to a `requireJustification: true` tool emits a `permission_decision` 
 }
 ```
 
-Verbatim — the justification IS the audit artifact; redacting it would defeat the purpose.
+The justification is stored **verbatim** — it IS the audit artifact; redacting it would defeat the purpose. The record is hash-chained into the per-day chain, so `verify('.crewhaus/audit')` detects any tampering. (`runtime-core` declares a minimal structural `JustificationAuditSink` — `append({ kind, payload })` — rather than importing `@crewhaus/audit-log`, to avoid a dependency cycle; the real `AuditLog` the CLI opens satisfies that seam, and any other `append`-compatible sink can be injected programmatically.)
 
 ## Defense in depth
 
@@ -201,7 +214,9 @@ Example: agent calls `Fetch({ url: "https://safe.example.com/", justification: "
 - Judge interface: `JustificationJudge` in [packages/permission-engine/src/index.ts](../../factory/packages/permission-engine/src/index.ts)
 - Default judge: `ruleBasedJustificationJudge` in the same file
 - Runtime hook: [packages/runtime-core/src/index.ts](../../factory/packages/runtime-core/src/index.ts) (search for `requireJustification`)
-- `RunChatLoopOptions.justificationJudge` to override per run
+- `RunChatLoopOptions.justificationJudge` to override the judge per run
+- `RunChatLoopOptions.justificationAuditSink` to receive the durable `permission_justification_evaluated` records (the CLI wires `@crewhaus/audit-log`; see `apps/cli/src/justification-gate.ts`)
+- Durable audit kind: `permission_justification_evaluated` in [packages/audit-log/src/index.ts](../../factory/packages/audit-log/src/index.ts)
 
 ## Further reading
 

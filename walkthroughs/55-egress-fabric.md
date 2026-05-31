@@ -112,6 +112,69 @@ tools:
 
 `OPTIMIZABLE_PATHS` includes `["security", "egressPolicy"]`, so `crewhaus optimize` can tune these overrides if you supply an eval set with attack examples.
 
+## Swapping the matcher (substring → semantic)
+
+The egress check has two separable concerns: *where* it runs (wired from the IR, on every external-scope tool call) and *how* it decides a payload "contains" tagged lineage. The placement is the durable guarantee; the matching algorithm is pluggable behind an `EgressMatcher` strategy interface (FR-006).
+
+```ts
+export interface EgressMatcher {
+  readonly name: string; // namespaces audit/trace records + the verdict cache key
+  match(input: EgressMatchInput): EgressMatchResult | Promise<EgressMatchResult>;
+}
+```
+
+The matcher returns only raw hits — `{ originsFound, matchCount }` — and never computes a verdict. The per-origin/per-sink policy fold (`block > warn > pass`) stays inside `classifyEgress`, so **the three audit outcomes and their precedence are matcher-independent by construction**. Swapping the matcher changes detection quality and nothing else.
+
+- **Default — `SubstringEgressMatcher` (`name: "substring"`).** The behavior-preserving scan: a tagged lineage entry counts when it is at least `MIN_MATCH_LENGTH` (16) characters and appears verbatim in the payload. This is the built-in default for both `classifyEgress` (no `matcher` option) and `runChatLoop` (no `egressMatcher` option), so existing specs are completely unchanged. It is a tripwire: it catches verbatim/near-verbatim leakage and is evaded by paraphrase or base64/translation re-encoding.
+
+- **Optional — `@crewhaus/egress-matcher-semantic` (`name: "semantic"`).** An embedding-backed reference matcher: it embeds the outbound payload and each candidate tagged string and flags an origin when their cosine similarity clears a threshold (default 0.82), so semantically-equivalent leakage registers even with no substring overlap. It ships behind an **optional dependency** — the default egress path never imports it, so the default path gains no new dependency. Its embedding backend is *injected* (`createEmbedder(...)`), and a misconfigured/failing embedder falls back to the substring matcher rather than dropping the check.
+
+Select the matcher per spec via the `security` block:
+
+```yaml
+# spec.yaml
+security:
+  egressMatcher: semantic   # "substring" (default) | "semantic"
+```
+
+The runtime equivalent is `RunChatLoopOptions.egressMatcher` — pass a `SemanticEgressMatcher` (or any `EgressMatcher`) instance and every external-sink call routes its payload through it. Either way, the placement (IR-wired, every external sink), the `sinkScope` (`external-configured` vs `external-dynamic`), and the warn/block policy above are untouched.
+
+The spec field is lowered to `ir.security.egressMatcher` and honoured by `crewhaus run`: the run path resolves it (with `--egress-matcher` overriding the spec) and, for `semantic`, constructs `@crewhaus/egress-matcher-semantic` with an injected embedder before threading it into `runChatLoop({ egressMatcher })` — exactly how `security.justification.judge` selects the intent-gate judge on the same path. Pick the embedder with `--egress-embedder <model>` (or the `CREWHAUS_EGRESS_EMBEDDER` env var; defaults to `openai/text-embedding-3-small`); a failing embedder degrades to the substring tripwire rather than dropping the check.
+
+```bash
+# Both reach the semantic matcher on the run path:
+crewhaus run my-spec.yaml                                   # spec: security.egressMatcher: semantic
+crewhaus run my-spec.yaml --egress-matcher semantic         # flag overrides the spec
+crewhaus run my-spec.yaml --egress-matcher semantic --egress-embedder voyage/voyage-3
+```
+
+One seam remains open: the *generated cli bundle* (the `target-cli` emitter) does not yet construct the matcher from this field — like the justification judge, it is a run-path capability today. `crewhaus compile` emits a `[warn]` when a spec sets `egressMatcher: semantic`, so a bundle-only user is not misled into thinking the emitted artifact carries it. Threading the selection into a standalone bundle is the remaining FR-006 follow-up.
+
+## Catching a mis-scoped tool at build time
+
+The egress check above only fires on tools marked `scope: "external"`. A tool that reaches outside the trust boundary but is left at the default `"internal"` is silently exempt — nothing errors, nothing warns. Three defenses close that gap *before* the agent ever runs:
+
+- **Inference for the known outward tools.** `buildTool` now defaults `scope` to `"external"` for the tools that are outward-reaching by definition — `Fetch`, `WebFetch`, `WebSearch`, `SendMessage`, `EvmSendTransaction`, `ImageGenerate`, and any namespaced MCP tool (`mcp__*`). An explicit `scope` in the `ToolDefinition` still wins, so the built-ins that already annotate `"external"` are unchanged; the inference only protects a *future* outward built-in that forgets the annotation.
+
+- **An io-capability fact, separate from the scope policy.** `ToolDefinition` carries `ioCapability?: "network" | "process"` — the *fact* that the tool crosses a boundary, distinct from `scope`, the *policy* that decides whether the egress classifier runs. The six built-in outward tools declare it (`"network"`), and any custom `buildTool` tool that opens a socket or spawns a process SHOULD too. This is what lets the gate flag an **arbitrary-named** custom tool by capability, not just by a hardcoded name set — the residual the FR's mechanism 2 named ("custom buildTool tools that open sockets, spawn processes, touch the network").
+
+- **A strict compile gate for the residual.** `crewhaus compile --strict` audits every tool the spec uses and fails the build (exit 1) when an I/O-capable tool is left at a non-`"external"` scope. A tool counts as I/O-capable when it either declares `ioCapability` **or** has a definitionally-outward name. Concretely the gate fires on:
+
+  - a resolvable built-in whose declared capability or outward name disagrees with its scope (e.g. an author overriding `Fetch` back to `"internal"`); and
+  - an outward-by-name sink the compiler **cannot resolve to a `scope:"external"` tool offline** — any `mcp__*` tool, or a known outward built-in name absent from the offline map. Its egress scope is unverifiable at compile time, so `--strict` refuses to emit a bundle that reaches it:
+
+  ```bash
+  crewhaus compile evil-spec.yaml --strict --emit-ir -o ./out   # tools: [ mcp__evil__exfiltrate ]
+  # crewhaus: [strict] tool "mcp__evil__exfiltrate" is an outward-reaching sink by name but could not be
+  #           resolved to a scope:"external" tool at compile time (dynamic/MCP sinks must be vetted, not
+  #           assumed) — its egress scope is unverifiable offline
+  # crewhaus: [strict] 1 scope finding(s) — refusing to emit.
+  ```
+
+  The same `auditToolScopes` runs as part of `crewhaus doctor --philosophy-alignment` (the two share one implementation, so they can never drift). Because doctor audits the *live* registered tool map, it now also flags a registered custom tool that declared `ioCapability` but forgot `scope: "external"`.
+
+  Two caveats remain. The gate ships **opt-in** today and is slated to become the default in a later minor. And the *irreducible* residual is now narrow: a custom tool that touches the network yet declares **neither** an `ioCapability` **nor** an outward name is invisible to a static, annotation-based check — closing that last sliver would need full dataflow/taint analysis, which the FR puts out of scope. The fix is one line on the tool: declare `ioCapability` (or `scope: "external"`).
+
 ## Verifying the fabric
 
 The trace event bus emits a `permission_decision` event with `outcome: "egress-passed" | "egress-warned" | "egress-blocked"` for every external-scope tool call. Tail the structured event printer to see them:
