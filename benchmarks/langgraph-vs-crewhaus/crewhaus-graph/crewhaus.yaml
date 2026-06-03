@@ -1,0 +1,59 @@
+# Workload (B) — CrewHaus equivalent of the hand-built native LangGraph
+# stateful graph with a checkpoint saver.
+#
+# The hand-built baseline (benchmarks/langgraph-vs-crewhaus/langgraph-stateful-graph.ts)
+# makes the engineer assemble, by hand, ~106 code lines of orchestration:
+#   - an explicit Annotation.Root state schema with an accumulating-context
+#     reducer + step counter (36 code lines)
+#   - four node definitions: plan / work / reflect / finalize (51)
+#   - a conditional-edge router looping work->reflect to a step budget (3)
+#   - a MemorySaver checkpoint saver wired through compile({ checkpointer }) (16)
+# The MemorySaver is in-process, so a crash at step 16 drops it and the
+# accumulated ~128k-token context must be rebuilt from scratch.
+#
+# Here the SAME four-node workload (plan -> work -> reflect -> finalize) is
+# declared. `crewhaus compile` lowers it to an IR graph and emits a thin
+# dist/agent.ts that IMPORTS graph-engine + checkpoint-store + run-context +
+# runtime-core. The emitter UNCONDITIONALLY instantiates
+# `createCheckpointStore()` and wires it into the graph (target-graph
+# src/index.ts) — the durable, branchable checkpoint store is structurally
+# mandatory and cannot be dropped. The HITL approval on `reflect` exercises the
+# pause/resume checkpoint path; resumption re-sends only a durable pointer, not
+# the full context window.
+name: bench-graph
+target: graph
+model: claude-sonnet-4-6
+entry: plan
+nodes:
+  plan:
+    instructions: |
+      You are the PLAN node of a long-running planning graph
+      (plan → work → reflect → finalize) assembling a deployment-readiness
+      brief for a multi-tenant agent gateway. Read the goal from the
+      Upstream state and produce a 3-bullet plan of the findings to
+      accumulate. Return only the plan, no preamble.
+  work:
+    instructions: |
+      You are the WORK node. Read the plan and any accumulated findings
+      from the Upstream state and produce one concrete new finding
+      (2–3 sentences) that builds on — and does not repeat — what is
+      already there. Stay grounded in the accumulated context.
+  reflect:
+    instructions: |
+      You are the REFLECT node. Read the accumulated findings from the
+      Upstream state and produce a one-sentence reflection on what is
+      still missing for a complete deployment-readiness brief.
+    hitl:
+      prompt: "Findings accumulated. Approve reflection and continue to finalize?"
+  finalize:
+    instructions: |
+      You are the FINALIZE node. Read the full accumulated context from
+      the Upstream state and write a 2-sentence executive summary of the
+      deployment-readiness brief. Prose only — no lists or bullets.
+edges:
+  - from: plan
+    to: work
+  - from: work
+    to: reflect
+  - from: reflect
+    to: finalize
