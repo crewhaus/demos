@@ -1,0 +1,270 @@
+{
+  "metric": "1 — boilerplate / lines of code (granular)",
+  "generatedAt": "2026-06-03",
+  "method": {
+    "locCounter": "benchmarks/langgraph-vs-crewhaus/shared/loc.ts",
+    "codeDefinition": "non-blank, non-comment lines (line-oriented stripper; trailing inline comments still count)",
+    "rawDefinition": "physical lines",
+    "compiler": {
+      "tool": "@crewhaus/compiler v0.1.1 via apps/cli `crewhaus compile`",
+      "invokedBy": "demos/scripts/compile.ts -> bun ../factory/apps/cli/src/index.ts compile <spec> -o <demoDir>/dist",
+      "commands": [
+        "bun scripts/compile.ts benchmarks/langgraph-vs-crewhaus/crewhaus-rag",
+        "bun scripts/compile.ts benchmarks/langgraph-vs-crewhaus/crewhaus-graph"
+      ],
+      "note": "Bundles are REAL compiler output (not hand-written); both executed end-to-end offline up to the live model call (RAG ran chunk->embed->store indexing 5 chunks, graph started a real grun_ run, both hit only the absent-credential wall at the runChatLoop model call). See checkpointDurabilityProof for the durable-resume evidence.",
+      "bunVersion": "1.3.13"
+    }
+  },
+  "handBuiltLangGraph": {
+    "statefulGraph": {
+      "path": "benchmarks/langgraph-vs-crewhaus/langgraph-stateful-graph.ts",
+      "file": {
+        "bytes": 11539,
+        "sha256": "83b3895de6d57c28a99b4ad3c1e37e1d59f75fa9306dc6369d70283384fe4968"
+      },
+      "breakdownCode": {
+        "stateSchema": 36,
+        "nodeDefinitions": 51,
+        "conditionalEdges": 3,
+        "checkpointSaverWiring": 16
+      },
+      "breakdownRaw": {
+        "stateSchema": 39,
+        "nodeDefinitions": 65,
+        "conditionalEdges": 3,
+        "checkpointSaverWiring": 16
+      },
+      "orchestrationSubtotalCode": 106,
+      "wholeFile": {
+        "code": 147,
+        "raw": 234
+      }
+    },
+    "ragPipeline": {
+      "path": "benchmarks/langgraph-vs-crewhaus/langgraph-rag.ts",
+      "file": {
+        "bytes": 12647,
+        "sha256": "c436bbc58d09c03be5008a3b0bf3ff13aa891a6198bc6be3ba50407149379f33"
+      },
+      "wholeFile": {
+        "code": 192,
+        "raw": 272
+      }
+    },
+    "sharedLiveModelHelper": {
+      "path": "benchmarks/langgraph-vs-crewhaus/shared/live-model.ts",
+      "note": "model client reused by BOTH hand-built workloads; excluded from orchestration ratios",
+      "wholeFile": {
+        "code": 133,
+        "raw": 174
+      }
+    }
+  },
+  "crewhaus": {
+    "graph": {
+      "authoredSpec": {
+        "path": "benchmarks/langgraph-vs-crewhaus/crewhaus-graph/crewhaus.yaml",
+        "code": 37,
+        "raw": 59,
+        "file": {
+          "bytes": 2798,
+          "sha256": "3d454a378fc5ee5b5ecc08d12239347a70b924d2edc5923fa51ad0f9f07c5e55"
+        }
+      },
+      "emittedBundle": {
+        "path": "benchmarks/langgraph-vs-crewhaus/crewhaus-graph/dist/agent.ts",
+        "code": 175,
+        "raw": 188,
+        "file": {
+          "bytes": 8293,
+          "sha256": "e84280c8bcb2c3830e04d8d2596416bd1e8db10cff5f4ca7b0ab948ed54d134a"
+        }
+      },
+      "runtimeCoreImportedNotInlined": {
+        "importLines": [
+          "import { runChatLoop } from \"@crewhaus/runtime-core\";",
+          "import { createCheckpointStore } from \"@crewhaus/checkpoint-store\";",
+          "import { createGraph } from \"@crewhaus/graph-engine\";",
+          "import { createRunContext } from \"@crewhaus/run-context\";"
+        ],
+        "importLineCount": 4,
+        "packages": [
+          {
+            "path": "packages/runtime-core/src/index.ts",
+            "raw": 2204,
+            "code": 1462
+          },
+          {
+            "path": "packages/run-context/src/index.ts",
+            "raw": 243,
+            "code": 91
+          },
+          {
+            "path": "packages/graph-engine/src/index.ts",
+            "raw": 618,
+            "code": 468
+          },
+          {
+            "path": "packages/checkpoint-store/src/index.ts",
+            "raw": 351,
+            "code": 266
+          }
+        ],
+        "totalCode": 2287,
+        "note": "These 4 single-line imports pull in the orchestration the hand-built file inlines. The checkpoint store is wired UNCONDITIONALLY by the emitter (target-graph) — `const __store = createCheckpointStore()` then `createGraph({ checkpointStore: __store })` — so durability is structurally mandatory, not optional."
+      }
+    },
+    "rag": {
+      "authoredSpec": {
+        "path": "benchmarks/langgraph-vs-crewhaus/crewhaus-rag/crewhaus.yaml",
+        "code": 55,
+        "raw": 67,
+        "file": {
+          "bytes": 3071,
+          "sha256": "9af77118c27a840cc0d847b4795104f370ba56b8f4bdb3f23c4dd05cad5c46a3"
+        }
+      },
+      "emittedBundle": {
+        "path": "benchmarks/langgraph-vs-crewhaus/crewhaus-rag/dist/agent.ts",
+        "code": 75,
+        "raw": 83,
+        "file": {
+          "bytes": 4923,
+          "sha256": "25d52b6f780f9bfea4916056c96d2e9322cdb8d07f52fbf03f1363fba98a30fc"
+        }
+      },
+      "runtimeCoreImportedNotInlined": {
+        "importLines": [
+          "import { runChatLoop } from \"@crewhaus/runtime-core\";",
+          "import { defaultCatalog } from \"@crewhaus/tool-catalog\";",
+          "import { BUILTIN_DEFAULT_RULES } from \"@crewhaus/permission-engine\";",
+          "import { createPipeline } from \"@crewhaus/pipeline-engine\";",
+          "import { chunk } from \"@crewhaus/chunker\";",
+          "import { createEmbedder } from \"@crewhaus/embedder\";",
+          "import { createVectorStore } from \"@crewhaus/vector-store\";",
+          "import { registerRetrieveConfig, retrieve } from \"@crewhaus/tool-retrieve\";",
+          "import { loadHooks } from \"@crewhaus/hooks-engine\";",
+          "import { discoverSkills, createSkillTool } from \"@crewhaus/skills-registry\";",
+          "import { loadCommands } from \"@crewhaus/slash-commands\";"
+        ],
+        "importLineCount": 11,
+        "packages": [
+          {
+            "path": "packages/runtime-core/src/index.ts",
+            "raw": 2204,
+            "code": 1462
+          },
+          {
+            "path": "packages/pipeline-engine/src/index.ts",
+            "raw": 292,
+            "code": 223
+          },
+          {
+            "path": "packages/chunker/src/index.ts",
+            "raw": 200,
+            "code": 162
+          },
+          {
+            "path": "packages/embedder/src/index.ts",
+            "raw": 240,
+            "code": 179
+          },
+          {
+            "path": "packages/vector-store/src/index.ts",
+            "raw": 229,
+            "code": 184
+          },
+          {
+            "path": "packages/tool-retrieve/src/index.ts",
+            "raw": 129,
+            "code": 101
+          }
+        ],
+        "totalCode": 2311,
+        "note": "The chunker / embedder / vector-store / retrieve-tool / pipeline-engine and the chat loop are all imported, not inlined."
+      }
+    },
+    "sharedRuntimeImportLine": {
+      "graph": [
+        "import { runChatLoop } from \"@crewhaus/runtime-core\";"
+      ],
+      "rag": [
+        "import { runChatLoop } from \"@crewhaus/runtime-core\";"
+      ],
+      "claim": "The single `import { runChatLoop } from \"@crewhaus/runtime-core\"` line is the thread that makes every emitted bundle thin: full orchestration (chat loop, compaction, recovery, permissions, tool execution) lives in one 1462-code-line (2204-raw) shared module the bundle imports rather than re-implements.",
+      "runtimeCore": {
+        "path": "packages/runtime-core/src/index.ts",
+        "raw": 2204,
+        "code": 1462
+      }
+    }
+  },
+  "ratios": {
+    "graph_spec_vs_handOrchestration": {
+      "handCode": 106,
+      "specCode": 37,
+      "x": 2.9
+    },
+    "graph_spec_vs_handWholeFile": {
+      "handCode": 147,
+      "specCode": 37,
+      "x": 4
+    },
+    "rag_spec_vs_handWholeFile": {
+      "handCode": 192,
+      "specCode": 55,
+      "x": 3.5
+    },
+    "interpretation": "For the stateful-graph workload the engineer hand-writes 106 code lines of the four named orchestration parts (state schema, node defs, conditional edges, checkpoint wiring); the CrewHaus author writes 37 spec lines and the compiler emits the rest, importing 2287 lines of shared, tested runtime-core via 4 import lines."
+  },
+  "checkpointDurabilityProof": {
+    "runtimePackages": [
+      "@crewhaus/graph-engine",
+      "@crewhaus/checkpoint-store",
+      "@crewhaus/run-context"
+    ],
+    "note": "Same packages the emitted graph bundle imports; deterministic node, no model — runs offline.",
+    "graphRunId": "grun_067fa9dc8c2dc6c3",
+    "headCheckpointId": "ckpt_d720801ccdcd69da",
+    "accumulatedContextItemsAtPause": 15,
+    "checkpointFileOnDisk": true,
+    "checkpointFilesWritten": 16,
+    "idShapeMatchesStoreContract": true,
+    "freshStoreResumedToCompletion": true,
+    "finalContextItemsAfterResume": 16,
+    "resumePointer": "{\"resume\":\"grun_067fa9dc8c2dc6c3\",\"head\":\"ckpt_d720801ccdcd69da\"}",
+    "resumePointerBytes": 65,
+    "proven": true
+  },
+  "metric3_checkpointFailureCost": {
+    "note": "Full empirical detail (the real 15-step window is ~1.7k tokens, model/run-dependent) is in failure-scenario.ts --json; this is the fixed 128k headline row.",
+    "scenario": "agent loops 15x accumulating context; step 16 network timeout",
+    "tokenizer": "cl100k_base (js-tiktoken)",
+    "pricing": {
+      "source": "@crewhaus/cost-tracker",
+      "version": "2026-05-08",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "row": {
+        "inputPer1M": 3,
+        "outputPer1M": 15
+      }
+    },
+    "headline128k": {
+      "handBuilt": {
+        "tokensLost": 128000,
+        "retryUsd": 0.384,
+        "resumptionUsd": 0.384
+      },
+      "crewhaus": {
+        "tokensLost": 0,
+        "retryUsd": 0,
+        "resumptionUsd": 0.00012,
+        "pointerTokens": 40
+      },
+      "deltaUsd": 0.38388,
+      "ratio": 3200
+    }
+  }
+}
