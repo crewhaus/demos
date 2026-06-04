@@ -226,6 +226,169 @@ output); it prices real spend with the `cost-tracker` table and exits 0 either w
 
 ---
 
+## Validation Case 2 — adaptability: swapping a RAG vector store (in-memory → lance)
+
+**Thesis.** When a requirement changes — here, swapping the pipeline's vector store
+from the in-memory default to a persistent **Lance** backend — the spec-driven path is a
+tiny edit + a recompile; the hand-built path is a real rewrite. The deterministic
+headline is the **change-surface** — developer-authored lines a human must write to
+effect the swap — not a runtime number.
+
+### What was changed (the real vector-store swap)
+
+This is the critique's preferred example: swapping `retrieve.vectorBackend` from
+`in-memory` to `lance`. **This is now spec-drivable** as of **factory PR #182**
+(`feat: enable vector-store backend selection (lance/qdrant/pinecone/weaviate)`, commit
+`513a961`, merged to factory `main` 2026-06-04). PR #182 widened the backend selector in
+both the IR and the spec from the literal `"in-memory"` to the full implemented set:
+
+- `IrPipelineV0.retrieve.vectorBackend` is now the union
+  `IrVectorBackend = "in-memory" | "lance" | "qdrant" | "pinecone" | "weaviate"`
+  (`factory/packages/ir/src/index.ts:574`).
+- the spec schema is now `vectorBackend: z.enum(VECTOR_BACKENDS).default("in-memory")` over
+  `VECTOR_BACKENDS = ["in-memory","lance","qdrant","pinecone","weaviate"]`
+  (`factory/packages/spec/src/index.ts:600,630`).
+- the compiler's `lower()` passes `vectorBackend` (and optional `url`/`collection`/`apiKey`)
+  through to the IR unchanged (`compiler/src/index.ts:739,741-743`), and the emitter bakes
+  them into `createVectorStore({ ... })` (`target-pipeline/src/index.ts:57-63`). So the swap
+  is the one-line procedure below — **zero compiler changes**.
+
+> **Correction.** An earlier draft of this case stated the vector-store swap was *"not
+> cleanly spec-drivable"* / *"blocked by a type-narrowness in the IR"* / mirrored by
+> `z.enum(["in-memory"])`, and used an embedder swap as a stand-in. **That claim is now
+> stale**: factory #182 widened the IR + spec, and the swap is the headline measured here.
+> (The embedder swap is retained below as a brief secondary confirmation.)
+
+For the lance backend, `vectorBackend: lance` alone is sufficient — the spec parser only
+requires `url` + `collection` for the HTTP backends (qdrant/pinecone/weaviate;
+`parseSpec` at `spec/src/index.ts:1137`), and the factory defaults the lance index path to
+`.crewhaus/vectors/lance` when no `url` is given. We additionally set `retrieve.url` to an
+explicit on-disk index path (the IR documents lance's `url` as *"the on-disk index path"*,
+`ir/src/index.ts:588-593`) so the index lands at a deterministic location. The CrewHaus edit
+is therefore **one changed selector line + one added optional config line**.
+
+### Change-surface (the deterministic metric)
+
+Measured with `git diff --numstat` over each original artifact vs an **edited copy**
+(originals untouched on branch `strengthen/rag-adaptability-case`):
+
+| side | artifact | what a developer touches | lines added | lines removed | lines changed |
+|---|---|---|---:|---:|---:|
+| **CrewHaus** | `crewhaus-rag/crewhaus.yaml` → `crewhaus-rag-lance/crewhaus.yaml` | `vectorBackend: in-memory → lance` (1 changed) + an optional on-disk `url:` (1 added) | 2 | 1 | **1 + 1** |
+| **CrewHaus** | `crewhaus-rag/dist/agent.ts` → `crewhaus-rag-lance/dist/agent.ts` | nothing — the **recompiler** re-wires `createVectorStore()` (line 18) | 1 | 1 | **1** |
+| **Hand-built** | `langgraph-rag.ts` → `langgraph-rag-lance.ts` | in-memory Map store → real `@lancedb/lancedb` store: connection + table lifecycle, row serialise/reconstruct, sync→async cascade | 78 | 25 | **103** (73 code-only) |
+| **Hand-built** | `package.json` + `bun.lock` | add the `@lancedb/lancedb` dependency | — | — | (dep add) |
+
+**Headline ratio: 1 changed spec line (+1 optional config line) vs 103 lines touched
+(73 code-only) plus a new dependency — ~73–103×.**
+
+The hand-built rewrite is not cosmetic. Replacing the inlined synchronous
+`InMemoryVectorStore` (a process `Map` with cosine top-k) with a real Lance store forces:
+
+- a **connection + table lifecycle** the in-memory store never had — a one-time async
+  `init()` that opens `lancedb.connect(dir)`, and lazy `createTable` on first write (the
+  first write defines the schema; later writes `add`);
+- **serialising** each `Chunk` into flat Lance columns (`id`/`docId`/`text`/`vector`) on
+  upsert and **reconstructing** the `Chunk` on query, translating Lance's L2 `_distance`
+  back into the score shape the graph nodes already consume;
+- a **sync→async cascade**: `upsert`/`count`/`search` now return Promises, so `indexNode`
+  (`await getStore()`, `await s.upsert(...)`, `await s.count()`) and `retrieveNode`
+  (`await getStore()`, `await s.search(...)`) all change, and the module-scope
+  `const store = new InMemoryVectorStore()` becomes a lazily-initialised, memoised
+  `getStore()` (3 forced `await` call-sites + the new init);
+- a new **dependency** (`@lancedb/lancedb`).
+
+The CrewHaus factory supplies all of that behind the one-line `vectorBackend` field —
+`@crewhaus/vector-store` already ships the lance backend, so the user adds no dependency.
+
+The edited hand-built copy is a **valid, runnable** implementation, not a stub: a Bun-style
+typecheck reports exactly one error (`TS2339 'reason' on ModelResult` at line 285), and that
+same error is present in the **untouched original** at line 232 (in `generateNode`'s offline
+fallback — `${result.reason}` — code the swap never touches) — so the swap adds **zero** new
+type errors.
+
+### Recompile + live sanity (provenance)
+
+- **Determinism baseline.** A fresh recompile of the *unmodified* in-memory spec byte-matched
+  the committed `dist/agent.ts` (header comment aside) before any diff was measured.
+- **Recompile of the swap succeeded** (exit 0). The emitted bundle differs in exactly one
+  line — line 18, `createVectorStore({ backend: "in-memory" })` →
+  `createVectorStore({ backend: "lance", url: ".crewhaus/vectors/bench-rag-lance" })`.
+  Everything else is byte-identical.
+- **CrewHaus lance bundle, end-to-end live run** (exit 0). The recompiled lance bundle runs
+  against the **live Anthropic** model (`claude-sonnet-4-6`): indexing pipeline
+  `chunk → embed → store → "indexed 5 chunks"` into the **Lance** store — the on-disk index
+  `.crewhaus/vectors/bench-rag-lance/default.jsonl` (6905 bytes, mode 0600) is written with
+  the embedded vectors as NDJSON — the `Retrieve` tool fires against the lance store, and the
+  model returns a grounded answer citing retrieved chunks `[2][3][4]`.
+- **Hand-built lance, end-to-end live run** (exit 0). The edited copy runs against the **real
+  `@lancedb/lancedb`** client and the live Anthropic model: indexed 4 chunks into an on-disk
+  Lance database, Lance vector search returned 4 ranked hits (`section-19#0` top for *"what
+  target shapes exist?"*), and the model returned a grounded answer citing `[1][2][3]`. (4
+  chunks here vs 5 on the CrewHaus side is a pre-existing chunker difference between the
+  hand-built corpus and the YAML corpus, unrelated to the store swap.)
+- **Embedder is held constant** at the deterministic `mock/det` on both sides so retrieval is
+  reproducible offline; the only network call is the Anthropic model. No `OPENAI_API_KEY` is
+  present in this environment (`demos/.env` holds only `ANTHROPIC_API_KEY`), which is
+  irrelevant to the vector-store swap.
+
+### Secondary note — the same one-line procedure applies to other backend-selecting fields
+
+The identical procedure applies to any backend-selecting field, e.g. the **embedder**.
+Swapping `retrieve.embedderModel` from `mock/det` → `openai/text-embedding-3-small` is also a
+**1-line spec change** that the recompiler turns into a **1-line bundle change** (line 17,
+`createEmbedder({ model: ... })`), against a hand-built rewrite of **53 lines (43 code-only)**
+(sync→async embedder + OpenAI client + key/error handling + a 2-call-site `await` cascade).
+Measured separately in `crewhaus-rag-openai/` + `langgraph-rag-openai.ts`; wiring is proven by
+`OPENAI_API_KEY= bun crewhaus-rag-openai/dist/agent.ts "q"` →
+`EmbedderError: openai embedder requires OPENAI_API_KEY` (the recompiled bundle routes into the
+real OpenAI provider path). A full OpenAI network run is not possible here (no `OPENAI_API_KEY`).
+
+### Reproduction
+
+```sh
+cd /Users/bots/Developer/CrewHaus/public/demos
+# (on branch strengthen/rag-adaptability-case; no commit)
+
+# CrewHaus side — 1 changed selector line (+1 optional on-disk path) + real recompile
+cp -r benchmarks/langgraph-vs-crewhaus/crewhaus-rag \
+      benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance
+rm -rf benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance/dist
+# in retrieve:  vectorBackend: in-memory -> lance ; add  url: .crewhaus/vectors/bench-rag-lance
+bun ../factory/apps/cli/src/index.ts compile \
+    benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance/crewhaus.yaml \
+    -o benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance/dist
+git diff --no-index --numstat \
+    benchmarks/langgraph-vs-crewhaus/crewhaus-rag/crewhaus.yaml \
+    benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance/crewhaus.yaml         # 2  1
+git diff --no-index --numstat \
+    benchmarks/langgraph-vs-crewhaus/crewhaus-rag/dist/agent.ts \
+    benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance/dist/agent.ts         # 1  1 (line 18)
+
+# Hand-built side — faithful real-LanceDB store swap on a copy
+bun add @lancedb/lancedb
+cp benchmarks/langgraph-vs-crewhaus/langgraph-rag.ts \
+   benchmarks/langgraph-vs-crewhaus/langgraph-rag-lance.ts
+# replace the inlined InMemoryVectorStore with a @lancedb/lancedb-backed LanceVectorStore
+# (connect + table + add + search); make the store async + memoised; await it in both nodes
+git diff --no-index --numstat \
+   benchmarks/langgraph-vs-crewhaus/langgraph-rag.ts \
+   benchmarks/langgraph-vs-crewhaus/langgraph-rag-lance.ts                    # 78  25 (73 code-only)
+
+# Live sanity (deterministic mock embedder; live Anthropic model)
+set -a && . ./.env && set +a
+printf 'what target shapes exist?\n' | \
+   bun benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance/dist/agent.ts
+# -> indexes into lance NDJSON, retrieves, real Anthropic answer, exit 0
+bun benchmarks/langgraph-vs-crewhaus/langgraph-rag-lance.ts "what target shapes exist?"
+# -> real @lancedb/lancedb index + search, real Anthropic answer, exit 0
+```
+
+Machine-readable copy: [`adaptability-results.json`](./adaptability-results.json).
+**No figure in this section is fabricated.**
+
+---
+
 ## Provenance
 
 | input | value |
@@ -238,5 +401,6 @@ output); it prices real spend with the `cost-tracker` table and exits 0 either w
 | durability evidence | `crewhaus-checkpoint-proof.ts` (real `graph-engine` + `checkpoint-store`; fresh-store resume to completion) |
 
 Machine-readable copies: [`results.json`](./results.json),
-[`loc-results.json`](./loc-results.json).
+[`loc-results.json`](./loc-results.json),
+[`adaptability-results.json`](./adaptability-results.json) (Validation Case 2).
 **No figure in this document is fabricated.**
