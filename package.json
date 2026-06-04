@@ -54,6 +54,7 @@
     "bun": ">=1.2.0"
   },
   "dependencies": {
+    "@lancedb/lancedb": "^0.30.0",
     "@langchain/core": "0.3.66",
     "@langchain/langgraph": "0.2.74",
     "js-tiktoken": "^1.0.21"
