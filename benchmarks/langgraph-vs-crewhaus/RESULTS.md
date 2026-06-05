@@ -347,7 +347,7 @@ real OpenAI provider path). A full OpenAI network run is not possible here (no `
 ### Reproduction
 
 ```sh
-cd /Users/bots/Developer/CrewHaus/public/demos
+cd /path/to/demos
 # (on branch strengthen/rag-adaptability-case; no commit)
 
 # CrewHaus side — 1 changed selector line (+1 optional on-disk path) + real recompile

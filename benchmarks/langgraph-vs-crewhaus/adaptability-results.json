@@ -144,7 +144,7 @@
   },
 
   "reproduction": [
-    "cd /Users/bots/Developer/CrewHaus/public/demos",
+    "cd /path/to/demos",
     "# (on branch strengthen/rag-adaptability-case; no commit)",
     "# --- CrewHaus side: 1-line selector swap (+1 optional on-disk path) + real recompile ---",
     "cp -r benchmarks/langgraph-vs-crewhaus/crewhaus-rag benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance && rm -rf benchmarks/langgraph-vs-crewhaus/crewhaus-rag-lance/dist",
