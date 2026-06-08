@@ -222,7 +222,7 @@ For real web research:
 ```yaml
 retrieve:
   allowedOrigins:
-    - https://docs.crewhaus.dev
+    - https://docs.crewhaus.ai
     - https://github.com/crewhaus
   maxBodyBytes: 2_000_000
   redirectCap: 5
