@@ -84,7 +84,7 @@ The bundled example [`starters/rag/crewhaus.yaml`](../starters/rag/crewhaus.yaml
 is one agent and four inline documents:
 
 ```yaml
-name: starters/rag
+name: hello-rag
 target: pipeline
 agent:
   model: claude-sonnet-4-6

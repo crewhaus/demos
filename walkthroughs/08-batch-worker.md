@@ -73,7 +73,7 @@ The bundled example [`starters/batch/crewhaus.yaml`](../starters/batch/crewhaus.
 is one agent, one in-memory queue, four seeded jobs:
 
 ```yaml
-name: starters/batch
+name: hello-batch
 target: batch
 agent:
   model: claude-haiku-4-5-20251001

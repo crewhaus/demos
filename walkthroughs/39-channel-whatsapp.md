@@ -53,7 +53,7 @@ WHATSAPP_APP_SECRET=...
 [`starters/channels/whatsapp/crewhaus.yaml`](../starters/channels/whatsapp/crewhaus.yaml):
 
 ```yaml
-name: starters/channels/whatsapp
+name: hello-channel-whatsapp
 target: channel
 agent:
   model: claude-sonnet-4-6

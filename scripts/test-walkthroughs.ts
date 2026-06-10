@@ -267,8 +267,19 @@ function tryCompileSpec(specText: string): { ok: boolean; stderr: string } {
     // resort report the first noisy line. Adapter-emitted warnings
     // (e.g. `[adapter-anthropic] could not detect claude CLI...`) are
     // skipped so the real failure surfaces.
-    const userLine = lines.find((l) => l.startsWith("crewhaus:"));
-    if (userLine) return { ok: false, stderr: userLine };
+    const userIdx = lines.findIndex((l) => l.startsWith("crewhaus:"));
+    if (userIdx !== -1) {
+      // Include the indented detail lines that follow (e.g. the Zod
+      // field errors after `spec validation failed:`) — the headline
+      // alone says nothing about which field is wrong.
+      const detail = [lines[userIdx]];
+      for (let i = userIdx + 1; i < lines.length; i++) {
+        const l = lines[i];
+        if (l === undefined || !/^\s/.test(l)) break;
+        detail.push(l.trim());
+      }
+      return { ok: false, stderr: detail.join(" ") };
+    }
     const nonWarning = lines.find(
       (l) =>
         !l.startsWith("[adapter-") &&

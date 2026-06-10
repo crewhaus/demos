@@ -82,7 +82,7 @@ shape.
 The bundled example [`starters/browser/crewhaus.yaml`](../starters/browser/crewhaus.yaml):
 
 ```yaml
-name: starters/browser
+name: hello-browser
 target: browser
 agent:
   model: claude-sonnet-4-6

@@ -84,7 +84,7 @@ The bundled example [`starters/graph/crewhaus.yaml`](../starters/graph/crewhaus.
 has three nodes and one HITL pause:
 
 ```yaml
-name: starters/graph
+name: hello-graph
 target: graph
 model: claude-sonnet-4-6
 entry: plan

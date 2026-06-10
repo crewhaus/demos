@@ -75,7 +75,7 @@ tenant SaaS image deployed to Linux would never even try.
 [`starters/channels/imessage/crewhaus.yaml`](../starters/channels/imessage/crewhaus.yaml):
 
 ```yaml
-name: starters/channels/imessage
+name: hello-channel-imessage
 target: channel
 agent:
   model: claude-sonnet-4-6

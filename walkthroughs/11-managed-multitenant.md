@@ -85,7 +85,7 @@ reads after this one (see *What to read next* below), not prereqs.
 The bundled example [`starters/managed/crewhaus.yaml`](../starters/managed/crewhaus.yaml):
 
 ```yaml
-name: starters/managed
+name: hello-managed
 target: managed
 agent:
   model: claude-sonnet-4-6

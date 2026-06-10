@@ -83,14 +83,14 @@ The bundled example [`starters/eval/crewhaus.yaml`](../starters/eval/crewhaus.ya
 grades a math agent with one deterministic grader:
 
 ```yaml
-name: starters/eval
+name: hello-eval
 target: eval
 agent:
   model: claude-opus-4-7
   instructions: |
     Answer math questions with just the number.
 dataset:
-  name: starters/eval
+  name: hello-eval
   version: v1
   split: dev
 graders:
