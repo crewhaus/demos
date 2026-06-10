@@ -73,7 +73,7 @@ The bundled example [`starters/workflow/crewhaus.yaml`](../starters/workflow/cre
 is two steps: list files, then summarize. The whole file:
 
 ```yaml
-name: starters/workflow
+name: hello-workflow
 target: workflow
 model: claude-sonnet-4-6
 permissions:

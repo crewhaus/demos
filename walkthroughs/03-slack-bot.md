@@ -116,7 +116,7 @@ needed.
 The bundled example [`starters/channel/crewhaus.yaml`](../starters/channel/crewhaus.yaml):
 
 ```yaml
-name: starters/channel
+name: hello-channel
 target: channel
 agent:
   model: claude-sonnet-4-6

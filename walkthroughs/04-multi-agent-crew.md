@@ -83,7 +83,7 @@ The bundled example [`starters/crew/crewhaus.yaml`](../starters/crew/crewhaus.ya
 is three roles, one entry point:
 
 ```yaml
-name: starters/crew
+name: hello-crew
 target: crew
 model: claude-sonnet-4-6
 entry: researcher

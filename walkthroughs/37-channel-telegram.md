@@ -50,7 +50,7 @@ The bundled example
 [`starters/channels/telegram/crewhaus.yaml`](../starters/channels/telegram/crewhaus.yaml):
 
 ```yaml
-name: starters/channels/telegram
+name: hello-channel-telegram
 target: channel
 agent:
   model: claude-sonnet-4-6

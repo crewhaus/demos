@@ -52,7 +52,7 @@ Three fields, all needed.
 [`starters/channels/discord/crewhaus.yaml`](../starters/channels/discord/crewhaus.yaml):
 
 ```yaml
-name: starters/channels/discord
+name: hello-channel-discord
 target: channel
 agent:
   model: claude-sonnet-4-6

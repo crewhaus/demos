@@ -74,7 +74,7 @@ operations-heavier and only justified when latency is the product.
 The bundled example [`starters/voice/crewhaus.yaml`](../starters/voice/crewhaus.yaml):
 
 ```yaml
-name: starters/voice
+name: hello-voice
 target: voice
 agent:
   model: gpt-4o-realtime-preview
