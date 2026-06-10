@@ -380,4 +380,4 @@ work — a coverage gap that pure HTTP automation can't fill.
 - **Mouse/keyboard tools:** [`packages/tool-mouse-keyboard`](https://github.com/crewhaus/factory/blob/main/packages/tool-mouse-keyboard).
 - **Vision grounding:** [`packages/tool-vision-grounding`](https://github.com/crewhaus/factory/blob/main/packages/tool-vision-grounding).
 - **Spec schema (browser variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search `browserSchema`).
-- **Module catalog reference:** §25, §30 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §25, §30 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

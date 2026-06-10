@@ -283,4 +283,4 @@ plus the SSR-rendered HTML for key UI strings.
 - **Graph visualizer:** [`packages/graph-visualizer`](https://github.com/crewhaus/utilities/blob/main/graph-visualizer).
 - **Plugin SDK:** [`packages/plugin-sdk`](https://github.com/crewhaus/utilities/blob/main/plugin-sdk).
 - **Launcher:** [`scripts/studio-launcher.ts`](https://github.com/crewhaus/factory/blob/main/scripts/studio-launcher.ts).
-- **Module catalog reference:** §26, §31 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §26, §31 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

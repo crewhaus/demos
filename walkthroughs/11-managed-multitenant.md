@@ -367,4 +367,4 @@ need isolated **storage, budgets, and audit**.
 - **Audit log:** [`packages/audit-log`](https://github.com/crewhaus/factory/blob/main/packages/audit-log).
 - **Policy engine:** [`packages/policy-engine`](https://github.com/crewhaus/factory/blob/main/packages/policy-engine).
 - **Spec schema (managed variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search `managedSchema`).
-- **Module catalog reference:** §20 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §20 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

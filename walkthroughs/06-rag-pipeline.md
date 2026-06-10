@@ -349,4 +349,4 @@ the CLI decides whether to invoke the pipeline as a sub-agent.
 - **Vector store:** [`packages/vector-store`](https://github.com/crewhaus/factory/blob/main/packages/vector-store).
 - **Retrieve tool:** [`packages/tool-retrieve`](https://github.com/crewhaus/factory/blob/main/packages/tool-retrieve).
 - **Spec schema (pipeline variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search `pipelineSchema`).
-- **Module catalog reference:** §21, §30 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §21, §30 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

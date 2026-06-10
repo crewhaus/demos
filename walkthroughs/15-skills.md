@@ -260,4 +260,4 @@ for each discovered skill.
 
 - **Registry / discovery / lazy load:** [`packages/skills-registry`](https://github.com/crewhaus/factory/blob/main/packages/skills-registry).
 - **Tool surface:** the `Skill` tool is auto-registered by `runtime-core`.
-- **Module catalog reference:** §11 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §11 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

@@ -322,4 +322,4 @@ regression gate confirms it on the next check.
 - **Deployment controller:** [`packages/deployment-controller`](https://github.com/crewhaus/factory/blob/main/packages/deployment-controller).
 - **Canary controller:** [`packages/canary-controller`](https://github.com/crewhaus/factory/blob/main/packages/canary-controller).
 - **Regression runner:** [`packages/regression-runner`](https://github.com/crewhaus/factory/blob/main/packages/regression-runner).
-- **Module catalog reference:** §28, §29 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §28, §29 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

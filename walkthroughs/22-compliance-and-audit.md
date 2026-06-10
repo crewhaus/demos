@@ -270,4 +270,4 @@ verifiable**. It's not a search engine — Splunk or Loki is.
 
 - **Audit log:** [`packages/audit-log`](https://github.com/crewhaus/factory/blob/main/packages/audit-log).
 - **Compliance controls:** [`packages/compliance-controls`](https://github.com/crewhaus/factory/blob/main/packages/compliance-controls).
-- **Module catalog reference:** §20 (audit-log), §39 (compliance-controls) in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §20 (audit-log), §39 (compliance-controls) in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

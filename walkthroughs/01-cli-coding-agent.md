@@ -556,4 +556,4 @@ you reach for often.
 - **CLI compiler entry:** [`apps/cli/src/index.ts`](https://github.com/crewhaus/factory/blob/main/apps/cli/src/index.ts).
 - **CLI codegen:** [`packages/target-cli`](https://github.com/crewhaus/factory/blob/main/packages/target-cli).
 - **Runtime loop:** [`packages/runtime-core/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/runtime-core/src/index.ts).
-- **Module catalog reference:** §2, §6–§14 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §2, §6–§14 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

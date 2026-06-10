@@ -327,4 +327,4 @@ out the way it did.
 - **Pattern matcher:** [`packages/tool-permission-matcher`](https://github.com/crewhaus/factory/blob/main/packages/tool-permission-matcher).
 - **Policy engine (multi-tenant):** [`packages/policy-engine`](https://github.com/crewhaus/factory/blob/main/packages/policy-engine).
 - **Sub-agent inheritance:** [`packages/sub-agent-permission-inheritance`](https://github.com/crewhaus/factory/blob/main/packages/sub-agent-permission-inheritance).
-- **Module catalog reference:** §7, §13 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §7, §13 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

@@ -434,4 +434,4 @@ each adapter runs side by side.
 - **Channel-target codegen:** [`packages/target-channel-bot`](https://github.com/crewhaus/factory/blob/main/packages/target-channel-bot).
 - **Slack adapter:** [`packages/channel-adapter-slack`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-slack).
 - **Spec schema (channel variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search for `channelSchema`).
-- **Module catalog reference:** §12 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §12 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

@@ -298,4 +298,4 @@ overarching question** — and you want the citation discipline.
 - **Citation tracker:** [`packages/citation-tracker`](https://github.com/crewhaus/factory/blob/main/packages/citation-tracker).
 - **Report writer:** [`packages/report-writer`](https://github.com/crewhaus/factory/blob/main/packages/report-writer).
 - **Spec schema (research variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search `researchSchema`).
-- **Module catalog reference:** §23 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §23 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

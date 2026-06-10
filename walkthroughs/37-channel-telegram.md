@@ -291,4 +291,4 @@ to validate the wiring.
 - **Example:** [`starters/channels/telegram/crewhaus.yaml`](../starters/channels/telegram/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-telegram`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-telegram).
 - **Spec schema (telegram block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
-- **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

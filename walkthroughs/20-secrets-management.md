@@ -297,4 +297,4 @@ subscriber handler.
 ## Pointers to source
 
 - **Module:** [`packages/secrets-manager`](https://github.com/crewhaus/factory/blob/main/packages/secrets-manager).
-- **Module catalog reference:** §27 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §27 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

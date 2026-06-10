@@ -250,7 +250,7 @@ The critique reasonably asked whether the system uses a source map from the pars
 
 The thing that would require a source map is patching IR-derived structure (a specific rule in a deduped, reordered `permissions.rules` array) back to the source. That is precisely the case `OPTIMIZABLE_PATHS` refuses. The whitelist *is* the design decision that says "we will not patch fields whose source-to-IR map is non-trivial." The choice is structural, not bolted-on.
 
-See [docs/COMPILER-ARCHITECTURE.md §The lossy lower, and how `crewhaus optimize` writes back](https://github.com/crewhaus/factory/blob/main/docs/COMPILER-ARCHITECTURE.md#the-lossy-lower-and-how-crewhaus-optimize-writes-back) for the same contract from the compiler's side.
+See [docs/COMPILER-ARCHITECTURE.md §The lossy lower, and how `crewhaus optimize` writes back](https://github.com/crewhaus/docs/blob/main/COMPILER-ARCHITECTURE.md#the-lossy-lower-and-how-crewhaus-optimize-writes-back) for the same contract from the compiler's side.
 
 ## Comparison to DSPy
 

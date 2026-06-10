@@ -270,4 +270,4 @@ tokens served from cache.
 
 - **Cache manager:** [`packages/prompt-cache-manager`](https://github.com/crewhaus/factory/blob/main/packages/prompt-cache-manager).
 - **Anthropic adapter (consumes the markers):** [`packages/adapter-anthropic`](https://github.com/crewhaus/factory/blob/main/packages/adapter-anthropic).
-- **Module catalog reference:** §27 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §27 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

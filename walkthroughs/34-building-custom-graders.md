@@ -371,4 +371,4 @@ graders for optimization workflows.
 - **LLM-as-judge:** [`packages/eval-judge`](https://github.com/crewhaus/factory/blob/main/packages/eval-judge).
 - **Registry:** [`packages/grader-registry`](https://github.com/crewhaus/factory/blob/main/packages/grader-registry).
 - **Production graders:** [`packages/grader-nlg-metrics`](https://github.com/crewhaus/factory/blob/main/packages/grader-nlg-metrics), [`packages/grader-semantic-similarity`](https://github.com/crewhaus/factory/blob/main/packages/grader-semantic-similarity), [`packages/grader-safety-classifiers`](https://github.com/crewhaus/factory/blob/main/packages/grader-safety-classifiers), [`packages/grader-multimodal`](https://github.com/crewhaus/factory/blob/main/packages/grader-multimodal).
-- **Module catalog reference:** §16, §29, §38 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §16, §29, §38 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

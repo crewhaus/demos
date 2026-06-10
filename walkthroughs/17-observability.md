@@ -297,4 +297,4 @@ For span-tree inspection in a UI, set up OTel + a local
 - **Cost tracker:** [`packages/cost-tracker`](https://github.com/crewhaus/factory/blob/main/packages/cost-tracker).
 - **Vendor exporters:** [`packages/exporter-datadog`](https://github.com/crewhaus/factory/blob/main/packages/exporter-datadog), [`packages/exporter-honeycomb`](https://github.com/crewhaus/factory/blob/main/packages/exporter-honeycomb), [`packages/exporter-splunk`](https://github.com/crewhaus/factory/blob/main/packages/exporter-splunk), [`packages/exporter-newrelic`](https://github.com/crewhaus/factory/blob/main/packages/exporter-newrelic).
 - **Default-subscriber wiring:** [`packages/runtime-core/src/observability.ts`](https://github.com/crewhaus/factory/blob/main/packages/runtime-core/src/observability.ts).
-- **Module catalog reference:** §15, §27 (cost-tracker), §37 (vendor exporters) in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §15, §27 (cost-tracker), §37 (vendor exporters) in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

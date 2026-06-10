@@ -338,4 +338,4 @@ them. Past that you usually want a different shape.
 - **Branching:** [`packages/branch-history`](https://github.com/crewhaus/factory/blob/main/packages/branch-history).
 - **Durable execution / idempotency:** [`packages/durable-execution`](https://github.com/crewhaus/factory/blob/main/packages/durable-execution).
 - **Spec schema (graph variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search `graphSchema`).
-- **Module catalog reference:** §19 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §19 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

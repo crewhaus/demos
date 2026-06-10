@@ -257,4 +257,4 @@ for the hardware.
 
 - **Model router:** [`packages/model-router`](https://github.com/crewhaus/factory/blob/main/packages/model-router).
 - **OpenAI-compatible adapter (used for local):** [`packages/adapter-openai`](https://github.com/crewhaus/factory/blob/main/packages/adapter-openai).
-- **Module catalog reference:** §17 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §17 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).
