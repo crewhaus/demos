@@ -279,4 +279,4 @@ Validates:
 - **Example:** [`starters/channels/whatsapp/crewhaus.yaml`](../starters/channels/whatsapp/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-whatsapp`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-whatsapp).
 - **Spec schema (whatsapp block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
-- **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

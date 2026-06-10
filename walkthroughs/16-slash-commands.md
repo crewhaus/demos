@@ -292,4 +292,4 @@ Each slash-command expansion logs at the user-message level:
 
 - **Module:** [`packages/slash-commands`](https://github.com/crewhaus/factory/blob/main/packages/slash-commands).
 - **Hooks integration (`pre-slash`):** [`packages/hooks-engine`](https://github.com/crewhaus/factory/blob/main/packages/hooks-engine).
-- **Module catalog reference:** §11 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §11 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

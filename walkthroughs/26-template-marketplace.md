@@ -286,4 +286,4 @@ flow signs + submits a PR with one click.
 - **Registry library:** [`packages/template-registry`](https://github.com/crewhaus/factory/blob/main/packages/template-registry).
 - **Marketplace client:** [`packages/template-marketplace-client`](https://github.com/crewhaus/factory/blob/main/packages/template-marketplace-client).
 - **Scaffold templates (built-in):** [`packages/scaffold-templates`](https://github.com/crewhaus/utilities/blob/main/scaffold-templates).
-- **Module catalog reference:** §40 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §40 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

@@ -284,4 +284,4 @@ inheritance.
 - **Sub-agent spawner:** [`packages/sub-agent-spawner`](https://github.com/crewhaus/factory/blob/main/packages/sub-agent-spawner).
 - **Permission inheritance:** [`packages/sub-agent-permission-inheritance`](https://github.com/crewhaus/factory/blob/main/packages/sub-agent-permission-inheritance).
 - **Task tool:** [`packages/tool-task`](https://github.com/crewhaus/factory/blob/main/packages/tool-task).
-- **Module catalog reference:** §13 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §13 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

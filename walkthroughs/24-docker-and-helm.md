@@ -283,4 +283,4 @@ when target shapes are added.
 - **Single-binary CLI:** [`packages/single-binary-cli`](https://github.com/crewhaus/factory/blob/main/packages/single-binary-cli).
 - **Helm chart:** [`packages/helm-chart`](https://github.com/crewhaus/factory/blob/main/packages/helm-chart).
 - **Cloud deploy:** [`packages/crewhaus-cloud`](https://github.com/crewhaus/factory/blob/main/packages/crewhaus-cloud).
-- **Module catalog reference:** §32 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §32 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

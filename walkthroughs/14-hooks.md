@@ -262,4 +262,4 @@ Useful when a hook isn't firing or when timing matters.
 
 - **Engine:** [`packages/hooks-engine`](https://github.com/crewhaus/factory/blob/main/packages/hooks-engine).
 - **Schema (in test fixtures):** [`packages/hooks-engine/src/index.test.ts`](https://github.com/crewhaus/factory/blob/main/packages/hooks-engine/src/index.test.ts).
-- **Module catalog reference:** §11 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §11 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

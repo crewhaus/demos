@@ -344,4 +344,4 @@ decisions in the model's own words.
 - **Handoff tool:** [`packages/agent-handoff`](https://github.com/crewhaus/factory/blob/main/packages/agent-handoff).
 - **Peer messaging:** [`packages/a2a-protocol`](https://github.com/crewhaus/factory/blob/main/packages/a2a-protocol).
 - **Spec schema (crew variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search `crewSchema`).
-- **Module catalog reference:** §22 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §22 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

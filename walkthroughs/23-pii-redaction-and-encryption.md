@@ -349,4 +349,4 @@ The bundled layers target the audit log because that's where PII
 - **PII redactor:** [`packages/pii-redactor`](https://github.com/crewhaus/factory/blob/main/packages/pii-redactor).
 - **Audit encryption:** [`packages/audit-encryption`](https://github.com/crewhaus/factory/blob/main/packages/audit-encryption).
 - **Data retention engine:** [`packages/data-retention-engine`](https://github.com/crewhaus/factory/blob/main/packages/data-retention-engine).
-- **Module catalog reference:** §39 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §39 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

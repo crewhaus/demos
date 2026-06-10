@@ -308,4 +308,4 @@ Uses `generateEd25519Keypair()` to produce valid test payloads.
 - **Example:** [`starters/channels/discord/crewhaus.yaml`](../starters/channels/discord/crewhaus.yaml).
 - **Adapter:** [`packages/channel-adapter-discord`](https://github.com/crewhaus/factory/blob/main/packages/channel-adapter-discord).
 - **Spec schema (discord block):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
-- **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §33 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

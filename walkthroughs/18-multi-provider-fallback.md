@@ -252,4 +252,4 @@ surface as ordinary errors with the original provider error message.
 - **Model router:** [`packages/model-router`](https://github.com/crewhaus/factory/blob/main/packages/model-router).
 - **Circuit breaker:** [`packages/circuit-breaker`](https://github.com/crewhaus/factory/blob/main/packages/circuit-breaker).
 - **Adapters:** [`packages/adapter-anthropic`](https://github.com/crewhaus/factory/blob/main/packages/adapter-anthropic), [`packages/adapter-openai`](https://github.com/crewhaus/factory/blob/main/packages/adapter-openai), [`packages/adapter-gemini`](https://github.com/crewhaus/factory/blob/main/packages/adapter-gemini), [`packages/adapter-bedrock`](https://github.com/crewhaus/factory/blob/main/packages/adapter-bedrock).
-- **Module catalog reference:** §17, §27 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §17, §27 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

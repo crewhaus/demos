@@ -430,4 +430,4 @@ refuses unless you opt in.
 - **Optimizer:** [`packages/prompt-optimizer`](https://github.com/crewhaus/factory/blob/main/packages/prompt-optimizer).
 - **Regression gate:** [`packages/regression-runner`](https://github.com/crewhaus/factory/blob/main/packages/regression-runner).
 - **End-to-end smoke:** [`smoke/section-29-smoke/smoke.ts`](https://github.com/crewhaus/factory/tree/main/smoke/section-29-smoke/smoke.ts).
-- **Module catalog reference:** §16, §29, §38 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §16, §29, §38 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

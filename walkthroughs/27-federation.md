@@ -309,4 +309,4 @@ content is screened independently of who sent it.
 - **Discovery:** [`packages/federation-discovery`](https://github.com/crewhaus/factory/blob/main/packages/federation-discovery).
 - **Router:** [`packages/federation-router`](https://github.com/crewhaus/factory/blob/main/packages/federation-router).
 - **Fixture:** [`starters/federation/README.md`](../starters/federation/README.md).
-- **Module catalog reference:** §34 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §34 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

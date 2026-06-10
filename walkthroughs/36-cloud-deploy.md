@@ -302,4 +302,4 @@ structural validation, not a live deploy.
 ## Pointers to source
 
 - **Module:** [`packages/crewhaus-cloud`](https://github.com/crewhaus/factory/blob/main/packages/crewhaus-cloud).
-- **Module catalog reference:** §32 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §32 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

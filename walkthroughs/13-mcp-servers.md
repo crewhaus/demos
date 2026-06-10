@@ -300,4 +300,4 @@ deployments.
 - **Host (lifecycle, reconnect):** [`packages/mcp-host`](https://github.com/crewhaus/factory/blob/main/packages/mcp-host).
 - **Tool layer:** [`packages/tool-mcp`](https://github.com/crewhaus/factory/blob/main/packages/tool-mcp).
 - **Boundary classifier (origin: "mcp"):** [`packages/boundary-classifier`](https://github.com/crewhaus/factory/blob/main/packages/boundary-classifier).
-- **Module catalog reference:** §9 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §9 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

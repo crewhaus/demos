@@ -295,4 +295,4 @@ acquisition fails before the model adapter sees the call.
 - **Cost tracker:** [`packages/cost-tracker`](https://github.com/crewhaus/factory/blob/main/packages/cost-tracker).
 - **Token budget:** [`packages/token-budget`](https://github.com/crewhaus/factory/blob/main/packages/token-budget).
 - **Gateway server (budget enforcement):** [`packages/gateway-server`](https://github.com/crewhaus/factory/blob/main/packages/gateway-server).
-- **Module catalog reference:** §27 (rate-limiter, cost-tracker), §20 (gateway budgets) in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §27 (rate-limiter, cost-tracker), §20 (gateway budgets) in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

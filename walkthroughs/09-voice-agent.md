@@ -301,4 +301,4 @@ different shape is cheaper.
 - **Barge-in controller:** [`packages/barge-in-controller`](https://github.com/crewhaus/factory/blob/main/packages/barge-in-controller).
 - **Call session:** [`packages/call-session`](https://github.com/crewhaus/factory/blob/main/packages/call-session).
 - **Spec schema (voice variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search `voiceSchema`).
-- **Module catalog reference:** §24 in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §24 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

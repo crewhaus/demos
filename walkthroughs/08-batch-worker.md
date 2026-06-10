@@ -317,4 +317,4 @@ asking "should I use eval or batch": eval is batch + scoring.
 - **Consumer:** [`packages/queue-consumer`](https://github.com/crewhaus/factory/blob/main/packages/queue-consumer).
 - **Idempotency:** [`packages/idempotency-keys`](https://github.com/crewhaus/factory/blob/main/packages/idempotency-keys).
 - **Spec schema (batch variant):** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts) (search `batchSchema`).
-- **Module catalog reference:** §23 (BATCH), §30 (production adapters) in [MODULE-CATALOG.md](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md).
+- **Module catalog reference:** §23 (BATCH), §30 (production adapters) in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).
