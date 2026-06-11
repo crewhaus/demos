@@ -19,7 +19,7 @@ import {
   renderLiveSvg,
 } from "@crewhaus/graph-visualizer";
 import type { IrGraphV0 } from "@crewhaus/ir";
-import { PluginSdkError, definePlugin, isFsAllowed, isNetAllowed } from "@crewhaus/plugin-sdk";
+import { PluginSdkError, definePlugin, isFsAllowed, isNetAllowed } from "@crewhaus/studio-plugin-sdk";
 import { startStudioServer } from "@crewhaus/studio-server";
 import { renderMultiSpecDashboard } from "@crewhaus/studio-ui";
 import type { TraceEvent } from "@crewhaus/trace-event-bus";
