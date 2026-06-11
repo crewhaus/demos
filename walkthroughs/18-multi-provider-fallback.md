@@ -1,9 +1,17 @@
 # Recipe 18 — Multi-Provider Fallback
 
 Wrap each model adapter in a circuit breaker. Consecutive failures
-trip the breaker open; a fallback model list cascades to the next
-provider when the primary is degraded. No manual retry logic in the
-agent; automatic recovery via probe success.
+trip the breaker open; your wiring cascades to the next provider
+when the primary is degraded. Automatic recovery via probe success.
+
+One thing to be clear about up front: **fallback is a TypeScript-level
+pattern, not a spec field.** The agent schema is strict —
+`agent.model`, `agent.instructions`, `agent.sub_agents`, nothing
+else — so there is no `fallbackModels:` YAML to reach for. What ships
+is the building blocks: `@crewhaus/model-router` resolves any model
+string to an adapter, and `@crewhaus/circuit-breaker` wraps an adapter
+so it fail-fasts when degraded. The cascade loop is ~15 lines of your
+own code, shown below.
 
 You'd reach for this when:
 
@@ -36,13 +44,15 @@ isn't expressive enough.
 ## The `model:` prefix grammar
 
 ```
-claude-sonnet-4-6                            → Anthropic
-claude-opus-4-7                              → Anthropic
-openai/gpt-4o                                → OpenAI
-openai/gpt-4o-mini                           → OpenAI
-gemini/gemini-1.5-pro                        → Google
-bedrock/anthropic.claude-3-5-sonnet-20241022 → Bedrock
-local/llama3.2@http://localhost:11434/v1     → Local OpenAI-compatible
+claude-sonnet-4-6                                    → Anthropic
+claude-opus-4-7                                      → Anthropic
+openai/gpt-4o                                        → OpenAI
+gemini/gemini-2.5-flash                              → Google (Gemini API or Vertex)
+bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0 → AWS Bedrock
+local/llama3.2@http://localhost:11434/v1             → Local OpenAI-compatible
+groq/llama-3.3-70b-versatile                         → Groq (OpenAI-compatible host)
+azure/<deployment>                                   → Azure OpenAI
+vertex/claude-sonnet-4-6                             → Claude on Vertex AI
 ```
 
 The model-router parses the prefix and lazy-loads only the matching
@@ -50,39 +60,77 @@ adapter. A spec with `model: claude-sonnet-4-6` never imports the
 OpenAI SDK; a spec with `model: openai/gpt-4o` never imports the
 Anthropic SDK. Cold start scales with what you actually use.
 
-## Adding a fallback list
+The named OpenAI-compatible hosts (`groq/`, `together/`, `fireworks/`,
+`openrouter/`, `deepseek/`, `xai/`, `mistral/`, `cerebras/`) make
+cheap fallback targets: each reads its own key env var
+(`GROQ_API_KEY`, …), so adding one to a fallback chain never collides
+with your `OPENAI_API_KEY`. See
+[Recipe 32 — Local Models](32-local-models.md) for the full list.
 
-The `agent.fallbackModels` field on a CLI spec (extension to the base
-schema):
+## Wiring a fallback chain
 
-```yaml
-# CLI spec fragment — focus is the agent block:
-agent:
-  model: claude-sonnet-4-6
-  fallbackModels:
-    - openai/gpt-4o
-    - gemini/gemini-1.5-pro
-  instructions: |
-    You are a coding assistant.
-tools:
-  - read
-  - write
+The pattern: keep an ordered candidate list, resolve each model
+string through the router, wrap each adapter in its own breaker, and
+cascade on failure. All TypeScript — the spec stays a single
+`agent.model`:
+
+```typescript
+import type { ProviderRequest, StreamEvent } from "@crewhaus/adapter-anthropic";
+import { type WrappedAdapter, wrap } from "@crewhaus/circuit-breaker";
+import { resolveModel } from "@crewhaus/model-router";
+
+const CANDIDATES = [
+  "claude-sonnet-4-6",
+  "openai/gpt-4o",
+  "groq/llama-3.3-70b-versatile",
+];
+
+const breakers = new Map<string, WrappedAdapter>();
+
+async function adapterFor(modelString: string) {
+  const { adapter, modelId } = await resolveModel(modelString);
+  let wrapped = breakers.get(modelString);
+  if (wrapped === undefined) {
+    wrapped = wrap(adapter, { adapterName: modelString, bus }); // bus optional
+    breakers.set(modelString, wrapped);
+  }
+  return { wrapped, modelId };
+}
+
+async function* streamWithFallback(
+  req: Omit<ProviderRequest, "model">,
+): AsyncIterable<StreamEvent> {
+  let lastError: unknown;
+  for (const modelString of CANDIDATES) {
+    const { wrapped, modelId } = await adapterFor(modelString);
+    if (wrapped.state() === "open") continue; // skip tripped providers, zero network
+    try {
+      yield* wrapped.stream({ ...req, model: modelId });
+      return;
+    } catch (err) {
+      lastError = err; // breaker recorded the failure; try the next candidate
+    }
+  }
+  throw lastError ?? new Error("all fallback candidates are open or failed");
+}
 ```
 
-The router treats `model:` + `fallbackModels:` as an ordered list.
 Every model call:
 
-1. Tries `claude-sonnet-4-6`.
-2. If the call fails (the failure taxonomy — see below — classifies
-   it as a fallback-worthy failure) and the primary's circuit is
-   open, tries `openai/gpt-4o`.
-3. If that also fails or its breaker is open, tries
-   `gemini/gemini-1.5-pro`.
+1. Tries `claude-sonnet-4-6` (unless its breaker is open).
+2. If the stream fails, the breaker counts it and the loop tries
+   `openai/gpt-4o`.
+3. If that also fails or its breaker is open, tries the Groq host.
 4. If all fail, the call surfaces the last error.
 
-Each model in the list has **its own breaker**. A bad Anthropic
-provider trips the Anthropic breaker but leaves the OpenAI one
-healthy.
+Each candidate has **its own breaker** (the `breakers` map). A bad
+Anthropic provider trips the Anthropic breaker but leaves the OpenAI
+one healthy.
+
+One streaming caveat: if the primary dies mid-stream, tokens have
+already been yielded to the caller. Retrying a *partial* turn on the
+next provider duplicates output — so cascade at turn granularity
+(re-issue the whole request), not mid-stream.
 
 ## The circuit breaker
 
@@ -93,129 +141,127 @@ the adapter three states:
 | State        | Behavior                                                              |
 | ------------ | --------------------------------------------------------------------- |
 | `closed`     | Calls go through normally. Failures increment a counter.              |
-| `open`       | Calls fail-fast with `CircuitOpenError`. Falls through to next model. |
-| `half-open`  | One trial call goes through. Success → `closed`; failure → `open`.    |
+| `open`       | Calls fail-fast with `CircuitBreakerOpenError`, no network touched. Your loop falls through to the next model. |
+| `half_open`  | A probe call goes through. Success → `closed`; failure → `open`.      |
 
-Defaults:
+Options (`CircuitBreakerOptions`):
 
-| Opt                 | Default | Meaning                                                  |
-| ------------------- | ------- | -------------------------------------------------------- |
-| `failureThreshold`  | 5       | Consecutive failures within `windowMs` that trip the breaker. |
-| `windowMs`          | 60_000  | Sliding window for counting failures.                    |
-| `cooldownMs`        | 30_000  | How long `open` stays open before a `half-open` probe.   |
-| `successThreshold`  | 1       | Successful trial calls needed to fully close.            |
+| Opt                 | Default              | Meaning                                                  |
+| ------------------- | -------------------- | -------------------------------------------------------- |
+| `failureThreshold`  | 5                    | Consecutive failures within `windowMs` that trip the breaker. |
+| `windowMs`          | 60_000               | Window for counting consecutive failures.                |
+| `cooldownMs`        | 30_000               | How long `open` stays open before a `half_open` probe.   |
+| `adapterName`       | `adapter.providerId` | Identifier surfaced on `circuit_state_changed` events.   |
+| `bus`               | none                 | Optional `TraceEventBus` for state-change events.        |
+| `isFailure`         | every error counts   | Predicate for which errors count toward the threshold.   |
 
-Override per-model in the agent block:
+Per-model tuning is just per-call `wrap()` options — the secondary
+can be more lenient than the primary:
 
-```yaml
-# CLI spec fragment:
-agent:
-  model: claude-sonnet-4-6
-  fallbackModels:
-    - openai/gpt-4o
-  circuitBreaker:
-    failureThreshold: 3        # tighter — trip after 3
-    cooldownMs: 60_000         # but stay open longer
-    windowMs: 30_000           # smaller window — only recent failures count
+```typescript
+wrap(anthropicAdapter, { adapterName: "claude-sonnet-4-6", failureThreshold: 3 });
+wrap(openaiAdapter, { adapterName: "openai/gpt-4o", failureThreshold: 10 });
 ```
 
-A single `circuitBreaker:` block applies to every model in the list.
-For per-model tuning, declare the breaker per-provider:
-
-```yaml
-# CLI spec fragment:
-agent:
-  model: claude-sonnet-4-6
-  fallbackModels:
-    - openai/gpt-4o
-  circuitBreaker:
-    claude-sonnet-4-6:
-      failureThreshold: 3
-    openai/gpt-4o:
-      failureThreshold: 10     # OpenAI is the secondary; more lenient
-```
+The wrapped adapter also exposes `state()`, `reset()`, and `stats()`
+(consecutive failures, transition count, last trip time) for
+dashboards and manual intervention.
 
 ## What counts as a failure
 
-The breaker's `isFailure` predicate excludes things that aren't
-provider problems:
+By default, **every** error counts: a thrown stream error, a stream
+that ends on an `error` event, and a stream that ends without a
+`message_stop` (likely truncated) all increment the failure counter.
+A clean `message_stop` resets it.
 
-| Classification              | Counts toward breaker? |
-| --------------------------- | ---------------------- |
-| 5xx server error            | Yes                    |
-| 429 rate limit               | Yes                    |
-| Network timeout              | Yes                    |
-| TLS / DNS failure            | Yes                    |
-| 4xx schema validation error  | **No** — client bug, not provider degradation. |
-| Cancellation by caller       | **No** — not a failure mode.                  |
-| `prompt-injection` redaction | **No** — runtime decision, not provider.      |
+That default is deliberately blunt. If you don't want client-side
+bugs (4xx schema-validation responses) or caller cancellations
+tripping the breaker, pass an `isFailure` predicate that returns
+`false` for them:
 
-Override `isFailure` only if you have a custom adapter that classifies
-errors differently. The default is correct for the bundled adapters.
+```typescript
+wrap(adapter, {
+  isFailure: (err) => !isAbortError(err) && !isInvalidRequest(err),
+});
+```
 
 ## Half-open probing
 
 When `cooldownMs` elapses on an open breaker, the next call goes
-through in `half-open` mode. If it succeeds, the breaker closes;
+through as a `half_open` probe. If it succeeds, the breaker closes;
 if it fails, the breaker reopens with another `cooldownMs` wait.
 
 So the recovery profile after a major outage looks like:
 
 ```
-T+0:    primary fails, breaker trips open
+T+0:    primary fails repeatedly, breaker trips open
 T+0:    every call uses fallback
-T+30s:  one probe to primary (in half-open)
-T+30s:  if probe fails, back to open; if succeeds, closed
+T+30s:  next call probes the primary (half_open)
+T+30s:  if the probe fails, back to open; if it succeeds, closed
 T+30s:  every subsequent call (closed primary) returns to primary
 ```
 
-The probe is **one** call — not a batch. So a flaky primary doesn't
-get hammered into a worse state by simultaneous probes from many
-workers.
-
-## Per-provider rate-limit awareness
-
-The bundled adapters parse `Retry-After` headers from 429 responses
-and pass them to the breaker, which uses the larger of `cooldownMs`
-and `Retry-After` for the next probe. So if Anthropic returns
-`Retry-After: 60`, the breaker waits at least 60s — no thundering
-herd against a still-overloaded primary.
+The state machine is per-process and in-memory; each worker probes
+independently.
 
 ## `circuit_state_changed` trace events
 
-Every breaker transition emits a structured event:
+When `wrap()` is given a `bus`, every breaker transition publishes a
+`CircuitStateChangedEvent`:
 
 ```json
 {
   "kind": "circuit_state_changed",
-  "model": "claude-sonnet-4-6",
-  "from": "closed",
-  "to": "open",
-  "reason": "5 failures in 60s",
-  "lastError": "ETIMEDOUT"
+  "adapter": "claude-sonnet-4-6",
+  "fromState": "closed",
+  "toState": "open",
+  "reason": "5 failures in 4211ms"
 }
 ```
 
-Pickup points:
+(plus the standard trace envelope: `runId`, `sessionId`, `traceId`,
+`spanId`, `timestamp`). `adapter` is whatever `adapterName` you
+passed — use the model string so dashboards can tell candidates
+apart. Without a bus, transitions are silent except for the `state()`
+getter.
 
-- **Trace bus.** Live in `CREWHAUS_TRACE=json` output.
-- **Audit log.** For managed deployments, the event is hash-chained
-  in the tenant's audit JSONL.
-- **OTel exporters.** Both `circuit_state_changed` and per-call
-  attributes (`model.attempt`, `model.circuit_state`) propagate via
-  `otel-exporter`.
+Pickup point: any subscriber on that trace bus. The structured event
+printer (`CREWHAUS_TRACE=pretty|json`) renders breaker transitions in
+red, so degradation stands out in live output. See
+[Recipe 17 — Observability](17-observability.md) for the wider
+trace-bus tooling.
 
-A grafana panel for breaker state is one of the defaults in
-[Recipe 17 — Observability](17-observability.md).
+## Bedrock setup
+
+Bedrock makes a natural second provider for a Claude-primary chain —
+same models, different control plane. Two gotchas:
+
+- **Use the inference-profile id.** AWS requires the cross-region
+  inference-profile id (geo prefix `us.` / `eu.` / `apac.` /
+  `global.` / …) — not the bare model id — to invoke
+  current-generation Claude and Llama models on demand:
+  `bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0`. The router
+  accepts the prefix and infers the family from the rest of the id.
+- **Credentials and region.** Auth is the standard AWS credential
+  chain (`AWS_ACCESS_KEY_ID`/profile/IAM role) **or** a Bedrock API
+  key via `AWS_BEARER_TOKEN_BEDROCK`. Region comes from
+  `AWS_REGION`/`AWS_DEFAULT_REGION` or your AWS profile — there is no
+  baked-in default, so an unset region fails loudly instead of
+  silently invoking `us-east-1`.
+
+Non-Anthropic Bedrock families (`meta.llama*`, `mistral.*`,
+`amazon.nova*`, `cohere.command*`, `qwen.*`, `openai.gpt-oss*`)
+stream via the Converse API and support tool use, so they can also
+hold a fallback slot for tool-calling agents.
 
 ## Operational tuning
 
 | Symptom                                                   | Adjustment                                          |
 | --------------------------------------------------------- | --------------------------------------------------- |
 | Breaker trips on transient blips.                         | Raise `failureThreshold` or shorten `windowMs`.     |
-| Breaker stays open too long after recovery.               | Lower `cooldownMs`; raise `successThreshold`.       |
-| Fallback gets traffic during minor primary slowness.      | Tighten primary's `windowMs` so the counter resets faster. |
-| Want manual reset.                                         | No CLI verb — the breaker is per-process and in-memory. It clears on daemon restart, or transitions to `half-open` automatically once `cooldownMs` elapses. |
+| Breaker stays open too long after recovery.               | Lower `cooldownMs`.                                 |
+| Fallback gets traffic during minor primary slowness.      | Shorten the primary's `windowMs` so the counter resets faster. |
+| Want manual reset.                                         | Call `reset()` on the wrapped adapter. No CLI verb — the breaker is per-process and in-memory; it also clears on restart, or transitions to `half_open` automatically once `cooldownMs` elapses. |
 
 ## Things that look like fallback but aren't
 
@@ -231,15 +277,17 @@ optimization. Use it as a safety net; not as a routing strategy.
 ## Local development
 
 For local dev, you usually want **no** fallback — failures should be
-loud so you fix the actual problem. Set
-`CREWHAUS_DISABLE_CIRCUIT_BREAKER=1` for the duration of dev:
+loud so you fix the actual problem. Since the breaker is wiring you
+add (not something the compiled bundle injects), the dev posture is
+simply: don't `wrap()`. Gate the wrapping on your own env flag if you
+want one binary for both:
 
-```bash
-CREWHAUS_DISABLE_CIRCUIT_BREAKER=1 bun run run starters/cli
+```typescript
+const adapter = process.env.MY_APP_BREAKERS === "1" ? wrap(raw, opts) : raw;
 ```
 
-That wraps every model in an always-closed breaker, so failures
-surface as ordinary errors with the original provider error message.
+Unwrapped, failures surface as ordinary errors with the original
+provider error message.
 
 ## What to read next
 

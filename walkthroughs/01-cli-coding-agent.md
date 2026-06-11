@@ -145,8 +145,9 @@ Three top-level fields:
 
 `agent.model` follows the [model id grammar](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md#other-model-providers):
 bare `claude-...` for Anthropic, `openai/...`, `gemini/...`,
-`bedrock/...`, or `local/<model>@<url>` for an OpenAI-compatible local
-endpoint.
+`bedrock/...`, `azure/...`, `vertex/...`, a named OpenAI-compatible
+host (`groq/...`, `openrouter/...`, ...), or `local/<model>[@<url>]`
+for an OpenAI-compatible local endpoint.
 
 `agent.instructions` is the system prompt. It can be a multi-line YAML
 block; `|` preserves the linebreaks.

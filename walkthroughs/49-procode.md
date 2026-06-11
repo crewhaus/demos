@@ -192,9 +192,9 @@ The `model:` field is provider-agnostic. Edit
 | Provider | `model:` | Env |
 |---|---|---|
 | Anthropic (default) | `claude-opus-4-7` | `ANTHROPIC_API_KEY` |
-| OpenAI | `gpt-4o-2024-11-20` | `OPENAI_API_KEY` |
-| Google | `gemini-2.0-flash` | `GOOGLE_API_KEY` |
-| Bedrock | `bedrock/anthropic.claude-sonnet-4-...` | `AWS_*` |
+| OpenAI | `openai/gpt-4o` | `OPENAI_API_KEY` |
+| Google | `gemini/gemini-2.5-flash` | `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) |
+| Bedrock | `bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0` | AWS credential chain or `AWS_BEARER_TOKEN_BEDROCK`, plus `AWS_REGION` |
 | Local | `local/llama-3.3-70b@http://localhost:8080/v1` | — |
 
 Recompile after every spec edit.
