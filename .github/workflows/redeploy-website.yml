@@ -18,12 +18,17 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
+      # client_payload is informational — it surfaces this push's repo + sha
+      # in the receiving run's event payload, answering "which merge
+      # triggered this deploy?" The website build resolves refs to commit
+      # SHAs itself (immune to raw.githubusercontent's ~5-min CDN cache,
+      # which served pre-merge content on 2026-06-12 with crewhaus/docs).
       - name: Fire docs-content-updated dispatch to crewhaus/website
         run: |
           curl -sS --fail -X POST \
             -H "Authorization: Bearer $TOKEN" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/crewhaus/website/dispatches \
-            -d '{"event_type":"docs-content-updated"}'
+            -d "{\"event_type\":\"docs-content-updated\",\"client_payload\":{\"repo\":\"demos\",\"sha\":\"$GITHUB_SHA\"}}"
         env:
           TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
