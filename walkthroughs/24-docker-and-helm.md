@@ -3,7 +3,7 @@
 Build per-target Docker images, single-binary cross-platform releases,
 and a Helm chart that handles the daemon vs non-daemon distinction.
 Plus package manifests for Homebrew, Debian, Scoop, and winget so end
-users can `brew install crewhaus`.
+users can `brew install crewhaus/tap/crewhaus`.
 
 You'd use this when:
 
@@ -91,12 +91,24 @@ manifest auto-update.
 [`packages/single-binary-cli`](https://github.com/crewhaus/factory/blob/main/packages/single-binary-cli)
 auto-generates manifests for four distribution channels:
 
-| Channel    | File written                                  | Install command                                |
-| ---------- | --------------------------------------------- | ---------------------------------------------- |
-| Homebrew   | `Formula/crewhaus.rb`                          | `brew install crewhaus/tap/crewhaus`           |
-| Debian     | `debian/crewhaus.control`                      | `apt install crewhaus`                         |
-| Scoop      | `bucket/crewhaus.json`                         | `scoop install crewhaus`                       |
-| winget     | `manifests/crewhaus/crewhaus.installer.yaml`   | `winget install crewhaus`                      |
+| Channel    | File written                                  | Install command                                                                  |
+| ---------- | --------------------------------------------- | -------------------------------------------------------------------------------- |
+| Homebrew   | `Formula/crewhaus.rb`                          | `brew install crewhaus/tap/crewhaus`                                             |
+| Debian     | `debian/crewhaus.control`                      | signed apt repo, then `sudo apt install crewhaus` (see block below)              |
+| Scoop      | `bucket/crewhaus.json`                         | `scoop bucket add crewhaus https://github.com/crewhaus/scoop-bucket && scoop install crewhaus` |
+| winget     | `manifests/crewhaus/crewhaus.installer.yaml`   | `winget install CrewHaus.CLI`                                                    |
+
+The Debian channel installs from a signed apt repo:
+
+```bash
+curl -fsSL https://crewhaus.github.io/apt/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/crewhaus.gpg
+echo "deb [signed-by=/usr/share/keyrings/crewhaus.gpg] https://crewhaus.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/crewhaus.list
+sudo apt update && sudo apt install crewhaus
+```
+
+These four binaries are self-contained — no Bun or Node runtime needed.
+(The fifth channel, the bare `crewhaus` npm package — `npm install -g crewhaus`
+or `bun add -d crewhaus` — does need Bun >= 1.2.)
 
 Each generator is deterministic — same release inputs produce
 byte-identical manifests. `writeAllManifests()` dumps all four into

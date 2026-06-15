@@ -14,15 +14,36 @@ All three default to Claude but the `model:` field accepts any provider (GPT-4o,
 
 ## How it relates to factory
 
-`crewhaus-demos` is its own repo, but the examples only make sense alongside the `@crewhaus/*` packages — they're compiled by `@crewhaus/cli` and the compiled `dist/` outputs import `@crewhaus/runtime-core` and friends.
+`crewhaus-demos` is its own repo, but the examples only make sense alongside the `@crewhaus/*` packages — they're compiled by the `crewhaus` CLI and the compiled `dist/` outputs import `@crewhaus/runtime-core` and friends.
 
 This repo deliberately keeps no `@crewhaus/*` runtime in its own `package.json` — `bun install` only pulls `@types/bun` and `typescript`. The compile scripts find the CLI via this precedence:
 
 1. `FACTORY_PATH` env or a `../factory` sibling checkout → contributor / dual-checkout mode (changes in `factory/` flow into demo runs without republishing). **CI uses this path.**
-2. `node_modules/@crewhaus/cli` — if you ran `bun add -d @crewhaus/cli` yourself in this repo.
+2. `node_modules/crewhaus` — if you ran `bun add -d crewhaus` yourself in this repo.
 3. `bun x crewhaus` — falls back to a globally installed binary.
 
-**Default path for users following the docs:** `bun add -d @crewhaus/cli` after cloning, then `bun run compile <demo>` shells out to the npm-installed binary. During the v0.1.1 private-scope window, `bun add` requires `npm login` with scope access; see [factory/PACKAGES.md](https://github.com/crewhaus/factory/blob/main/PACKAGES.md) for the access flip plan.
+**Default path for users following the docs:** install the `crewhaus` CLI (the bare, unscoped npm package — the old `@crewhaus/cli` name is deprecated and now just points at it), then `bun run compile <demo>` shells out to the installed binary. The CLI is available from five channels:
+
+```bash
+# npm / Bun (requires Bun >= 1.2)
+npm install -g crewhaus            #  or:  bun add -d crewhaus
+
+# Homebrew (macOS / Linux)
+brew install crewhaus/tap/crewhaus
+
+# Scoop (Windows)
+scoop bucket add crewhaus https://github.com/crewhaus/scoop-bucket && scoop install crewhaus
+
+# winget (Windows)
+winget install CrewHaus.CLI
+
+# apt (Debian / Ubuntu, signed)
+curl -fsSL https://crewhaus.github.io/apt/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/crewhaus.gpg
+echo "deb [signed-by=/usr/share/keyrings/crewhaus.gpg] https://crewhaus.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/crewhaus.list
+sudo apt update && sudo apt install crewhaus
+```
+
+The Homebrew / Scoop / winget / apt binaries are self-contained — no Bun or Node runtime needed. Only the npm package needs Bun. After install, `crewhaus --version` prints e.g. `0.1.3`.
 
 **Contributor / dual-checkout path:** clone [crewhaus/factory](https://github.com/crewhaus/factory) as a sibling — no extra install needed, the scripts and `tsconfig.json` `paths` block pick it up.
 
