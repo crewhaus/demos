@@ -22,21 +22,23 @@ on:
       - "smoke/**/crewhaus.yaml"
       - ".github/workflows/walkthroughs.yml"
 
+permissions:
+  contents: read
+
 jobs:
   static:
     name: Static walkthrough validation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout demos
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           path: demos
       - name: Checkout factory (sibling — required for the compiler CLI)
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: crewhaus/factory
           path: factory
-          token: ${{ secrets.CREWHAUS_REPO_TOKEN }}
       # If the demos PR's branch name also exists in factory, check that
       # out — it lets cross-repo PRs (e.g. a spec field added to factory
       # consumed by a new demo) test together. Falls back silently to
@@ -44,9 +46,10 @@ jobs:
       - name: Match factory branch to demos PR branch when present
         if: github.head_ref != ''
         working-directory: factory
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-          BRANCH="${{ github.head_ref }}"
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
             echo "[recipes-ci] factory has matching branch $BRANCH — checking out"
             git fetch origin "$BRANCH"
@@ -54,7 +57,7 @@ jobs:
           else
             echo "[recipes-ci] no factory branch named $BRANCH; staying on default"
           fi
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: ">=1.2.0"
       - name: Install factory deps (workspace setup)
@@ -73,21 +76,21 @@ jobs:
     needs: static
     steps:
       - name: Checkout demos
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           path: demos
       - name: Checkout factory (sibling — required for the compiler CLI)
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: crewhaus/factory
           path: factory
-          token: ${{ secrets.CREWHAUS_REPO_TOKEN }}
       - name: Match factory branch to demos PR branch when present
         if: github.head_ref != ''
         working-directory: factory
+        env:
+          BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-          BRANCH="${{ github.head_ref }}"
           if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
             echo "[recipes-ci] factory has matching branch $BRANCH — checking out"
             git fetch origin "$BRANCH"
@@ -95,7 +98,7 @@ jobs:
           else
             echo "[recipes-ci] no factory branch named $BRANCH; staying on default"
           fi
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: ">=1.2.0"
       - name: Install factory deps (workspace setup)
