@@ -29,7 +29,7 @@ This repo deliberately keeps no `@crewhaus/*` runtime in its own `package.json` 
 npm install -g crewhaus            #  or:  bun add -d crewhaus
 
 # Homebrew (macOS / Linux)
-brew tap crewhaus/tap && brew install crewhaus
+brew install crewhaus/tap/crewhaus
 
 # Scoop (Windows)
 scoop bucket add crewhaus https://github.com/crewhaus/scoop-bucket && scoop install crewhaus

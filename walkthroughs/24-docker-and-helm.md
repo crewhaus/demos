@@ -3,7 +3,7 @@
 Build per-target Docker images, single-binary cross-platform releases,
 and a Helm chart that handles the daemon vs non-daemon distinction.
 Plus package manifests for Homebrew, Debian, Scoop, and winget so end
-users can `brew tap crewhaus/tap && brew install crewhaus`.
+users can `brew install crewhaus/tap/crewhaus`.
 
 You'd use this when:
 
@@ -93,7 +93,7 @@ auto-generates manifests for four distribution channels:
 
 | Channel    | File written                                  | Install command                                                                  |
 | ---------- | --------------------------------------------- | -------------------------------------------------------------------------------- |
-| Homebrew   | `Formula/crewhaus.rb`                          | `brew tap crewhaus/tap && brew install crewhaus`                                             |
+| Homebrew   | `Formula/crewhaus.rb`                          | `brew install crewhaus/tap/crewhaus`                                             |
 | Debian     | `debian/crewhaus.control`                      | signed apt repo, then `sudo apt install crewhaus` (see block below)              |
 | Scoop      | `bucket/crewhaus.json`                         | `scoop bucket add crewhaus https://github.com/crewhaus/scoop-bucket && scoop install crewhaus` |
 | winget     | `manifests/crewhaus/crewhaus.installer.yaml`   | `winget install CrewHaus.CLI`                                                    |
