@@ -64,8 +64,10 @@ By the end of this recipe you'll have:
 - A small JSONL dataset with a train/dev/test split.
 - A graders config that mixes deterministic graders, NLG metrics, and
   LLM-as-judge.
-- A `target: eval` spec that runs the agent against the dev split and
-  writes a sortable HTML report.
+- A `crewhaus eval` run that grades a `target: cli` agent against the
+  dev split and writes a sortable HTML report.
+- A `target: eval` spec that compiles to a standalone bundle running
+  the same loop.
 - A diff between two eval runs that shows what flipped pass/fail.
 - An understanding of where eval plugs into canary rollouts and
   prompt optimization.
@@ -77,10 +79,41 @@ By the end of this recipe you'll have:
 - An Anthropic credential in `.env` if you want to run live eval
   rather than just compile the bundle.
 
-## Step 1 — The smallest possible eval spec
+## Step 1 — Two ways to run an eval
+
+There are two entry points into the eval stack, and they take different
+spec shapes:
+
+- **`crewhaus eval`** grades a **`target: cli`** spec — the agent under
+  test — passing the dataset and graders as separate flags. This is the
+  interactive, run-from-the-CLI path used through the rest of this recipe.
+- **The `target: eval` shape** bundles the agent, dataset reference, and
+  graders into one spec that **compiles to a standalone bundle** you run
+  directly with `bun` (no `crewhaus eval` involved). It's the shape you'd
+  check in and deploy.
+
+### The `target: cli` spec `crewhaus eval` grades
+
+`crewhaus eval` takes the same plain agent spec you'd use for
+[Recipe 01](01-cli-coding-agent.md) — just the agent under test:
+
+```yaml
+name: hello
+target: cli
+agent:
+  model: claude-opus-4-7
+  instructions: |
+    Answer math questions with just the number.
+```
+
+The dataset and graders live outside the spec and are passed on the
+command line (`--dataset`, `--graders`); see Step 1.5.
+
+### The `target: eval` shape that compiles to a bundle
 
 The bundled example [`starters/eval/crewhaus.yaml`](../starters/eval/crewhaus.yaml)
-grades a math agent with one deterministic grader:
+folds the agent, dataset reference, and graders into one spec and
+compiles to a self-contained `agent.ts`:
 
 ```yaml
 name: hello-eval
@@ -108,14 +141,16 @@ Five top-level fields:
 | `concurrency` | How many samples to run in parallel. Default 4.                        |
 | `seed`        | Optional integer seed for grader / sampling determinism.               |
 
-Compile to see the generated bundle:
+Compile to see the generated bundle — a single-file `agent.ts` that
+loads the dataset registry, parses the synthesized graders config, and
+calls `runEval` standalone:
 
 ```bash
 bun run compile starters/eval
 ls starters/eval/dist/   # agent.ts
 ```
 
-## Step 1.5 — Run the bundled eval end-to-end
+## Step 1.5 — Run the eval end-to-end
 
 Before unpacking datasets and graders, prove the runtime is wired by
 running the in-process eval probe — five fixtures that exercise the
@@ -127,18 +162,26 @@ bun run smoke:section-29
 # Five probes pass in under 2 seconds.
 ```
 
-Then run the bundled math eval against the dev split, with the
-`exact_match` grader scoring each sample:
+Then run the math eval against the dev split, with the `exact_match`
+grader scoring each sample. `crewhaus eval` grades a `target: cli`
+spec, so the math agent from Step 1 is saved as
+[`starters/eval/agent.cli.yaml`](../starters/eval/agent.cli.yaml).
+The `--dataset` flag takes a flat sample file — `.jsonl`, `.csv`,
+`.yaml`, or an `http(s)` URL — so point it at the dev split
+[`hello-eval/dev.jsonl`](../.crewhaus/datasets/hello-eval/dev.jsonl)
+(the versioned `.json` registry format from Step 2 is what the
+`target: eval` bundle resolves by name, not what `--dataset` reads):
 
 ```bash
-bun apps/cli/src/index.ts eval starters/eval/crewhaus.yaml \
-  --dataset .crewhaus/datasets/starters/eval/v1.json \
+bun apps/cli/src/index.ts eval starters/eval/agent.cli.yaml \
+  --dataset .crewhaus/datasets/hello-eval/dev.jsonl \
   --graders starters/eval/graders.yaml \
   --concurrency 2 --seed 42 \
   -o .crewhaus/evals/run-1
-# ✓ d1  exact_match  7  (pass)
-# ✓ d2  exact_match  5  (pass)
-# pass_rate=1.00  mean_score=1.00  samples=2  → report .crewhaus/evals/run-1/report.html
+# ✓ d1  exact_match  7   (pass)
+# ✓ d2  exact_match  5   (pass)
+# …  d3–d6 …
+# pass_rate=1.00  mean_score=1.00  samples=6  → report .crewhaus/evals/run-1/index.html
 ```
 
 Per-sample artifacts land at
@@ -260,9 +303,13 @@ defense.
 
 ## Step 4 — Running an eval
 
+`crewhaus eval` grades a `target: cli` spec; the dataset and graders are
+passed as flags (the `target: eval` shape that bundles all three is a
+separate path — Step 1):
+
 ```bash
-bun apps/cli/src/index.ts eval starters/eval/crewhaus.yaml \
-  --dataset .crewhaus/datasets/starters/eval/v1.json \
+bun apps/cli/src/index.ts eval starters/eval/agent.cli.yaml \
+  --dataset .crewhaus/datasets/hello-eval/dev.jsonl \
   --graders starters/eval/graders.yaml \
   --concurrency 2 \
   --seed 42 \
@@ -271,7 +318,7 @@ bun apps/cli/src/index.ts eval starters/eval/crewhaus.yaml \
 
 Per-sample artifacts land at
 `.crewhaus/evals/run-1/<sampleId>/{transcript.jsonl, events.jsonl, grades.json}`.
-A summary report writes to `.crewhaus/evals/run-1/report.html`.
+A summary report writes to `.crewhaus/evals/run-1/index.html`.
 
 The HTML report is a self-contained file with:
 
@@ -289,8 +336,8 @@ The point of having a dev split is to compare runs. After making a
 change to your agent, run a second eval:
 
 ```bash
-bun apps/cli/src/index.ts eval starters/eval/crewhaus.yaml \
-  --dataset .crewhaus/datasets/starters/eval/v1.json \
+bun apps/cli/src/index.ts eval starters/eval/agent.cli.yaml \
+  --dataset .crewhaus/datasets/hello-eval/dev.jsonl \
   --graders starters/eval/graders.yaml \
   -o .crewhaus/evals/run-2
 ```

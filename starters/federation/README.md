@@ -19,13 +19,15 @@ Six probes exercise the federation surface end-to-end (no docker required, no li
 5. In-process two-server demo over HTTP.
 6. Docker-compose fixture (gated on `CREWHAUS_FEDERATION_LIVE=1`).
 
-The full smoke source lives at [`examples/section-34-federation-smoke/smoke.ts`](../examples/section-34-federation-smoke/smoke.ts).
+The full smoke source lives at [`smoke/section-34-federation-smoke/smoke.ts`](../../smoke/section-34-federation-smoke/smoke.ts).
 
-## Inputs (for production deployments)
+## How production wires peers
 
-Production wires these in `spec.federation.peers`:
+There is **no `spec.federation.*` block** — the spec schema (`packages/spec/src/index.ts`) has no `federation` key, and `subAgentDefinitionSchema` is `.strict()`, so you can't add one. Federation is composed **programmatically**, exactly as the smoke's probes C and E do:
 
-- `deployment-a` (caller) — researcher agent. mTLS cert at `~/.crewhaus/federation/deployment-a/{cert,key}.pem`.
-- `deployment-b` (callee) — code-reviewer agent. mTLS cert at `~/.crewhaus/federation/deployment-b/{cert,key}.pem`.
+- The caller deployment (e.g. `deployment-a`, a researcher) constructs a router with `createFederationRouter({ fromDeployment, credentials })` and invokes `router.call({ fromRole, to: { deployment, role }, payload })`.
+- The callee deployment (e.g. `deployment-b`, a code-reviewer) stands up its own HTTPS endpoint that `decodeFederationEnvelope`s the request body, runs the named role, and responds with `{ reply }`.
+
+`credentials` is an `MtlsCredentials` value — PEM **strings** (`caCertPem`, `clientCertPem`, `clientKeyPem`) plus the peer's 64-char hex `pinnedFingerprint`, not file paths. Source them however your deployment supplies secrets; the walkthrough's router example reads them from env vars (`CREWHAUS_FED_CA_CERT`, `CREWHAUS_FED_CLIENT_CERT`, `CREWHAUS_FED_CLIENT_KEY`, `CREWHAUS_FED_PEER_FINGERPRINT`). Peers are discovered at call time via DNS SRV + `.well-known/crewhaus.json`, not declared in a spec.
 
 See [`walkthroughs/27-federation.md`](../../walkthroughs/27-federation.md) for the envelope shape, mTLS pinning, traceparent propagation, and error-classification details.

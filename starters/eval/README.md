@@ -24,8 +24,10 @@ The files in this directory mirror exactly what recipe 12 documents:
 | File                                          | Purpose                                              |
 | --------------------------------------------- | ---------------------------------------------------- |
 | `crewhaus.yaml`                               | Spec: agent + dataset reference + graders + concurrency. |
+| `agent.cli.yaml`                              | `target: cli` companion spec — the same math agent, runnable directly. |
 | `graders.yaml`                                | Standalone graders config (used by the CLI `eval` subcommand). |
-| `../.crewhaus/datasets/hello-eval/v1.json`    | Dataset with train/dev/test splits (math QA).        |
+| `../../.crewhaus/datasets/hello-eval/v1.json`  | Dataset with train/dev/test splits (math QA).        |
+| `../../.crewhaus/datasets/hello-eval/dev.jsonl` | Flat dev-split dataset that `crewhaus eval --dataset` accepts. |
 
 To author a real eval against your own agent: copy this directory,
 swap `agent.instructions`, swap the dataset, and add graders. The
@@ -36,7 +38,7 @@ reads.
 ## Compile the bundle
 
 ```bash
-bun run compile eval
+bun run compile starters/eval
 ```
 
 Emits `dist/agent.ts` — a single-file `target: eval` bundle that loads
@@ -45,10 +47,11 @@ the dataset registry, parses the synthesized graders config, and calls
 `smoke:section-29` is the proof the runtime is wired.
 
 > Note: `bun run run eval` invokes the compiled `dist/agent.ts`
-> directly. There is a current API drift in `@crewhaus/target-eval-bundle`
-> against the latest `runEval` signature — the runtime walkthrough via
-> `smoke:section-29` is the supported end-to-end path until that
-> codegen lands.
+> directly. That bundle drives the real `runEval`, so it needs model
+> credentials to score samples — without them every sample fails and
+> the run reports `passRate: 0`. The credential-free, deterministic
+> proof of the eval stack is `smoke:section-29`, which is why that is
+> the supported end-to-end path here.
 
 ## What this proves
 

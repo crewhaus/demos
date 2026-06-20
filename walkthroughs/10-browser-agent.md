@@ -7,9 +7,10 @@ test:
 
 Build a computer-use agent that drives a chromium browser via
 `Screenshot`, `FindElement` (vision-grounded bounding boxes), `Click`,
-`Type`, `Key`, and `Scroll`. The same pattern works against the
-bundled Playwright chromium for tests and against a remote CDP-over-
-WebSocket browser for production.
+`Type`, `Key`, and `Scroll`. This walkthrough runs against the
+bundled Playwright chromium; a `remote` (CDP-over-WebSocket) backend
+is named in the schema but is **not implemented via the spec path in
+v0** (it throws at connect — see [Backends](#backends)).
 
 You'd reach for `target: browser` when:
 
@@ -118,13 +119,16 @@ permissions:
 The shape:
 
 - **`driver.backend:`** — `chromium` (Playwright bundled),
-  `remote` (CDP WebSocket URL), or `host` (xdotool on Linux, cliclick
+  `remote` (an external browser — not implemented via the spec in v0;
+  covered below), or `host` (xdotool on Linux, cliclick
   on macOS — read carefully before using; covered below).
 - **`driver.viewport:`** — width × height. The browser launches at
   this size and **everything else is layered on this coordinate
   space** — that's why `Click(x, y)` is deterministic across runs.
-- **`driver.startUrl:`** — what the browser opens to. Often this
-  is a per-task URL passed at run time via `--start-url <url>`.
+- **`driver.startUrl:`** — what the browser opens to. It's baked
+  into the compiled agent at compile time; the generated agent reads
+  only `--prompt` at run time (there is no `--start-url` flag), so
+  changing the target URL means editing the spec and recompiling.
 - **`groundingModel:`** — the model used by `FindElement` to map a
   natural-language description to coordinates. Defaults to the
   agent's model; override if you want a faster/cheaper grounding model.
@@ -288,22 +292,26 @@ for the full rule grammar.
 Playwright launches a headless Chromium per run. Fast, sandboxed,
 consistent across hosts. Cost: ~150MB memory per browser; ~1s startup.
 
-### `remote`
+### `remote` — **not implemented in v0 via the spec**
 
-Connect to an external browser via CDP WebSocket:
+The schema accepts `backend: remote`, but the spec-driven path is a
+stub: the compiled agent calls `createRemoteDriverStub()`, whose
+`connect()` throws *"remote backend (CDP / Browserless) is not
+implemented in v0"*. The spec also exposes **no field** for a remote
+endpoint (only `backend`, `viewport`, and `startUrl`), so there's no
+way to point it at an external browser from the YAML.
 
 ```yaml
 driver:
-  backend: remote
-  cdpUrl: ws://browser.internal:9222/devtools/browser/<browserId>
+  backend: remote   # throws at connect() — do not use via the spec
 ```
 
-Useful for:
-
-- A persistent browser farm (browserless.io, Selenoid, your own).
-- Sharing one browser across many runs (cookie / session persistence).
-- Geo-located browsers (a browser in EU for a task targeting EU
-  content).
+A real `createRemoteDriver` exists in `computer-use-driver`, but it's
+reachable only by wiring `puppeteer-core` directly — not through the
+spec/compiled-agent path this walkthrough documents. Browser farms,
+session persistence, and geo-located browsers are the intended use
+cases for that direct API; none of them are available via the spec
+in v0.
 
 ### `host` — **production-unsafe**
 
@@ -316,9 +324,9 @@ right backend for:
 - Local development against a real browser the developer is watching.
 - Pair-programming a UI-test recording.
 
-For multi-tenant or remote-input scenarios, use `chromium` or
-`remote` — host backend has no isolation between agent and the rest
-of the desktop.
+For multi-tenant or remote-input scenarios, use `chromium` (the
+`remote` backend is not implemented via the spec in v0) — host
+backend has no isolation between agent and the rest of the desktop.
 
 ## Event log
 
@@ -326,16 +334,14 @@ Browser-specific events flow into the JSONL log:
 
 ```bash
 SESSION=$(ls -t .crewhaus/sessions/sess_*.jsonl | head -1)
-jq -c 'select(.kind | startswith("browser_"))' "$SESSION"
+jq -c 'select(.kind == "browser_start" or .kind == "navigated" or .kind == "browser_done")' "$SESSION"
 ```
 
-| Subkind                 | Payload                                       |
-| ----------------------- | --------------------------------------------- |
-| `browser_session_start` | `{ backend, viewport, startUrl }`              |
-| `browser_screenshot`    | `{ width, height, hash }`                     |
-| `browser_action`        | `{ tool, args, latencyMs, success }`          |
-| `browser_navigation`    | `{ url, method: "click" \| "goto" \| "redirect" }` |
-| `browser_session_end`   | `{ reason }`                                  |
+| Subkind         | Payload              |
+| --------------- | -------------------- |
+| `browser_start` | `{ backend }`        |
+| `navigated`     | `{ url }`            |
+| `browser_done`  | `{ finalText }`      |
 
 ## Things that look like browser but aren't
 
@@ -348,18 +354,6 @@ jq -c 'select(.kind | startswith("browser_"))' "$SESSION"
 
 Browser is for **medium-sized, deterministic, vision-grounded** UI
 work — a coverage gap that pure HTTP automation can't fill.
-
-## Production knobs
-
-- **Block third-party requests.** `driver.blockOrigins:
-  ["https://*.doubleclick.net", ...]` for ad / analytics / tracker
-  domains. Smaller attack surface and faster page loads.
-- **Cookies.** `driver.cookies: [...]` to pre-populate session cookies.
-  Stored in `.env` via `$COOKIE_*` references.
-- **User-agent override.** `driver.userAgent: "..."` if the target
-  site sniffs.
-- **Recording.** `driver.recordingPath: ./recordings/` produces
-  Playwright-format trace files for replay.
 
 ## What to read next
 

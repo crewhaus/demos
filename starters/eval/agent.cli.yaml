@@ -1,0 +1,6 @@
+name: hello
+target: cli
+agent:
+  model: claude-opus-4-7
+  instructions: |
+    Answer math questions with just the number.

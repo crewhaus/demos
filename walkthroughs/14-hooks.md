@@ -96,7 +96,7 @@ Decision values:
 | `allow`    | Continue normally. Optional `reason` ignored.                              |
 | `deny`     | Short-circuit the in-flight call. `pre-tool` deny → tool not invoked; `pre-model` deny → model call refused. |
 | `block`    | Short-circuit the **entire turn**. The session continues but the user's next message reignites it. |
-| `mutate`   | Currently only `pre-slash` honors `mutate.text` — replaces the expanded command. |
+| `mutate`   | Currently only `pre-slash` honors `mutate.expanded` — replaces the expanded command. |
 
 If a hook prints anything other than valid JSON, the engine treats it
 as `{"decision": "allow"}` and logs a warning. Errors do not block
@@ -195,7 +195,7 @@ completes, deny or not.
   "hooks": {
     "pre-slash": [
       {
-        "command": "test \"$CREWHAUS_SLASH_NAME\" != \"deploy\" && { echo '{\"decision\":\"allow\"}'; exit 0; }; TS=$(date -u +%FT%TZ); ORIG=$(echo \"$CREWHAUS_SLASH_EXPANSION\" | jq -r .); MUTATED=\"$ORIG (deployed at $TS)\"; jq -n --arg t \"$MUTATED\" '{decision:\"allow\",mutate:{text:$t}}'"
+        "command": "test \"$CREWHAUS_SLASH_NAME\" != \"deploy\" && { echo '{\"decision\":\"allow\"}'; exit 0; }; TS=$(date -u +%FT%TZ); ORIG=$(echo \"$CREWHAUS_SLASH_EXPANSION\" | jq -r .); MUTATED=\"$ORIG (deployed at $TS)\"; jq -n --arg t \"$MUTATED\" '{decision:\"allow\",mutate:{expanded:$t}}'"
       }
     ]
   }

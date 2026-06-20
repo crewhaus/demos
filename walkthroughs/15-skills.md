@@ -76,16 +76,16 @@ clear "stop and ask" branch, and references to specific tools.
 
 The runtime looks for skills in three places, in order:
 
-1. **Project skills.** `<cwd>/.crewhaus/skills/<name>/SKILL.md` — version-
-   controlled with your repo. Highest priority.
-2. **User skills.** `~/.crewhaus/skills/<name>/SKILL.md` — per-user,
-   shared across all your projects.
-3. **Plugin skills.** Shipped by installed crewhaus plugins (see
+1. **Plugin skills.** Shipped by installed crewhaus plugins (see
    [`packages/skills-registry`](https://github.com/crewhaus/factory/blob/main/packages/skills-registry) for
-   the loader).
+   the loader). Highest priority.
+2. **Project skills.** `<cwd>/.crewhaus/skills/<name>/SKILL.md` — version-
+   controlled with your repo.
+3. **User skills.** `~/.crewhaus/skills/<name>/SKILL.md` — per-user,
+   shared across all your projects.
 
-If two layers declare the same skill name, project wins over user
-wins over plugin.
+If two layers declare the same skill name, plugin wins over project
+wins over user.
 
 ## What the model sees at boot vs at call
 
@@ -232,7 +232,7 @@ To check what skills the runtime discovered, list the files in each
 discovery layer:
 
 ```bash
-ls .crewhaus/skills/        # project skills (highest priority)
+ls .crewhaus/skills/        # project skills (override user skills)
 ls ~/.crewhaus/skills/      # user skills
 ```
 

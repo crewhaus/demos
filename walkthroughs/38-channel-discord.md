@@ -79,8 +79,8 @@ Three Discord-specific fields:
 
 | Field            | Used for                                                |
 | ---------------- | ------------------------------------------------------- |
-| `applicationId`  | Building interaction reply URLs.                         |
-| `botToken`       | REST API calls (sending follow-up messages, typing indicators). |
+| `applicationId`  | Identifies the app (e.g. registering slash commands).    |
+| `botToken`       | REST API calls (posting replies to the channel, typing indicators). |
 | `publicKeyHex`   | Ed25519 verification of incoming interactions.           |
 
 ## Step 3 — Ed25519 verification
@@ -168,24 +168,26 @@ from the parent channel.
 
 ## Sending replies
 
-Two-phase reply pattern:
+Once `runChatLoop` finishes, the daemon posts the reply straight to
+the interaction's channel with the bot token:
 
-1. **Initial response** — must arrive within 3 seconds. If the
-   model call will take longer, send a **deferred response** (type
-   5): `{ "type": 5, "data": { "flags": 64 } }`. This shows "Bot is
-   thinking..." in Discord while the model works.
-2. **Follow-up** — once the model finishes, POST to
-   `/webhooks/<applicationId>/<token>/messages/@original` with the
-   final text.
+```
+POST https://discord.com/api/v10/channels/<channelId>/messages
+Authorization: Bot <DISCORD_BOT_TOKEN>
 
-For interactions handled in <3s, send the response inline:
-
-```json
-{ "type": 4, "data": { "content": "Your reply" } }
+{ "content": "Your reply" }
 ```
 
-The adapter handles the deferred/follow-up dance based on how long
-`runChatLoop` takes.
+This is `sendReply` in the adapter. It's the same channel-post call
+the proactive `SendMessage` tool uses (see below) — the bot token
+authorizes it, and if the bot is in the channel the message lands.
+
+There's no deferred-interaction dance and no interaction-token
+follow-up: the v0 channel daemon doesn't carry the interaction token
+through to the reply path, so the reply is an ordinary channel
+message rather than an interaction response. That means **no
+ephemeral replies and no per-user replies** — everyone in the channel
+sees the bot's message.
 
 ## Posting to a channel proactively
 
@@ -204,9 +206,11 @@ for proactive sends. Discord doesn't gate this beyond bot permissions
 POST https://discord.com/api/v10/channels/<channelId>/typing
 ```
 
-Shows "Bot is typing..." for ~10 seconds. The adapter doesn't loop
-the typing call automatically (Discord deprioritizes "Bot is typing..."
-visibility); for long calls, a deferred response is the better UX.
+Shows "Bot is typing..." for ~10 seconds. `setTyping` fires this
+best-effort before the model runs and swallows any failure so a
+flaky typing call never breaks the reply flow. The adapter doesn't
+loop the typing call automatically (Discord deprioritizes "Bot is
+typing..." visibility).
 
 ## Worked examples
 

@@ -43,20 +43,16 @@ under
 ## The grader contract
 
 ```typescript
-interface Grader {
-  name: string;
-  evaluate(
-    sample: DatasetSample,
-    runResult: RunResult
-  ): Promise<GraderVerdict>;
-}
+type Grader = (
+  sample: Sample,
+  runResult: RunResult
+) => Promise<GradeResult>;
 
-interface GraderVerdict {
-  passed: boolean;       // the gate
-  score: number;         // [0, 1]
-  rationale: string;     // human-readable
-  details?: Record<string, unknown>;
-}
+type GradeResult = {
+  readonly passed: boolean;   // the gate
+  readonly score: number;     // [0, 1]
+  readonly rationale: string; // human-readable
+};
 ```
 
 `passed` is the binary outcome — does this sample pass the test?
@@ -70,27 +66,26 @@ A grader that asserts the answer starts with a digit:
 ```typescript
 import type { Grader } from "@crewhaus/eval-grader";
 
-export const startsWithDigit: Grader = {
-  name: "starts_with_digit",
-  async evaluate(_sample, runResult) {
-    const out = runResult.finalText.trim();
-    const passed = /^\d/.test(out);
-    return {
-      passed,
-      score: passed ? 1.0 : 0.0,
-      rationale: passed
-        ? "Output starts with a digit."
-        : `Output starts with '${out.slice(0, 1)}' instead of a digit.`
-    };
-  }
+export const startsWithDigit: Grader = async (_sample, runResult) => {
+  const out = runResult.agentOutput.trim();
+  const passed = /^\d/.test(out);
+  return {
+    passed,
+    score: passed ? 1.0 : 0.0,
+    rationale: passed
+      ? "Output starts with a digit."
+      : `Output starts with '${out.slice(0, 1)}' instead of a digit.`
+  };
 };
 ```
 
 Register:
 
 ```typescript
-import { register } from "@crewhaus/grader-registry";
-register("starts_with_digit", startsWithDigit);
+import { GraderRegistry } from "@crewhaus/grader-registry";
+
+const registry = new GraderRegistry();
+registry.register("starts_with_digit", startsWithDigit);
 ```
 
 Use in a spec:
@@ -107,37 +102,39 @@ deterministic, fast, free — pick them whenever possible.
 
 For fuzzy quality questions (faithfulness, tone), you need a model
 in the loop. The eval-judge package gives you a structured rubric:
+criteria, per-criterion 1–5 anchors, and a `passing_score` gate.
+`createJudgeGrader(rubric, opts)` wraps a judge call as a `Grader`:
 
 ```typescript
-import { llmJudge } from "@crewhaus/eval-judge";
-import { z } from "zod";
+import { createJudgeGrader, loadRubric } from "@crewhaus/eval-judge";
 
-export const factuallyAccurate = llmJudge({
-  name: "factually_accurate",
-  rubric: `
-    Read the agent's answer and the expected answer. Score the agent's
-    answer on factual accuracy:
-      1.0 = every claim is supported by the expected answer.
-      0.5 = some claims supported, some not.
-      0.0 = no overlap with expected answer.
-  `,
-  judgeModel: "claude-haiku-4-5-20251001",
-  responseSchema: z.object({
-    score: z.number().min(0).max(1),
-    rationale: z.string(),
-    passed: z.boolean()
-  })
+const rubric = loadRubric(`
+criteria:
+  - name: factual_accuracy
+    description: The agent's claims are supported by the expected answer.
+    anchors:
+      "1": no overlap with the expected answer
+      "2": mostly unsupported claims
+      "3": some claims supported, some not
+      "4": nearly every claim supported
+      "5": every claim supported by the expected answer
+passing_score: 4
+`);
+
+export const factuallyAccurate = createJudgeGrader(rubric, {
+  model: "claude-haiku-4-5-20251001"
 });
 ```
 
-The judge:
+The grader:
 
-- Loads the rubric.
-- Constructs a judge call with the sample's expected output + the
-  run's actual output.
-- Calls `judgeModel` with `responseSchema` to extract structured
-  output.
-- Returns the parsed `GraderVerdict`.
+- Calls `judge({ rubric, sample, agentOutput })` under the hood with
+  the sample's expected output + the run's actual output.
+- Resolves `model` (or `DEFAULT_JUDGE_MODEL`) through the model-router
+  and extracts a structured `submit_score` tool call.
+- Maps the judge's 1–5 `score` to `[0, 1]` via `(n - 1) / 4` and
+  gates `passed` on the rubric's `passing_score`.
+- Returns a `GradeResult`.
 
 ### Defending against injection
 
@@ -194,12 +191,13 @@ When to use each:
 [`packages/grader-registry`](https://github.com/crewhaus/factory/blob/main/packages/grader-registry):
 
 ```typescript
-import { register, lookup, list } from "@crewhaus/grader-registry";
+import { GraderRegistry } from "@crewhaus/grader-registry";
 
-register("my_grader", myGraderFactory({ threshold: 0.8 }));
+const registry = new GraderRegistry();
+registry.register("my_grader", myGraderFactory({ threshold: 0.8 }));
 
-const g = lookup("my_grader");
-console.log(list());   // ["exact_match", "contains", ..., "my_grader"]
+const g = registry.lookup("my_grader");
+console.log(registry.list());   // ["contains", "exact_match", ..., "my_grader"]
 ```
 
 Registered names appear in spec `graders:` lists:
@@ -248,6 +246,7 @@ For hybrid graders, compose your custom check with bundled ones:
 
 ```typescript
 import { all } from "@crewhaus/eval-grader";
+import { GraderRegistry } from "@crewhaus/grader-registry";
 import { rougeL } from "@crewhaus/grader-nlg-metrics";
 import { semanticSimilarity } from "@crewhaus/grader-semantic-similarity";
 import { safetyClassifier } from "@crewhaus/grader-safety-classifiers";
@@ -258,7 +257,9 @@ const productionGrader = all([
   safetyClassifier(),
   myCustomBusinessLogicGrader
 ]);
-register("production", productionGrader);
+
+const registry = new GraderRegistry();
+registry.register("production", productionGrader);
 ```
 
 The four bundled grader families ([`packages/grader-nlg-metrics`](https://github.com/crewhaus/factory/blob/main/packages/grader-nlg-metrics),
@@ -276,18 +277,18 @@ Two test styles:
 
 ```typescript
 test("starts_with_digit passes 'fix' → '5 things'", async () => {
-  const verdict = await startsWithDigit.evaluate(
-    { input: "Tell me numbers", expected: "5 things" },
-    { finalText: "5 things to remember" }
+  const verdict = await startsWithDigit(
+    { id: "s1", input: "Tell me numbers", expected_output: "5 things" },
+    { agentOutput: "5 things to remember" }
   );
   expect(verdict.passed).toBe(true);
   expect(verdict.score).toBe(1);
 });
 
 test("starts_with_digit fails 'fix' → 'five'", async () => {
-  const verdict = await startsWithDigit.evaluate(
-    { input: "Tell me numbers", expected: "5 things" },
-    { finalText: "five things to remember" }
+  const verdict = await startsWithDigit(
+    { id: "s2", input: "Tell me numbers", expected_output: "5 things" },
+    { agentOutput: "five things to remember" }
   );
   expect(verdict.passed).toBe(false);
 });
@@ -299,8 +300,8 @@ test("starts_with_digit fails 'fix' → 'five'", async () => {
 test("score is monotonic in input length", async () => {
   for (let len = 10; len < 100; len++) {
     const text = generateText(len);
-    const v1 = await myGrader.evaluate(sample, { finalText: text });
-    const v2 = await myGrader.evaluate(sample, { finalText: text + " more" });
+    const v1 = await myGrader(sample, { agentOutput: text });
+    const v2 = await myGrader(sample, { agentOutput: text + " more" });
     expect(v2.score).toBeGreaterThanOrEqual(v1.score - 0.01);  // allow small wobble
   }
 });

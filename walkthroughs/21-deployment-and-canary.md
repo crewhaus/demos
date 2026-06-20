@@ -47,17 +47,16 @@ The registry is **file-backed by default** under
 ```json
 {
   "versions": ["v1", "v2", "v3"],
-  "envs": {
+  "pins": {
     "dev": "v3",
     "staging": "v3",
     "prod": "v2"
-  },
-  "aliases": {
-    "stable": "v2",
-    "latest": "v3"
   }
 }
 ```
+
+The env pins *are* the aliases — there's no separate alias map. `pins`
+maps each environment to the version it resolves to.
 
 Operations on the registry:
 
@@ -66,7 +65,7 @@ crewhaus spec put agent-name v3 ./my-spec.yaml     # add a version
 crewhaus spec list agent-name                       # list versions + env pins
 crewhaus spec get agent-name v3                     # print a version's spec
 crewhaus spec pin agent-name prod v3                # pin an env to a version
-crewhaus spec alias agent-name stable v3            # update an alias
+crewhaus spec alias agent-name prod                 # resolve an env → its pinned version
 ```
 
 `pin` is the only operation that changes what production runs. Every

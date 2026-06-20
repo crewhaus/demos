@@ -52,13 +52,13 @@ run. File permissions are `0o600` — only the owning user can read.
 
 ```json
 {
-  "sessionId": "sess_abc123def4567890",
-  "specName": "hello",
+  "id": "sess_abc123def4567890",
   "createdAt": "2026-05-11T08:00:00Z",
-  "lastTurnAt": "2026-05-11T08:42:13Z",
-  "turnCount": 7,
-  "modelTokensIn": 4821,
-  "modelTokensOut": 1043
+  "updatedAt": "2026-05-11T08:42:13Z",
+  "name": "hello",
+  "target": "cli",
+  "model": "claude-sonnet-4-6",
+  "lastTurnIndex": 7
 }
 ```
 
@@ -179,10 +179,13 @@ touch -t 202001010000 .crewhaus/sessions/sess_*.json
 crewhaus run starters/cli/crewhaus.yaml --continue   # runtime list → eviction check
 ```
 
-To extend retention beyond 30 days, set the env var on a run:
+To extend retention beyond 30 days, pass a larger `ttlDays` when
+constructing the store in code — there's no env var or CLI flag for it:
 
-```bash
-CREWHAUS_SESSION_RETENTION_DAYS=180 crewhaus run starters/cli/crewhaus.yaml --continue
+```typescript
+import { createSessionStore } from "@crewhaus/session-store";
+
+const store = createSessionStore({ ttlDays: 180 });
 ```
 
 Or volume-mount `.crewhaus/sessions/` and rely on storage-tier

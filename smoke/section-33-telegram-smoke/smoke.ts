@@ -40,6 +40,8 @@ const FIXTURE_DIR = join(
   import.meta.dir,
   "..",
   "..",
+  "..",
+  "factory",
   "packages",
   "channel-adapter-telegram",
   "src",

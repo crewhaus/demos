@@ -1,8 +1,9 @@
 # Recipe 35 — Studio Walkthrough
 
 End-to-end use of Studio — the local web UI for browsing specs,
-running the spec wizard, visualizing graphs with live state coloring,
-replaying traces, and managing community plugins.
+running the spec wizard, building eval graders and datasets, and
+discovering plugins, all backed by the studio-server HTTP API (which
+also drives run inspection, graph layout, and cost summaries).
 
 You'd use Studio when:
 
@@ -48,7 +49,7 @@ PORT=8080 bun run studio          # UI port (default 4243)
 STUDIO_PORT=9090 bun run studio   # backend port (default 4242)
 ```
 
-Workspace defaults to `<cwd>/.crewhaus/studio-specs/` — every spec
+Workspace defaults to `<cwd>/specs` — every spec
 authored in Studio lives here. Override:
 
 ```bash
@@ -60,80 +61,78 @@ the Specs tab.
 
 ## The Specs tab
 
-Lists every spec in the workspace. Each row shows:
+Lists every spec in the workspace (`GET /api/specs`). Each row shows
+the spec name and its target shape (cli / channel / managed / ...).
 
-- Name + target shape (cli / channel / managed / ...).
-- Last modified.
-- Status (compiled / not compiled / outdated).
-- Quick actions: **Edit**, **Run**, **Compile**, **Delete**.
-
-Click a name to open the spec editor — a syntax-highlighted YAML
-editor with the same JSON Schema validation the IDE plugins use
-([Recipe 25](25-vscode-and-jetbrains.md)). Saves auto-format on Cmd+S
-/ Ctrl+S.
+Click a name to open it (`GET /api/specs/:name`) — the spec's YAML
+loads into a textarea with a **Save** button that writes back via
+`PUT /api/specs/:name`. The IDE plugins
+([Recipe 25](25-vscode-and-jetbrains.md)) carry the richer
+syntax-highlighted, schema-validated editor; the Studio surface is the
+plain textarea.
 
 ## The Wizard
 
 The Wizard creates a spec in 5 questions:
 
 1. **Target shape.** cli / channel / managed / graph / pipeline / ...
-2. **Name.** Display name; lowercased and slugified for the directory.
-3. **Model.** Dropdown of recent models, or type-your-own.
-4. **Tools.** Multi-select from the standard catalog.
+2. **Name.** Kebab-case slug; used verbatim as the spec's `name:` and
+   stored as `<name>.yaml` in the workspace.
+3. **Model.** A suggested-models hint, or type-your-own.
+4. **Tools.** Comma-separated (only meaningful for cli / research /
+   batch; other shapes skip it).
 5. **Permission mode.** default / plan / auto.
 
-When the user submits, the wizard:
+(The v0 UI asks these through plain `window.prompt`s; a richer
+form UI is a follow-up.)
 
-1. Picks the matching template from
-   [`packages/scaffold-templates`](https://github.com/crewhaus/utilities/blob/main/scaffold-templates).
-2. Patches it with the user's answers.
-3. Writes the spec into the workspace.
-4. Drops a `.env.example` listing every `$VAR_NAME` the spec references.
+The UI walks `/api/wizard/start` → `/api/wizard/step` (once per
+answer) → `/api/wizard/compile`. The `compile` call **returns** the
+generated artifacts as strings — `{ yaml, envExample, target, name }` —
+it does not write anything itself:
 
-The user lands in the spec editor with the new spec open. Total time:
-~30 seconds.
+1. The matching template from
+   [`packages/scaffold-templates`](https://github.com/crewhaus/utilities/blob/main/scaffold-templates)
+   is patched with the user's answers into the returned `yaml`.
+2. `envExample` lists every `$VAR_NAME` the spec references.
 
-## The Run viewer
+The UI renders the generated YAML and shows a **Create spec** button.
+Clicking it is what persists the spec — the UI `POST`s
+`{ name, yaml }` to `/api/specs`. Total time: ~30 seconds.
 
-Click **Run** on a spec → Studio:
+## Running specs over the API
 
-1. POSTs to `/api/runs` with the spec name.
-2. Receives `{ runId }`.
-3. Opens the Run viewer, which SSE-streams `/api/runs/:runId/events`.
+Run inspection is a server capability rather than an SPA tab. The
+flow:
 
-The viewer renders events as they arrive:
+1. `POST /api/runs` with `{ specName, prompt }`.
+2. Receive `201 { runId }`.
+3. SSE-stream `GET /api/runs/:runId/events` (terminated by `event:
+   done`). The server emits canned stubs unless you wire a
+   `runDispatcher`; events are shaped for
+   [`trace-viewer`](https://github.com/crewhaus/utilities/blob/main/trace-viewer)
+   to render.
 
-- **User messages** as right-aligned bubbles.
-- **Assistant messages** with markdown rendering.
-- **Tool calls** as collapsed cards (click to expand args + output).
-- **Errors** highlighted in red.
-- **Compaction** as gray bars with token deltas.
+For long-running daemons (channel / managed), the server also exposes:
 
-Each span shows its duration. Click any span → drilldown panel with
-the raw event JSON.
-
-For long-running daemons (channel / managed), the Run viewer also
-exposes:
-
-- **Cancel.** `POST /api/runs/:runId/cancel` signals the AbortSignal.
+- **Cancel.** `POST /api/runs/:runId/cancel` aborts the dispatcher's
+  signal.
 - **HITL.** For graph runs paused at HITL,
   `POST /api/runs/:runId/hitl?nodeId=&decision=` pushes the decision.
 
-The cancel + HITL endpoints make the daemon controllable from the
-web UI without touching the CLI.
+The cancel + HITL endpoints make the daemon controllable over the
+HTTP API without touching the CLI.
 
 ## Cost summary
 
-A dashboard tile aggregates spend:
+The server aggregates spend (via a `costSummarySource`):
 
 ```
 GET /api/cost-summary?tenant=&from=&to=
 ```
 
-Backed by [`packages/cost-tracker`](https://github.com/crewhaus/factory/blob/main/packages/cost-tracker).
-Shows per-tenant, per-model, per-tool cost over a date range. The
-default view is "this month, all tenants" — drill into one tenant
-for a per-call breakdown.
+Returns `{ totalUsdMicros, byProvider }` for the given tenant /
+date-range window — total spend plus a per-provider breakdown.
 
 For multi-tenant deployments ([Recipe 11](11-managed-multitenant.md)),
 the cost summary is the natural billing dashboard. For single-tenant
@@ -141,65 +140,95 @@ CLIs, it's the "how much did I spend today" view.
 
 ## Graph layouts
 
-For `target: graph` specs, Studio renders the graph as SVG:
+For `target: graph` specs, the studio-server renders the graph as SVG:
 
 ```
 GET /api/graph-layout/:specName
 ```
 
-The layout is **deterministic** (same spec → same SVG). Nodes are
-placed by topological order; edges route around nodes.
+The layout is **deterministic** (same spec → same SVG): the server
+lowers the spec to IR and calls `layoutGraph`/`renderSvg` from the
+separate [`graph-visualizer`](https://github.com/crewhaus/utilities/blob/main/graph-visualizer)
+package. Nodes are placed by topological order; edges route around
+nodes. (The studio-ui SPA has no graph tab — its five tabs are Specs,
+Wizard, Graders, Datasets, and Plugins; the endpoint is consumed by the
+graph-visualizer dev tooling, not a Studio SPA tab.)
 
-When a graph runs, Studio applies `applyEvent(state, event)` to
-update the SVG **live**:
+`graph-visualizer` also exports the **live** layer: as a graph runs, a
+consumer feeds SSE events through `applyEvent(state, event)` and
+`renderLiveSvg` to re-color nodes by state —
 
-- Active node: highlighted blue.
-- Completed node: green check.
-- HITL paused node: yellow with a "Decide" button.
-- Failed node: red.
+- Active node (`running`): highlighted blue.
+- Completed node (`done`): green check.
+- HITL paused node (`paused-hitl`): yellow, with a "Decide" affordance.
+- Failed node (`errored`): red.
 
-Click a node mid-run to see its current state JSON.
+Each node's current state JSON is tracked in `LiveGraphState` so the
+renderer can surface it on demand.
 
 ## Trace replay
 
-The Trace tab opens past sessions. Pick a session id (or paste
-from CLI output), and the replay engine walks the JSONL:
-
-- **Speed control.** `raw` / 1× / 2× / 4× (see [Recipe 31](31-session-resume-and-replay.md)).
-- **Step controls.** Play / pause / step-forward.
-- **Search.** Find tool calls by name.
-
-The same replay engine powers the IDE plugins' webview ([Recipe 25](25-vscode-and-jetbrains.md)) —
-opening a trace from VS Code lands in this Studio panel.
+Trace replay is a server capability, not an SPA tab: `GET
+/api/runs/:runId/replay` re-emits a past run's events from the
+configured `replaySource` over the same SSE stream a live run uses
+(see [Recipe 31](31-session-resume-and-replay.md)). The events are
+shaped for the separate
+[`trace-viewer`](https://github.com/crewhaus/utilities/blob/main/trace-viewer)
+package to render, which the IDE plugins' webview also uses
+([Recipe 25](25-vscode-and-jetbrains.md)).
 
 ## Plugins
 
-Studio is extensible via plugins from `~/.crewhaus/plugins/`:
+Studio is extensible via plugins from `~/.crewhaus/plugins/`. A plugin
+is a **single `index.ts`** that default-exports `definePlugin({...})`
+from [`@crewhaus/studio-plugin-sdk`](https://github.com/crewhaus/utilities/blob/main/studio-plugin-sdk) —
+no `package.json`, `plugin.json`, or separate UI file:
 
 ```
 ~/.crewhaus/plugins/
   my-plugin/
-    package.json
-    plugin.json
     index.ts
-    ui.tsx
 ```
 
-`plugin.json` declares the plugin's name, version, and which Studio
-hooks it taps:
+```typescript
+import { definePlugin } from "@crewhaus/studio-plugin-sdk";
 
-- `spec-editor-toolbar` — add a button to the spec editor toolbar.
-- `run-viewer-sidebar` — add a panel to the run viewer.
-- `dashboard-tile` — add a card to the dashboard.
+export default definePlugin({
+  name: "my-plugin",
+  version: "0.1.0",
+  description: "Adds a custom side-pane to the studio.",
 
-`index.ts` exports the plugin's server-side logic; `ui.tsx` is the
-React component.
+  hooks: {
+    onSpecLoad(spec) {},        // spec: { name, target, raw }
+    onTraceEvent(event) {},     // fires for every SSE event
+    onEvalSampleRendered(s) {}, // s: { id, passed, ... }
+  },
+
+  panes: [
+    { id: "my-pane", title: "My Pane", html: "<div>Hello</div>" },
+  ],
+
+  permissions: {
+    fs: ["read:~/.crewhaus/plugins/my-plugin/data/**"],
+    net: ["fetch:https://api.example.com/**"],
+  },
+});
+```
+
+`definePlugin` validates the definition (`name`/`version` required,
+pane `id`s unique, permission entries prefixed `read:`/`fetch:`) and
+freezes it. studio-server discovers the file when its `/api/plugins`
+endpoint scans `pluginRoot`; the Plugins tab renders each plugin's
+`panes[]`.
 
 ### Sandboxing
 
-Today's plugin sandbox is **path-only**: plugins can only read/write
-under their own directory. Full content isolation (worker-based,
-restricted imports) arrives in v1.3.
+Today's plugin sandbox is **permission-allowlist only**: a plugin's
+`permissions.fs` / `permissions.net` globs gate each I/O attempt
+(`isFsAllowed` / `isNetAllowed`), absent permissions fail closed, and
+`assertPluginPathsStaySandboxed` rejects pane HTML whose `file://`
+URLs escape the sandbox root at load. Full script isolation
+(worker / QuickJS) lands in a follow-up.
 
 For untrusted plugins, the contract is "review the code before
 installing" — this is a single-user system today, not a
@@ -207,41 +236,21 @@ plugins-from-strangers marketplace.
 
 ## Multi-spec dashboard
 
-The dashboard view runs `renderMultiSpecDashboard(rows)` to show:
+studio-ui isn't a Studio *tab* — the SPA's five tabs are Specs,
+Wizard, Graders, Datasets, and Plugins — but it does export
+`renderMultiSpecDashboard(rows)`, an HTML-table helper you can embed in
+your own page to show per-spec metrics (runs, cost, pass-rate, p50,
+p95).
 
-| Column        | Source                                                              |
-| ------------- | ------------------------------------------------------------------- |
-| Spec name      | spec-registry                                                       |
-| Last run       | session-store mtime                                                 |
-| Pass rate      | eval-runner's most recent result                                    |
-| Cost (24h)     | cost-tracker aggregate                                              |
-| p50 latency    | trace-event-bus rollup                                              |
-| p95 latency    | trace-event-bus rollup                                              |
-| Status         | red / yellow / green based on threshold deltas                       |
-
-Useful as the "single pane of glass" for a small fleet of specs.
+Useful as a "single pane of glass" for a small fleet of specs.
 For larger fleets (10+ specs), grafana / OTel exporters
 ([Recipe 17](17-observability.md)) scale better.
-
-## Public marketplace integration
-
-Studio's Marketplace tab embeds the
-[`MarketplaceClient`](https://github.com/crewhaus/factory/blob/main/packages/template-marketplace-client):
-
-- Browse public templates.
-- Search by query / target / author.
-- Click **Install** → drops the template into the workspace.
-- Click **Publish** (on a workspace spec) → signs + opens a PR.
-
-See [Recipe 26](26-template-marketplace.md) for the protocol details.
 
 ## Operating tips
 
 - **Workspace isolation.** Studio writes only under
-  `<cwd>/.crewhaus/studio-specs/`. So you can run Studio against
-  a project without polluting the rest of the repo.
-- **Headless mode.** `STUDIO_HEADLESS=1` runs the API without the
-  UI bundle. Useful when embedding Studio's APIs in another tool.
+  `<cwd>/specs` (override with `STUDIO_WORKSPACE`). So you can run
+  Studio against a project without polluting the rest of the repo.
 - **HTTPS.** Studio listens on HTTP by default. For remote use,
   reverse-proxy behind nginx/caddy for TLS.
 - **Auth.** Studio has **no authentication** by default — assume
@@ -270,7 +279,7 @@ plus the SSR-rendered HTML for key UI strings.
 ## What to read next
 
 - **VS Code / JetBrains parity.** [Recipe 25 — VS Code and JetBrains](25-vscode-and-jetbrains.md).
-- **The marketplace Studio embeds.** [Recipe 26 — Template Marketplace](26-template-marketplace.md).
+- **The template marketplace.** [Recipe 26 — Template Marketplace](26-template-marketplace.md).
 - **Session resume / replay.** [Recipe 31 — Session Resume and Replay](31-session-resume-and-replay.md).
 
 ## Pointers to source
@@ -281,6 +290,6 @@ plus the SSR-rendered HTML for key UI strings.
 - **Scaffolds:** [`packages/scaffold-templates`](https://github.com/crewhaus/utilities/blob/main/scaffold-templates).
 - **Trace viewer:** [`packages/trace-viewer`](https://github.com/crewhaus/utilities/blob/main/trace-viewer).
 - **Graph visualizer:** [`packages/graph-visualizer`](https://github.com/crewhaus/utilities/blob/main/graph-visualizer).
-- **Plugin SDK:** [`packages/plugin-sdk`](https://github.com/crewhaus/utilities/blob/main/plugin-sdk).
+- **Plugin SDK:** [`studio-plugin-sdk`](https://github.com/crewhaus/utilities/blob/main/studio-plugin-sdk).
 - **Launcher:** [`scripts/studio-launcher.ts`](https://github.com/crewhaus/factory/blob/main/scripts/studio-launcher.ts).
 - **Module catalog reference:** §26, §31 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

@@ -139,7 +139,7 @@ security:
 
 The runtime equivalent is `RunChatLoopOptions.egressMatcher` — pass a `SemanticEgressMatcher` (or any `EgressMatcher`) instance and every external-sink call routes its payload through it. Either way, the placement (IR-wired, every external sink), the `sinkScope` (`external-configured` vs `external-dynamic`), and the warn/block policy above are untouched.
 
-The spec field is lowered to `ir.security.egressMatcher` and honoured by `crewhaus run`: the run path resolves it (with `--egress-matcher` overriding the spec) and, for `semantic`, constructs `@crewhaus/egress-matcher-semantic` with an injected embedder before threading it into `runChatLoop({ egressMatcher })` — exactly how `security.justification.judge` selects the intent-gate judge on the same path. Pick the embedder with `--egress-embedder <model>` (or the `CREWHAUS_EGRESS_EMBEDDER` env var; defaults to `openai/text-embedding-3-small`); a failing embedder degrades to the substring tripwire rather than dropping the check.
+The spec field is lowered to `ir.security.egressMatcher` and honoured on **both** paths. On the run path, `crewhaus run` resolves it (with `--egress-matcher` overriding the spec) and, for `semantic`, constructs `@crewhaus/egress-matcher-semantic` with an injected embedder before threading it into `runChatLoop({ egressMatcher })` — exactly how `security.justification.judge` selects the intent-gate judge on the same path. Pick the embedder with `--egress-embedder <model>` (or the `CREWHAUS_EGRESS_EMBEDDER` env var; defaults to `openai/text-embedding-3-small`); a failing embedder degrades to the substring tripwire rather than dropping the check.
 
 ```bash
 # Both reach the semantic matcher on the run path:
@@ -148,7 +148,7 @@ crewhaus run my-spec.yaml --egress-matcher semantic         # flag overrides the
 crewhaus run my-spec.yaml --egress-matcher semantic --egress-embedder voyage/voyage-3
 ```
 
-One seam remains open: the *generated cli bundle* (the `target-cli` emitter) does not yet construct the matcher from this field — like the justification judge, it is a run-path capability today. `crewhaus compile` emits a `[warn]` when a spec sets `egressMatcher: semantic`, so a bundle-only user is not misled into thinking the emitted artifact carries it. Threading the selection into a standalone bundle is the remaining FR-006 follow-up.
+The *generated cli bundle* honours the selection too: the `target-cli` emitter reads `ir.security.egressMatcher` and, for `semantic`, emits the construction of `@crewhaus/egress-matcher-semantic` (with an injected `@crewhaus/embedder` embedder, its model resolved at bundle runtime from `CREWHAUS_EGRESS_EMBEDDER`) into the bundle's `runChatLoop({ egressMatcher })`. So a compiled standalone artifact honours `egressMatcher: semantic` **without** the `crewhaus run` path — no warning, no follow-up. The substring default emits nothing, keeping the bundle free of any embedding dependency.
 
 ## Catching a mis-scoped tool at build time
 
@@ -173,7 +173,7 @@ The egress check above only fires on tools marked `scope: "external"`. A tool th
 
   The same `auditToolScopes` runs as part of `crewhaus doctor --philosophy-alignment` (the two share one implementation, so they can never drift). Because doctor audits the *live* registered tool map, it now also flags a registered custom tool that declared `ioCapability` but forgot `scope: "external"`.
 
-  Two caveats remain. The gate ships **opt-in** today and is slated to become the default in a later minor. And the *irreducible* residual is now narrow: a custom tool that touches the network yet declares **neither** an `ioCapability` **nor** an outward name is invisible to a static, annotation-based check — closing that last sliver would need full dataflow/taint analysis, which the FR puts out of scope. The fix is one line on the tool: declare `ioCapability` (or `scope: "external"`).
+  One caveat remains. The gate is **default-on**: every `crewhaus compile` runs it (`--strict` is now an accepted no-op kept for back-compat), and a build that reaches an unmarked outward/io-capable sink fails unless you explicitly opt out with `--allow-unmarked-sinks` (alias `--no-strict-scope`). The *irreducible* residual is now narrow: a custom tool that touches the network yet declares **neither** an `ioCapability` **nor** an outward name is invisible to a static, annotation-based check — closing that last sliver would need full dataflow/taint analysis, which the FR puts out of scope. The fix is one line on the tool: declare `ioCapability` (or `scope: "external"`).
 
 ## Verifying the fabric
 

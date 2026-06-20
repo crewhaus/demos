@@ -40,13 +40,14 @@ in [`starters/managed`](../starters/managed/README.md) under
 
 Each tenant gets one JSONL file per day under
 `<base>/audit/<tenant>/<yyyy-mm-dd>.jsonl`. Permissions: `0o600`. Each
-line is one event with a `prevHash` field forming an immutable chain:
+line is one event with a `prevHash` field forming an immutable chain.
+Per-event data lives in an opaque `payload`; `seq` is a gapless 0-based
+counter and `hash` commits to the whole body plus `prevHash`:
 
 ```json
-{ "ts": "2026-05-11T08:00:00Z", "kind": "run_started", "runId": "r1", "prevHash": "0000..." }
-{ "ts": "2026-05-11T08:00:01Z", "kind": "tool_use", "runId": "r1", "tool": "Bash", "prevHash": "abc1..." }
-{ "ts": "2026-05-11T08:00:05Z", "kind": "permission_decision", "runId": "r1", "outcome": "allow", "prevHash": "def4..." }
-{ "ts": "2026-05-11T08:00:08Z", "kind": "run_ended", "runId": "r1", "prevHash": "0234..." }
+{ "ts": 1747036800000, "version": 1, "kind": "policy_decision", "seq": 0, "payload": { "decision": "allow", "tool": "Bash" }, "prevHash": "GENESIS", "hash": "abc1..." }
+{ "ts": 1747036801000, "version": 1, "kind": "tool_classification", "seq": 1, "payload": { "tool": "Bash", "class": "exec" }, "prevHash": "abc1...", "hash": "def4..." }
+{ "ts": 1747036805000, "version": 1, "kind": "secrets_access", "seq": 2, "payload": { "secret": "DB_URL", "action": "read" }, "prevHash": "def4...", "hash": "0234..." }
 ```
 
 Verify programmatically — the [`audit-log`](https://github.com/crewhaus/factory/blob/main/packages/audit-log)
@@ -82,24 +83,32 @@ queries:
 ```typescript
 {
   frameworkId: "soc2",
-  controlId: "CC6.7",       // "The entity restricts the transmission, movement, and removal of information..."
-  description: "Restrict permitted actions; audit denials.",
+  controlId: "CC6.7",       // Restricted access to system functions
+  description: "Restrict permitted actions; audit access and rotation.",
+  // OR-merged: a record matching ANY filter is evidence for this control.
   evidenceQueries: [
-    {
-      name: "permission_denials",
-      query: "kind == 'permission_decision' && outcome == 'deny'"
-    },
-    {
-      name: "tool_uses_with_permission",
-      query: "kind == 'tool_use' && permission == 'allow'"
-    }
-  ]
+    { kind: "secrets_rotation" },
+    { kind: "secrets_access" },
+  ],
+}
+```
+
+Each entry in `evidenceQueries` is an `AuditEventFilter` — a structured
+object, not a query string. Fields are AND-ed within one filter and the
+filters are OR-merged across the array. The supported fields are `kind`,
+`payloadField` / `payloadFieldEquals` (own-property reads on the record's
+`payload`), and `tsAfter` / `tsBefore` (the `ts` bounds):
+
+```typescript
+// every secrets-manager rotation whose action was "rotate"
+{
+  kind: "secrets_rotation",
+  payloadField: "action",
+  payloadFieldEquals: "rotate",
 }
 ```
 
 Definitions live in [`packages/compliance-controls`](https://github.com/crewhaus/factory/blob/main/packages/compliance-controls).
-The query language is a small predicate dialect over the JSON event
-shape — `==`, `!=`, `&&`, `||`, dotted-path reads.
 
 ## Built-in frameworks
 
@@ -107,12 +116,21 @@ Ships with definitions for:
 
 | Framework      | Controls covered                                            |
 | -------------- | ----------------------------------------------------------- |
-| SOC 2 Type II  | CC6.1 (logical access), CC6.7 (transmission), CC7.2 (anomaly detection), CC7.3 (response) |
+| SOC 2 Type II  | CC6.1 (logical access), CC6.7 (restricted access to system functions), CC7.2 (anomaly detection), CC7.3 (response) |
 | ISO 27001      | A.12.4 (logging)                                             |
-| HIPAA          | §164.312(b) (audit controls)                                 |
+| HIPAA          | 164.312(b) (audit controls)                                  |
 
 These are starting points — your auditor may map controls differently.
-Add custom definitions in `<cwd>/.crewhaus/compliance-controls/<framework>.json`.
+Add custom definitions in code with `collector.registerControl(def)`:
+
+```typescript
+collector.registerControl({
+  frameworkId: "soc2",
+  controlId: "CC6.8",
+  description: "Custom control — captured deployment actions.",
+  evidenceQueries: [{ kind: "deployment_action" }],
+});
+```
 
 ## The evidence collector
 
@@ -136,31 +154,25 @@ Each `EvidenceBundle` JSON file:
 {
   "frameworkId": "soc2",
   "controlId": "CC6.7",
+  "description": "Restricted access to system functions — secrets-manager rotation + access events captured.",
   "period": "2026-Q2",
-  "collectedAt": "2026-07-01T00:00:00Z",
-  "queries": [
-    {
-      "name": "permission_denials",
-      "matchCount": 142,
-      "records": [/* every matching audit record */]
-    },
-    {
-      "name": "tool_uses_with_permission",
-      "matchCount": 89421,
-      "records": [/* first 1000; with truncation marker */]
-    }
-  ],
-  "digest": "sha256:<hash of all record hashes>",
-  "signature": "hmac:<HMAC of digest under signing key>"
+  "generatedAt": 1751328000000,
+  "recordCount": 142,
+  "records": [/* every matching audit record, verbatim */],
+  "digest": "<hex SHA-256 of the canonical record list>",
+  "signature": "<hex HMAC of digest under signing key, or null when unsigned>"
 }
 ```
 
-The bundle is **self-verifying**: an auditor with the signing key's
-public half can:
+The bundle is **self-verifying** — `verifyBundle(bundle, signingKey)` in
+[`compliance-controls`](https://github.com/crewhaus/factory/blob/main/packages/compliance-controls)
+re-checks it before it's trusted:
 
-1. Recompute `digest = sha256(record.hash | record.hash | ...)`.
-2. Check that the `digest` field matches.
-3. Verify `signature` against `digest`.
+1. Recompute `digest` over the bundle's `records` and compare it to the
+   `digest` field (catches a payload rewrite after signing).
+2. Re-check every record's body↔hash consistency.
+3. When a signing key is supplied, re-derive the HMAC and compare it to
+   `signature` in constant time.
 
 If any step fails, the bundle is rejected as tampered.
 
@@ -225,9 +237,12 @@ overwriting an unrelated file.
 
 ## Data retention
 
-Audit segments older than `auditRetentionDays` (default 2555 days = 7
-years, per SOC 2 default) are NOT automatically deleted — the runtime
-won't garbage-collect compliance evidence. To rotate, archive offline
+The `data-retention-engine` default is **90 days** (`defaultRetentionDays`);
+multi-year retention is not the default — it's an explicit per-kind choice
+you make with `retain(...)`. Pin audit records for as long as your
+framework requires before the sweeper can reclaim them. Records inside an
+active audit window are never reclaimed regardless of policy, so in-flight
+evidence collection isn't disrupted. To rotate older data, archive offline
 or move to compliant cold storage.
 
 To enforce and inspect retention, use the
@@ -237,7 +252,9 @@ programmatically:
 ```typescript
 import { createDataRetentionEngine } from "@crewhaus/data-retention-engine";
 
-const engine = createDataRetentionEngine({ store });
+const engine = createDataRetentionEngine({ recordStore });
+// Default window is 90 days; pin audit records for 7 years explicitly.
+engine.retain(tenant, "policy_decision", 2555);
 engine.listRetention();                 // the configured per-tenant / per-kind policies
 const result = await engine.sweep();    // walk all records, delete anything past its window
 ```
