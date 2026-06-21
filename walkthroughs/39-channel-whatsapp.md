@@ -132,8 +132,8 @@ The `parseInbound` handler covers:
 | Type            | Rendered as user message               | Notes                                          |
 | --------------- | -------------------------------------- | ---------------------------------------------- |
 | `text`          | `<body>` verbatim                       | Most common.                                   |
-| `interactive` → `button_reply` | `[button:<id>] <title>`        | User pressed an inline button.                  |
-| `interactive` → `list_reply`   | `[list:<id>] <title>`           | User chose a list option.                       |
+| `interactive` → `button_reply` | `[button:<id>]`                | User pressed an inline button.                  |
+| `interactive` → `list_reply`   | `[list:<id>]`                   | User chose a list option.                       |
 | `image` w/ caption | `[image] <caption>`                  | The image bytes are not fetched.               |
 | `image` w/o caption | (skipped)                            | Nothing to reply to.                            |
 | `audio` / `sticker` / `video` | (skipped)                          | No transcription / OCR built in today.          |
@@ -173,9 +173,8 @@ Content-Type: application/json
 }
 ```
 
-The adapter wraps this. For interactive replies (buttons, lists),
-use the matching payload type — the adapter exposes
-`sendInteractive({...})` for richer messages.
+The adapter wraps this. Outbound replies are plain text — the adapter
+does not send interactive (button/list) messages.
 
 ## Typing indicator
 
@@ -208,14 +207,10 @@ WhatsApp imposes a **24-hour rule**:
 
 For bots, this is rarely a constraint — bot replies are immediate.
 But for **proactive sends** (a scheduled summary at end-of-day),
-you need an approved template:
-
-```typescript
-await sendTemplate({
-  to: "<wa_id>",
-  template: { name: "daily_summary", language: { code: "en_US" } }
-});
-```
+you need an approved template. The bundled adapter only sends plain
+text replies (within the 24-hour window); to send template messages
+you'd POST a `type: "template"` body to the messages endpoint yourself
+or customize the adapter.
 
 The template approval process takes 1-3 days. Set this up well
 before launch.

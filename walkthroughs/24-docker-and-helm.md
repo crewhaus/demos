@@ -34,8 +34,8 @@ All:
 | Target shape         | Healthcheck                                                |
 | -------------------- | ---------------------------------------------------------- |
 | Daemon shapes (`channel`, `managed`, `voice`) | `httpGet /healthz`                  |
-| `batch`               | `exec bun /app/crewhaus.js doctor --batch`                  |
-| `cli`, `workflow`, `eval`, `research`, etc. | `exec bun /app/crewhaus.js doctor` |
+| `batch`               | `exec pgrep -f crewhaus.js`                                 |
+| `cli`, `workflow`, `eval`, `research`, etc. | `exec bun /app/crewhaus.js doctor --liveness` |
 | `browser`             | `httpGet /healthz` (browser worker has a tiny HTTP shim)  |
 
 ### Building

@@ -38,6 +38,8 @@ const FIXTURE_DIR = join(
   import.meta.dir,
   "..",
   "..",
+  "..",
+  "factory",
   "packages",
   "channel-adapter-whatsapp",
   "src",
@@ -46,6 +48,37 @@ const FIXTURE_DIR = join(
 const fixture = (n: string) => readFileSync(join(FIXTURE_DIR, `${n}.json`), "utf8");
 
 const APP_SECRET = "smoke-app-secret";
+
+// The fixture JSON files live in the factory repo and are shared with factory's
+// own tests, so their `messages[].timestamp` values are fixed in the past and
+// would fail the WhatsApp adapter's 10-minute replay-freshness bound. Rewrite
+// every message timestamp to the current unix-seconds at runtime BEFORE signing
+// and parsing — the HMAC is recomputed over the freshened body, so it stays
+// valid. Bodies that don't carry the messages envelope (skip-path fixtures,
+// malformed JSON) pass through unchanged.
+const freshenTimestamps = (body: string): string => {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    return body;
+  }
+  const nowSec = String(Math.floor(Date.now() / 1000));
+  const messages = (payload as Record<string, unknown>)?.["entry"];
+  const changes = Array.isArray(messages)
+    ? (messages[0] as Record<string, unknown>)?.["changes"]
+    : undefined;
+  const value = Array.isArray(changes)
+    ? (changes[0] as Record<string, unknown>)?.["value"]
+    : undefined;
+  const msgs = (value as Record<string, unknown>)?.["messages"];
+  if (!Array.isArray(msgs)) return body;
+  for (const m of msgs) {
+    if (m && typeof m === "object") (m as Record<string, unknown>)["timestamp"] = nowSec;
+  }
+  return JSON.stringify(payload);
+};
+
 const signedHeaders = (body: string) => {
   const sig = signWhatsAppBody({ body, appSecret: APP_SECRET });
   const h = new Headers();
@@ -79,7 +112,7 @@ const adapter = createWhatsAppAdapter(
   { apiBaseUrl: "https://test.graph.local" },
 );
 for (const f of ["text_message", "button_reply", "list_reply", "image_with_caption"]) {
-  const body = fixture(f);
+  const body = freshenTimestamps(fixture(f));
   const headers = signedHeaders(body);
   check(`verify ${f} → true`, verifyWhatsAppSignature({ headers, body, appSecret: APP_SECRET }));
   const r = adapter.parseInbound({ headers, body });
@@ -98,7 +131,7 @@ for (const f of [
   check(`parseInbound ${f} → skip`, r.kind === "skip");
 }
 {
-  const body = fixture("text_message");
+  const body = freshenTimestamps(fixture("text_message"));
   const headers = signedHeaders(body);
   check(
     "tampered body fails verify",
@@ -154,7 +187,7 @@ log("probe D: sendReply argv");
 // ── Probe E: idempotency ──────────────────────────────────────────────────
 log("probe E: idempotency");
 {
-  const body = fixture("text_message");
+  const body = freshenTimestamps(fixture("text_message"));
   const r1 = adapter.parseInbound({ headers: signedHeaders(body), body });
   const r2 = adapter.parseInbound({ headers: signedHeaders(body), body });
   if (r1.kind === "event" && r2.kind === "event") {

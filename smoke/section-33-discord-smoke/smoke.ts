@@ -39,6 +39,8 @@ const FIXTURE_DIR = join(
   import.meta.dir,
   "..",
   "..",
+  "..",
+  "factory",
   "packages",
   "channel-adapter-discord",
   "src",
@@ -48,7 +50,7 @@ const fixture = (n: string) => readFileSync(join(FIXTURE_DIR, `${n}.json`), "utf
 
 const { publicKeyHex, privateKeyPem } = generateEd25519Keypair();
 
-const signedHeaders = (body: string, ts = "1700000000") => {
+const signedHeaders = (body: string, ts = String(Math.floor(Date.now() / 1000))) => {
   const sig = signDiscordBody({ body, timestamp: ts, privateKeyPem });
   const h = new Headers();
   h.set("X-Signature-Ed25519", sig);

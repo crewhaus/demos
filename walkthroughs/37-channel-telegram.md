@@ -148,9 +148,8 @@ user's edited message becomes the next user input. So edits aren't
 ignored.
 
 For `callback_query`, the inline button's `data` field is the user
-message. The bot can reply via `sendMessage` and also call
-`answerCallbackQuery` to dismiss the loading spinner Telegram shows
-on the button.
+message. The bot replies via `sendReply`, which POSTs `sendMessage`
+like any other turn.
 
 ## Session keying
 
@@ -200,20 +199,18 @@ Content-Type: application/json
 {
   "chat_id": <chatId>,
   "message_thread_id": <topicId or omitted>,
-  "text": "Your reply.",
-  "reply_to_message_id": <inbound message id or omitted>,
-  "parse_mode": "MarkdownV2"
+  "text": "Your reply."
 }
 ```
 
-Markdown V2 is the default — it lets the agent use **bold**, *italic*,
-inline `code`, [links](https://example.com), etc. Telegram's V2
-escaping is strict; the adapter handles escaping internally.
+The adapter sends **plain text** — it sets no `parse_mode`, so Telegram
+renders the reply verbatim. Markdown/HTML markup in the model's output
+isn't interpreted, and there's no escaping step to worry about.
 
 For typing indicators ("the bot is typing..."), call `sendChatAction`:
 
 ```typescript
-await adapter.setTyping({ chatId, typing: true });
+await adapter.setTyping({ event });
 // the model thinks...
 await adapter.sendReply({ event, text: "..." });
 ```
@@ -234,22 +231,6 @@ agent:
   tools:
     - webFetch
 ```
-
-### Button menu bot
-
-```yaml
-agent:
-  instructions: |
-    On the first message, reply with an inline keyboard:
-      [✅ Yes]  [❌ No]
-    On a callback_query whose data is "Yes" or "No", reply with the
-    corresponding choice acknowledgment.
-  tools:
-    - sendInlineKeyboard
-```
-
-`sendInlineKeyboard` is a Telegram-adapter-specific tool that wraps
-the `reply_markup` field on `sendMessage`.
 
 ## IR slot
 

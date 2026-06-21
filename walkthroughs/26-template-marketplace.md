@@ -26,9 +26,10 @@ the right answer when "many people install from a known source."
 
 ```typescript
 interface RegistrySource {
+  id: string;
   list(): Promise<TemplateMetadata[]>;
   fetch(name: string): Promise<TemplateManifest>;
-  metadata?(name: string): Promise<TemplateMetadata>;
+  metadata(name: string): Promise<TemplateMetadata>;
 }
 ```
 
@@ -41,23 +42,20 @@ optional signature).
 
 ### `LocalRegistrySource`
 
-A file-backed registry under `<path>/`:
+A file-backed registry under `rootDir/`. Each listing is a single
+`<name>.json` manifest file (the spec YAML lives inside it, in the
+manifest's `yaml` field) — no per-template subdirectories:
 
 ```
-<path>/
-  starters/cli/
-    manifest.json
-    spec.yaml
-    screenshots/
-      thumbnail.png
-  slack-bot/
-    manifest.json
-    spec.yaml
+rootDir/
+  starters-cli.json
+  slack-bot.json
 ```
 
-Refuses **path traversal** at every read: a `name` containing `/`,
-`..`, or null bytes is rejected. So an attacker who can submit a
-template name can't read `/etc/passwd` via `fetch("../../etc/passwd")`.
+Refuses **path traversal** at every read: a `name` that isn't a plain
+`[A-Za-z][A-Za-z0-9_-]*` identifier is rejected. So an attacker who
+can submit a template name can't read `/etc/passwd` via
+`fetch("../../etc/passwd")`.
 
 ### `HttpRegistrySource`
 
@@ -101,7 +99,7 @@ import { verifyingRegistry } from "@crewhaus/template-registry";
 
 const verified = verifyingRegistry({
   source: cachedSource,
-  trustRoot: ["ed25519:base64-pub-key-1", "ed25519:base64-pub-key-2"]
+  trustRoot: { publicKeys: ["ed25519:base64-pub-key-1", "ed25519:base64-pub-key-2"] }
 });
 
 const manifest = await verified.fetch("slack-bot");
@@ -133,7 +131,7 @@ Refuses three failure modes:
   "author": "alice@example.com",
   "target": "channel",
   "yaml": "name: my-bot\ntarget: channel\n...",
-  "exampleEnv": ["SLACK_BOT_TOKEN", "SLACK_SIGNING_SECRET"],
+  "exampleEnv": { "SLACK_BOT_TOKEN": "xoxb-...", "SLACK_SIGNING_SECRET": "..." },
   "screenshots": ["https://.../thumb.png"],
   "publicKey": "ed25519:abc...",
   "signature": "base64:def..."
@@ -152,12 +150,19 @@ The user-facing entry:
 ```typescript
 import { MarketplaceClient } from "@crewhaus/template-marketplace-client";
 
-const client = new MarketplaceClient({ registry: verifiedRegistry });
+const client = new MarketplaceClient({
+  registry: verifiedRegistry,
+  workspaceDir: "./my-specs",
+});
 
 await client.list();
 await client.search({ query: "slack", target: "channel", limit: 10 });
 await client.install("slack-bot", { subdir: "agents", filename: "crewhaus.yaml" });
 ```
+
+Both `registry` and `workspaceDir` are **required** — the constructor
+throws if either is missing. `workspaceDir` is the root that
+`install` writes installed specs into.
 
 ### `search`
 
@@ -167,13 +172,17 @@ and target are filters, not ranking signals.
 
 ### `install`
 
-Writes the manifest's `yaml` field to `<subdir>/<filename>` (default
-`./<name>/crewhaus.yaml`). Also writes an `.env.example` with any
-`exampleEnv` entries so users know what secrets they need.
+Writes the manifest's `yaml` field to
+`<workspaceDir>/<subdir>/<filename>` (default
+`<workspaceDir>/<name>/crewhaus.yaml`) and returns
+`{ path, manifest }`. That single spec file is the only thing written
+— `install` does **not** emit an `.env.example` or any other file;
+inspect `manifest.exampleEnv` yourself if you need the expected
+secrets.
 
-For verified registries, `install` re-checks the signature before
-writing — defense in depth against a cache poisoned between `fetch`
-and write.
+For verified registries, `install` calls `registry.fetch`, which
+re-checks the signature before returning — defense in depth against a
+cache poisoned between `fetch` and write.
 
 ## Putting the client to work
 
@@ -183,15 +192,19 @@ above:
 ```typescript
 import { MarketplaceClient } from "@crewhaus/template-marketplace-client";
 
-const client = new MarketplaceClient({ registry: verifiedRegistry });
+const client = new MarketplaceClient({
+  registry: verifiedRegistry,
+  workspaceDir: "./my-specs",
+});
 
 await client.list();
 await client.search({ query: "slack" });
 await client.install("slack-bot");
 ```
 
-`install` takes the same options as before; `client.install("slack-bot", { subdir: "agents" })`
-writes to `./agents/slack-bot/crewhaus.yaml`.
+`install` takes the same options as before; with `workspaceDir` set to
+`./my-specs`, `client.install("slack-bot", { subdir: "agents" })`
+writes to `./my-specs/agents/crewhaus.yaml`.
 
 ## Publishing
 
@@ -233,6 +246,7 @@ const draft = publisher.draftPublish({
 
 ```typescript
 class MyRegistrySource implements RegistrySource {
+  readonly id = "my-internal";
   async list() {
     const res = await fetch("https://my-internal.example.com/list");
     return res.json();
@@ -250,8 +264,9 @@ class MyRegistrySource implements RegistrySource {
 const client = new MarketplaceClient({
   registry: verifyingRegistry({
     source: cachedRegistry({ source: new MyRegistrySource(), ttlMs: 60_000 }),
-    trustRoot: ["ed25519:..."]
-  })
+    trustRoot: { publicKeys: ["ed25519:..."] }
+  }),
+  workspaceDir: "./my-specs",
 });
 ```
 

@@ -42,18 +42,25 @@ network=none + read-only root. Run any with
 
 ```typescript
 const sb = createSandbox({
-  image: "python:3.13-slim",
-  cpu: 1.0,
-  memoryMb: 512,
-  timeoutMs: 60_000,
-  network: "none",
-  readonlyRoot: true,
-  tmpfs: ["/tmp"]
+  allowedImages: ["python:3.13-slim"],
+  memory: "512m",
+  cpus: "1.0",
+  defaultTimeoutMs: 60_000,
+  network: false
 });
 
-const result = await sb.exec("python3 -c 'print(2+2)'");
-// result = { stdout: "4\n", stderr: "", exitCode: 0, durationMs: 142 }
+const result = await sb.exec({
+  image: "python:3.13-slim",
+  argv: ["python3", "-c", "print(2+2)"]
+});
+// result = { stdout: "4\n", stderr: "", exitCode: 0, timedOut: false, durationMs: 142 }
 ```
+
+The image is chosen **per call**, not at construction — one sandbox
+can run any image on its allow-list. `memory` and `cpus` are strings
+(`"512m"`, `"1.0"`), and `network` is a boolean. The command is given
+in **argv form** (`["python3", "-c", code]`), passed as separate
+`Bun.spawn` argv elements so shell metacharacters can't escape.
 
 Backends:
 
@@ -71,20 +78,24 @@ opt **out** to relax any of them:
 | Constraint        | Default                                      | Why                                              |
 | ----------------- | -------------------------------------------- | ------------------------------------------------ |
 | Network           | `none`                                       | No outbound; no DNS; no metadata-service access. |
-| Memory            | 512 MB                                       | Bound fork-bomb impact.                          |
-| CPU               | 1.0                                          | Bound runaway-loop CPU impact.                   |
+| Memory            | `512m`                                       | Bound fork-bomb impact.                          |
+| CPU               | `1.0`                                        | Bound runaway-loop CPU impact.                   |
 | Timeout           | 60 s                                         | Kill long-runners.                                |
-| Root filesystem   | Read-only                                    | Can't pollute the host or persist payload.       |
+| Root filesystem   | Read-only (`--read-only`)                    | Can't pollute the host or persist payload.       |
 | `/tmp`            | tmpfs, 64 MB                                  | Writable scratch; vanishes at container stop.     |
-| Allowed mounts    | None (whitelist)                              | No host filesystem leakage.                      |
-| Allowed images    | `CREWHAUS_SANDBOX_ALLOWED_IMAGES` env var     | Only vetted images can run.                       |
-| User              | UID 1100 (`crewhaus`)                         | Not root inside the container.                   |
-| Caps              | All dropped                                   | No `CAP_NET_RAW`, `CAP_SYS_ADMIN`, ...           |
+| Allowed mounts    | None (whitelist; defaults to cwd)             | No host filesystem leakage.                      |
+| Allowed images    | `allowedImages` + `CREWHAUS_SANDBOX_ALLOWED_IMAGES` env var | Only vetted images can run.                       |
+| Privilege escalation | `--security-opt no-new-privileges`        | A setuid binary can't gain privileges.          |
 
-To allow network from one specific sandbox:
+If neither `allowedImages` nor the env var is set, only the curated
+default list is permitted: `python:3.13-slim`, `node:22-alpine`,
+`alpine:3.19`.
+
+To allow network from a sandbox, flip the boolean (which maps to
+`--network=bridge`):
 
 ```typescript
-createSandbox({ image: "python:3.13-slim", network: "bridge" });
+createSandbox({ allowedImages: ["python:3.13-slim"], network: true });
 ```
 
 But this is a **deliberate** opt-out — the tool author has to choose
@@ -94,9 +105,11 @@ it. The default is fail-closed.
 
 `CREWHAUS_SANDBOX_ALLOWED_IMAGES=python:3.13-slim,node:22-alpine,alpine:3.19`
 
-A sandbox call with an image not in this list fails at construction.
-This prevents the agent (or a buggy tool) from pulling an arbitrary
-image — which could be malicious or expose untrusted code paths.
+A sandbox call with an image not in this list fails the call — the
+image is supplied at construction via `allowedImages` or through the
+env var. This prevents the agent (or a buggy tool) from pulling an
+arbitrary image — which could be malicious or expose untrusted code
+paths.
 
 Production deployments pin to a small allow-list of CI-built, scanned
 images. For the bundled tools the list defaults to the three images
@@ -136,39 +149,39 @@ permissions:
       pattern: Shell
 ```
 
-The model invokes `Python({ code: "..." })`. The tool spawns the
-sandbox, writes the code to `/tmp/script.py`, runs `python3
-/tmp/script.py`, and returns `{ stdout, stderr, exitCode }`.
+The model invokes `Python({ code: "..." })`. The tool delegates to
+the sandbox, running `python3 -c <code>` (argv `["python3", "-c",
+code]`) in the container, and returns the formatted `{ stdout,
+stderr, exitCode }`.
 
-Persistent state across calls within one turn: a tool-level
-`workdir` is mounted across calls in the same turn. The model sees
-"the same /workdir from the last Python call is still there",
-allowing multi-step workflows (write file → process it → analyze
-output).
+Files can be exposed to the container via the tool's `mounts`
+config (`{ hostAbsolutePath: containerPath }`); each entry must pass
+the sandbox's mount whitelist or the call is refused. Mounts default
+to read-only, letting the model read host data without writing to it.
 
 ## Warm pool
 
 Each sandbox call has a cold-start cost (~200ms-1s in Docker). For
-fast iteration, the runtime maintains a **warm pool**: pre-warmed
-containers that wait for the next call.
+fast iteration, a per-language **warm pool** of pre-warmed containers
+is the planned answer, configured through `registerCodeExecutionConfig`:
 
-```bash
-CREWHAUS_SANDBOX_WARM_POOL=2 bun run run starters/cli
+```typescript
+registerCodeExecutionConfig({ backend: "docker", warmPoolSize: 2 });
 ```
 
-Keeps 2 warm Python containers, 2 warm Node containers, etc. The
-first `Python` call lands on a warm container in <50ms. The pool
-re-warms after each use.
-
-The pool is **per-image**, **per-deployment**. Multi-tenant managed
-deployments scope warm containers per-tenant via
-AsyncLocalStorage — tenant-A's warm container is never reused for
-tenant-B.
+The `warmPoolSize` knob is **reserved for v1; v0 ignores it** — there
+is no warm pool in the shipped runtime yet, so every call pays the
+cold-start cost today. When implemented, the pool would be
+**per-image** and **per-deployment**; multi-tenant managed
+deployments would scope warm containers per-tenant so tenant-A's
+container is never reused for tenant-B.
 
 ## Streaming output
 
-For long-running calls, stdout/stderr stream through the trace bus
-as `tool_stream_chunk` events:
+For long-running calls, stdout/stderr stream line-by-line through the
+`onStdoutChunk` / `onStderrChunk` callbacks on the sandbox call. The
+code-execution tools forward these to `ctx.onStreamChunk`, which
+runtime-core publishes as `tool_stream_chunk` trace events:
 
 ```json
 { "kind": "tool_stream_chunk", "tool": "Python", "stream": "stdout", "data": "step 1 done\n" }
@@ -193,9 +206,9 @@ import { registerSandboxImage } from "@crewhaus/sandbox-image-registry";
 
 registerSandboxImage({
   id: "go",
-  image: "golang:1.22-alpine",
-  healthcheck: ["go", "version"],
-  defaultEntry: "/usr/local/bin/go run",
+  image: "golang:1.23-alpine",
+  defaultEntrypoint: ["go", "run", "-"],
+  healthcheck: { command: ["go", "version"], expectedExitCode: 0, timeoutMs: 2_000 },
 });
 ```
 
@@ -203,14 +216,14 @@ Lookup:
 
 ```typescript
 const img = lookupSandboxImage("go");
-// → { image, healthcheck, defaultEntry }
+// → { id, image, healthcheck, defaultEntrypoint, description? }
 ```
 
 The bundled polyglot images (`sandbox-image-go`, `sandbox-image-rust`,
 `sandbox-image-java`, `sandbox-image-ruby`, `sandbox-image-r`,
 `sandbox-image-dotnet`, `sandbox-image-php`) all follow this pattern.
-Each is one package with the image id, a healthcheck command, and
-a smoke test that runs `Hello World`.
+Each is one package with the image id, a `defaultEntrypoint`, a
+healthcheck contract, and a smoke test that runs `Hello World`.
 
 To add an eighth language, follow the same template:
 
@@ -228,23 +241,37 @@ why polyglot support is a leaf addition rather than a core change.
 crewhaus sandbox doctor
 ```
 
-Lists every registered image with its allow-list / pull status.
+Lists every registered image (the §18 trio auto-registers; polyglot
+images appear once their `register()` has run) with its healthcheck
+status. Without `--probe` nothing is run, so every image reads as not
+yet probed:
+
+```
+registered sandbox images:
+  • javascript node:22-alpine               not yet probed
+  • python     python:3.13-slim             not yet probed
+  • shell      alpine:3.19                   not yet probed
+```
 
 ```bash
 crewhaus sandbox doctor --probe
 ```
 
-Actually pulls each image and runs its healthcheck. Output:
+Constructs a sandbox over the registered image set and runs each
+image's healthcheck argv. A passing image flips to `✓`, a failing
+one to `✗` with the error detail:
 
 ```
-python:3.13-slim    pulled, healthcheck OK   (python3 --version → "3.13.0")
-node:22-alpine      pulled, healthcheck OK   (node --version → "v22.4.0")
-alpine:3.19         pulled, healthcheck OK   (sh --version → ...)
-golang:1.22-alpine  pull FAILED              (denied by registry; image not in allow-list)
+registered sandbox images:
+  ✓ javascript node:22-alpine               last healthy 2026-06-20T12:00:00.000Z
+  ✓ python     python:3.13-slim             last healthy 2026-06-20T12:00:00.000Z
+  ✓ shell      alpine:3.19                   last healthy 2026-06-20T12:00:00.000Z
 ```
 
-Run as part of deployment validation to catch image-pull failures
-before runtime.
+Add `--format json` to emit the raw status objects (`id`, `image`,
+`healthy`, `lastHealthyAt`, `lastError`) instead of the table. Run as
+part of deployment validation to catch image-pull / healthcheck
+failures before runtime.
 
 ## Prompt-injection on tool output
 
@@ -298,7 +325,7 @@ asserts on hardening (network=none → outbound calls fail).
 | Symptom                                                          | Better tool                                       |
 | ---------------------------------------------------------------- | ------------------------------------------------- |
 | Want to restrict file reads.                                     | Permission rules with path globs.                 |
-| Want to firewall outbound.                                       | `network: "bridge"` + adapter-level allow-list.   |
+| Want to firewall outbound.                                       | `network: true` + adapter-level allow-list.       |
 | Want resource limits on the host (not just sandboxed processes).  | k8s pod resource requests/limits.                  |
 
 ## What to read next

@@ -4,6 +4,6 @@
 # which improves grader pass-rate.
 graders:
   - name: contains-expected
-    kind: contains
-    case_sensitive: false
-    field: expected_output
+    type: contains
+    substring: expected_output
+    case_insensitive: true

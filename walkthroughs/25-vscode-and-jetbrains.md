@@ -48,8 +48,8 @@ registers:
 | Surface              | Behavior                                                                |
 | -------------------- | ----------------------------------------------------------------------- |
 | Language id          | `crewhaus-spec` for `crewhaus.yaml` files.                              |
-| Commands             | `crewhaus.runSpec`, `crewhaus.openTrace`, `crewhaus.compileSpec`.        |
-| Settings             | `crewhaus.cliPath`, `crewhaus.studioUrl`, `crewhaus.runCommandPrefix`.   |
+| Commands             | `crewhaus.runSpec`, `crewhaus.continueSpec`, `crewhaus.openTrace`.       |
+| Settings             | `crewhaus.cliPath`, `crewhaus.studioUrl`.                                |
 | Hover cards          | Sub-agent references render the sub-agent's frontmatter on hover.        |
 | Webview              | "Open trace" opens a Studio panel in a side webview.                    |
 
@@ -79,12 +79,8 @@ Right-click on `crewhaus.yaml` → **CrewHaus: Run Spec**.
 The command:
 
 1. Reads `crewhaus.cliPath` (default: `crewhaus`).
-2. Runs `<cliPath> compile <spec> && <cliPath> run <spec>`.
-3. Streams stdout/stderr into a "CrewHaus" output channel.
-
-Tracing flag:
-
-- `crewhaus.runCommandPrefix: "CREWHAUS_TRACE=pretty"` (default empty).
+2. Runs `<cliPath> run <spec>`.
+3. Opens a fresh integrated terminal in the spec's directory and runs the command there, streaming stdout/stderr into the terminal panel.
 
 ### Sub-agent hover cards
 
@@ -122,7 +118,7 @@ into the JetBrains YAML plugin's JSON Schema integration:
 | Surface                 | Behavior                                                              |
 | ----------------------- | --------------------------------------------------------------------- |
 | Schema provider          | `CrewhausSpecSchemaProviderFactory` registers `spec.json` for `*/crewhaus.yaml`. |
-| Run configurations       | `RunSpec`, `RunEval`, `RunDeploy` (three types).                       |
+| Run configurations       | `RunSpec`, `RunEval`, `RunCanary` (three types).                       |
 | Tool window              | `CrewHaus Spec Registry` browses `.crewhaus/specs/`.                   |
 | Action: Run Spec         | Right-click → CrewHaus → Run Spec.                                     |
 | Action: Open Trace       | Right-click on a `sess_*.jsonl` → CrewHaus → Open Trace.               |
@@ -155,9 +151,9 @@ Three configuration types:
 
 | Type         | Runs                                            | Parameters                                  |
 | ------------ | ----------------------------------------------- | ------------------------------------------- |
-| `RunSpec`    | `crewhaus compile <spec> && crewhaus run <spec>` | Spec path, env vars                          |
+| `RunSpec`    | `crewhaus run <spec>`                           | Spec path, env vars                          |
 | `RunEval`    | `crewhaus eval <spec> --dataset <name>`          | Spec path, dataset name, concurrency        |
-| `RunDeploy`  | `crewhaus deploy promote <name> --from staging --to prod` | Spec name, from-env, to-env        |
+| `RunCanary` | `crewhaus deploy promote <name> --canary`        | Spec name, canary options                   |
 
 Each is template-able and persists into the project's
 `.idea/runConfigurations/*.xml`.
@@ -168,10 +164,10 @@ Both plugins open trace JSONL in a **webview** that points at Studio
 ([Recipe 35](35-studio-walkthrough.md)):
 
 ```
-<studioUrl>/trace?session=<sessionId>
+<studioUrl>/#/run?spec=<relative-path>
 ```
 
-Default `crewhaus.studioUrl: "http://localhost:4243"`. If you run
+Default `crewhaus.studioUrl: "http://localhost:4242"`. If you run
 Studio remote (cluster-hosted Studio), set this to the public URL.
 
 Webview vs external browser: the webview embeds Studio's React UI
@@ -215,8 +211,7 @@ VS Code `settings.json` (workspace or user):
 ```json
 {
   "crewhaus.cliPath": "/usr/local/bin/crewhaus",
-  "crewhaus.studioUrl": "http://localhost:4243",
-  "crewhaus.runCommandPrefix": "CREWHAUS_TRACE=pretty",
+  "crewhaus.studioUrl": "http://localhost:4242",
   "yaml.schemas": {
     "./packages/vscode-extension/schemas/spec.json": ["**/crewhaus.yaml"]
   }

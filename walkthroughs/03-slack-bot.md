@@ -168,15 +168,18 @@ Key things to notice:
 ## Step 3 — Compile and run the smoke test
 
 The smoke test exercises the full inbound path with synthetic webhooks
-signed with a test secret — no real Slack workspace required, and no
-API credits spent on model calls (the smoke uses a scripted adapter):
+signed with a test secret — no real Slack workspace required. It is an
+end-to-end test against the live Anthropic API, so it **does spend API
+credits** on the model turn it drives; it needs `ANTHROPIC_AUTH_TOKEN`
+or `ANTHROPIC_API_KEY` in `.env`:
 
 ```bash
 bun run smoke:section-12
 ```
 
-If that prints `OK` you know the gateway, signature verification, and
-session router work in your environment.
+If all five scenarios print `PASS` you know the gateway, signature
+verification, session router, and a real inbound→model→reply round-trip
+work in your environment.
 
 ## Step 4 — Run against your tunnel
 
@@ -265,8 +268,8 @@ The universal "authenticate, then classify" pattern this step is part
 of lives in [Recipe 00 — Network Security
 Primer](00-network-security-primer.md). Read that first; this step
 covers what's specific to Slack (the HMAC math, the signing secret,
-the `v0:` prefix) and the channel-adapter hook that wires the universal
-classifier in.
+the `v0:` prefix) and shows where the generated `agent.ts` wires the
+universal classifier in for you.
 
 ### The Slack-specific authentication math
 
@@ -311,35 +314,42 @@ workspace are fine," re-read the primer's "who vs. what" section —
 authentication does not defend against prompt injection from accounts
 your authentication already accepted.
 
-### Wiring the classifier today (`pre-model` hook)
+### The classifier is already wired inline (don't add a hook)
 
-The channel-target codegen has `classifyBoundary` queued for inline
-wiring (tracked in §18 / the
-[boundary inventory's "follow-up" rows](41-security-fabric.md#the-boundary-inventory)).
-You can wire the same check today with a `pre-model` hook — same
-recipe as in the primer, dropped into the Slack daemon's
-`.crewhaus/settings.json`:
+You don't have to wire this yourself — the channel-target codegen
+already does it for you. The generated `agent.ts` imports
+`classifyInbound` from `@crewhaus/channel-adapter-base` and calls it on
+every inbound message **before** it seeds the model turn:
 
-```json
-// .crewhaus/settings.json
-{
-  "hooks": {
-    "pre-model": [
-      {
-        "command": "bun scripts/classify-inbound.ts"
-      }
-    ]
-  }
+```ts
+// generated agent.ts (excerpt)
+import { classifyInbound } from "@crewhaus/channel-adapter-base";
+
+async runTurn(args) {
+  const runContext = createRunContext({ sessionId: args.sessionId });
+  // Pillar 3 channel boundary — classify the inbound at TrustOrigin
+  // "channel" BEFORE it seeds a model turn. Malicious inbound is
+  // replaced by a redaction notice; pass/warn content is tagged into
+  // runContext.dataLineage so the egress fabric sees the channel origin.
+  const __inbound = await classifyInbound(args.message, runContext, { origin: "channel" });
+  return await runChatLoop({ /* ... */, seedMessages: [{ role: "user", content: __inbound }] });
 }
 ```
 
-The hook script reads `$CREWHAUS_USER_MESSAGE`, calls
-`classifyBoundary(text, { origin: "channel" })`, and emits
-`{"decision":"deny","reason":...}` on stdout when the classifier
-blocks. The hook engine short-circuits before the model sees the
-payload, and the JSONL event log records the decision the same way it
-records permission decisions for tool calls. See
-[Recipe 14 — Hooks](14-hooks.md) for the full hook lifecycle.
+`classifyInbound` wraps the same `classifyBoundary(text, { origin:
+"channel" })` call shown above, replaces blocked inbound with a
+redaction notice before the model sees it, and tags pass/warn content
+into `runContext.dataLineage` so the sink-side egress fabric knows the
+content came in over a channel. The decision lands in the JSONL event
+log the same way permission decisions for tool calls do.
+
+> **Do not add a `pre-model` hook to re-run the classifier.** Because
+> `classifyInbound` is already in the generated `agent.ts`, a hook that
+> also called `classifyBoundary` on the same text would **classify every
+> inbound message twice** — double the latency and double the classifier
+> spend, with no added safety. The inline call is the wiring. See
+> [Recipe 14 — Hooks](14-hooks.md) for hooks you *do* add yourself
+> (policy guards around tool calls, not the channel boundary).
 
 ## Step 7 — Proactive sends with the `SendMessage` tool
 

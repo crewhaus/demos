@@ -68,7 +68,7 @@ patterns: customer IDs, internal account numbers, names in free text).
 | `replace` | `[REDACTED:email]`, `[REDACTED:credit-card]` | No.         |
 | `hash`    | `[HASHED:email:<hex>]`                       | No, but joinable (same input → same hash). |
 
-`hash` mode requires a non-empty HMAC key (`new Redactor({ mode: "hash", secret })`).
+`hash` mode requires a non-empty HMAC key (`createPiiRedactor({ mode: "hash", secret })`).
 The constructor refuses an empty secret to prevent accidental
 plaintext hashing.
 
@@ -86,15 +86,17 @@ When to choose:
 in a JSON object:
 
 ```typescript
-const r = new Redactor({ mode: "replace" });
-const safe = r.redactObject(rawEvent);
+import { createPiiRedactor } from "@crewhaus/pii-redactor";
+
+const r = createPiiRedactor({ mode: "replace" });
+const safe = await r.redactObject(rawEvent);
 // safe carries [REDACTED:email] wherever rawEvent had an email.
 ```
 
 Wire it into the audit log's `append` path:
 
 ```typescript
-auditLog.append(redactor.redactObject(event));
+auditLog.append(await redactor.redactObject(event));
 ```
 
 ### Per-tenant allow-list
@@ -219,21 +221,19 @@ shortening requires `retention.shorten(tenant, kind, days, { force: true })`.
 
 ### Active audit windows
 
-`addAuditWindow({ tenant, kind, start, end })` declares a regulatory
-or legal hold over a date range. The engine **refuses to delete data
-covered by an active window**.
+`addAuditWindow({ frameworkId, controlId, expiresAt })` declares a
+regulatory or legal hold tied to a compliance control. The engine
+**refuses to delete data covered by an active window**.
 
 ```typescript
 retention.addAuditWindow({
-  tenant: "tenant-a",
-  kind: "session",
-  start: "2026-01-01",
-  end: "2026-12-31",
-  reason: "litigation hold, case XYZ"
+  frameworkId: "soc2",
+  controlId: "CC6.1",
+  expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000 // 1 year out
 });
 ```
 
-`addAuditWindow` refuses already-expired windows (`end` < now) — a
+`addAuditWindow` refuses already-expired windows (`expiresAt` <= now) — a
 hold from the past is either a typo or pointless.
 
 ### GDPR right-to-delete
@@ -295,7 +295,7 @@ Every layer enforces tenant isolation:
 
 | Layer       | Guard                                                                   |
 | ----------- | ----------------------------------------------------------------------- |
-| Redactor    | Per-tenant policy lookup uses `AsyncLocalStorage.tenant` — can't read another tenant's policy. |
+| PiiRedactor | Per-tenant policy lookup uses `AsyncLocalStorage.tenant` — can't read another tenant's policy. |
 | Encryption  | Per-tenant DEK; reading a wrong-tenant record fails at the DEK lookup.   |
 | Retention   | `retain` / `purge` / `export` all require an explicit tenant arg.        |
 

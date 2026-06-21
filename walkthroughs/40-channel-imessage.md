@@ -111,7 +111,7 @@ channels:
 ## Inbound — polling chat.db
 
 `chat.db` is a SQLite database iMessage uses for message history.
-The adapter polls it once per second:
+You read new messages by calling `pollNewMessages()`, which runs:
 
 ```sql
 SELECT m.ROWID, h.id, m.text, m.is_from_me
@@ -123,13 +123,16 @@ ORDER BY m.ROWID ASC
 ```
 
 `cursor` is the highest `ROWID` seen so far, persisted in
-`.crewhaus/imessage-cursor.json` (mode `0o600`). On daemon restart,
+`.crewhaus/imessage-cursor.json` (mode `0o600`). On restart,
 polling resumes from `cursor` — no replays of old messages, no
 missed messages between restarts.
 
-Polling frequency: 1 Hz. Tunable via `CREWHAUS_IMESSAGE_POLL_MS=500`
-for half-second polling, but most workloads don't need faster than
-1 second.
+There's no built-in poll loop and no polling-interval env var: each
+`pollNewMessages()` call drains everything past the cursor and
+returns. The generated `daemon.ts` registers the adapter but does
+**not** auto-poll — you decide the cadence by calling
+`pollNewMessages()` yourself (e.g. on a `setInterval`), or drive it
+on demand.
 
 ## Outbound — driving Messages.app
 

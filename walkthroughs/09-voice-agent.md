@@ -8,7 +8,7 @@ test:
 # Recipe 09 — Voice Agent
 
 Build a realtime voice agent: PCM 16-bit mono / 24 kHz audio in and
-out, server- or client-side VAD, hysteresis-gated barge-in (the user
+out, server-side or disabled VAD, hysteresis-gated barge-in (the user
 talking over the agent cuts off the agent's speech mid-utterance), and
 a pluggable telephony adapter for Twilio / LiveKit / Vapi.
 
@@ -102,7 +102,7 @@ The shape:
 - **`voiceId:`** — the TTS voice. Provider-specific. OpenAI: `alloy`,
   `echo`, `fable`, `nova`, `onyx`, `shimmer`. Vapi: see their docs.
 - **`vad:`** — `server` (provider-side VAD; recommended) or
-  `client` (the runtime's energy-based VAD).
+  `none` (no VAD; you frame turns yourself).
 - **`bargeInTriggerFrames` / `bargeInWindowMs`** — barge-in
   hysteresis: 4 frames of speech in 200ms cuts off the agent's TTS.
 
@@ -133,17 +133,16 @@ Two modes:
 - **`vad: server`** — the provider's own VAD. For OpenAI Realtime
   this is the recommended default. The provider tells you when speech
   starts and stops; you don't run your own detector.
-- **`vad: client`** — the runtime's built-in detector: energy
-  (RMS amplitude) + zero-crossing rate. Lighter on the provider
-  (you only send audio when speech is detected) but more
-  end-to-end-latency variability.
+- **`vad: none`** — no VAD. The runtime never auto-detects turn
+  boundaries; you commit audio buffers explicitly (e.g. push-to-talk
+  or a telephony adapter that signals end-of-utterance).
 
 Trade-offs:
 
 | Mode      | Latency           | Cost                       | When to use                              |
 | --------- | ----------------- | -------------------------- | ---------------------------------------- |
 | `server`  | Lowest            | Provider charges per-stream | Default. Use unless cost-constrained.     |
-| `client`  | Slightly higher   | Fewer provider-side frames | Cost-constrained or unreliable network. |
+| `none`    | You control it    | No provider VAD            | Push-to-talk or adapter-driven turns.   |
 
 ## Barge-in — interrupting the agent
 

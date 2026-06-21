@@ -49,7 +49,7 @@ contracts:
 
 transaction_policy:
   defaultWriteApproval: required
-  maxValueUsd: 10000
+  maxValueWei: "10000000000000000"   # 0.01 ETH native-token cap (oracle-free; maxValueUsd hard-throws — no price oracle)
   allowedContracts: [usdc]
   simulationRequired: true
 
@@ -88,8 +88,8 @@ Tool names in the `tools:` list use the lowercase registration name (`evmSimulat
 
 - `EvmSendTransaction` called with `contractId: "uniswap-router"` → wallet-engine throws `WalletEngineError: contract id "uniswap-router" not in transaction_policy.allowedContracts`. Permission engine would have allowed; wallet engine refuses.
 - `EvmSendTransaction` called via a permission rule `alwaysAllow` → permission engine allows; wallet engine still simulates and gates on the simulation result. If sim reverts, `requestSignAndBroadcast` refuses.
-- Native-token transfer over `maxValueUsd` → wallet engine refuses pre-approval.
+- Native-token transfer over `maxValueWei` → wallet engine refuses pre-approval.
 
 ## Pillar 2 — what's optimizable
 
-`OPTIMIZABLE_PATHS` ([packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)) lists `chains` and `transaction_policy` as tunable for `workflow`: `transaction_policy.maxValueUsd`, `chains[*].finality.count`, and `simulationRequired` are all entries the optimizer can reach. Today `crewhaus optimize` only runs on `target: cli` specs (it exits with an error on any other target), so the optimizer reaches these paths only when the spec is a cli target — or in a future release that extends optimize to other shapes. For the `workflow` spec here, tune these knobs by hand.
+`OPTIMIZABLE_PATHS` ([packages/spec-patch/src/index.ts](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)) lists `chains` and `transaction_policy` as tunable for `workflow`: `transaction_policy.maxValueWei`, `chains[*].finality.count`, and `simulationRequired` are all entries the optimizer can reach. Today `crewhaus optimize` only runs on `target: cli` specs (it exits with an error on any other target), so the optimizer reaches these paths only when the spec is a cli target — or in a future release that extends optimize to other shapes. For the `workflow` spec here, tune these knobs by hand.

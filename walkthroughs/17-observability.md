@@ -115,10 +115,10 @@ JSONL persists, including:
 
 - `turn_start`, `turn_end`
 - `model_request`, `model_stream_token`, `model_response`
-- `tool_request`, `tool_response`
+- `tool_call_start`, `tool_call_end`
 - `mcp_call_start`, `mcp_call_end`
 - `hook_fired`
-- `compaction_start`, `compaction_end`
+- `compaction_fired`
 - `permission_decision`
 - `error_recovered`
 - Sub-agent boundaries (`sub_agent_start`, `sub_agent_end`)
