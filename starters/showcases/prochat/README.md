@@ -14,8 +14,8 @@ From the repo root:
 
 ```bash
 bun install
-bun run compile showcases/prochat                          # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-ant-... bun run run showcases/prochat # opens REPL
+bun run compile starters/showcases/prochat                          # writes dist/agent.ts
+ANTHROPIC_API_KEY=sk-ant-... bun run run starters/showcases/prochat # opens REPL
 ```
 
 ## Try this
@@ -84,7 +84,7 @@ The `model:` field is a provider-prefixed string. Edit
 | AWS Bedrock | `bedrock/anthropic.claude-sonnet-4-20250514-v1:0` | `AWS_*` |
 | Local (OpenAI-compatible) | `local/llama-3.3-70b@http://localhost:8080/v1` | — |
 
-Recompile (`bun run compile showcases/prochat`) after any change to the spec.
+Recompile (`bun run compile starters/showcases/prochat`) after any change to the spec.
 
 > **Vision note**: `ReadImage` works on any model. For URL-fetched
 > images, vision-capable models (GPT-4o, Claude Sonnet/Opus, Gemini)

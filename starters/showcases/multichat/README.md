@@ -14,14 +14,14 @@ From the repo root:
 
 ```bash
 bun install
-bun run compile showcases/multichat                    # writes dist/{daemon,gateway,session-router,agent}.ts
+bun run compile starters/showcases/multichat                    # writes dist/{daemon,gateway,session-router,agent}.ts
 
 # Minimum: one channel's creds. Provide all three to listen on all.
 ANTHROPIC_API_KEY=sk-ant-... \
   SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \
   DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_PUBLIC_KEY=... \
-  bun run run showcases/multichat
+  bun run run starters/showcases/multichat
 ```
 
 The daemon listens on `PORT` (default `3000`). Point each platform's
@@ -133,7 +133,7 @@ Catalog modules touched (per factory's
 
 ## How the feature flags fit together
 
-- **Always-on daemon** — once you `bun run run showcases/multichat`, the
+- **Always-on daemon** — once you `bun run run starters/showcases/multichat`, the
   process listens forever. No "open a terminal" / "start a chat"
   ceremony.
 - **Multi-channel presence** — same agent answers on whichever surface
