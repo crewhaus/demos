@@ -1,11 +1,34 @@
 # hello-procode — a pro-grade terminal coding companion in one YAML
 
 A full coding agent — codebase exploration, file editing, test
-execution, sub-agent dispatch, safety-gated bash, web research —
-compiled from a single [`crewhaus.yaml`](crewhaus.yaml). It feels
-tier-one (think Claude Code / Cursor) on the surface and runs against
-**any model** (Claude, GPT-4o, Gemini, Bedrock, local) — see
-[Swap the model](#swap-the-model) below.
+execution, **multi-agent workflows**, an **exhaustive ULTRACODE mode**,
+and an **autonomous goal loop** — compiled from a single
+[`crewhaus.yaml`](crewhaus.yaml). It feels tier-one (think Claude Code /
+Cursor) on the surface and runs against **any model** (Claude, GPT-4o,
+Gemini, Bedrock, local) — see [Swap the model](#swap-the-model) below.
+
+## What's new — workflows, ULTRACODE, and goal loop
+
+Three Claude-Code-class capabilities, all expressed in the same spec:
+
+- **Multi-agent workflows** — `/workflow <goal>` dispatches an
+  `orchestrator` that DECOMPOSES the goal, FANS OUT a fleet of specialist
+  sub-agents in parallel (`reviewer`, `security-auditor`, `debugger`,
+  `docs-writer`, `verifier`, plus the original `code-explorer` /
+  `test-runner`), CROSS-CHECKS their returns, and SYNTHESIZES one ranked
+  answer. Read-only workers run on a cheaper model by design.
+- **ULTRACODE mode** — `/ultracode` flips the agent to exhaustive-by-
+  default: every substantive task becomes a verified workflow without you
+  asking. Audits, migrations, and security reviews always fan out.
+  `/standard` flips it back. For the deepest REASONING budget, pair it
+  with `crewhaus run --effort xhigh` (the runtime effort lever — it is
+  not a spec field).
+- **Goal loop** — `/loop <condition>` records a verifiable completion
+  condition to `GOAL.md` and works toward it across turns, judged each
+  turn by an INDEPENDENT `verifier` sub-agent (it cannot rubber-stamp its
+  own work). `/resume-goal` picks the loop back up in a new session;
+  `/verify` runs the independent pass on demand. Because `GOAL.md` lives
+  on disk, the goal outlives the conversation context.
 
 ## Run it
 
@@ -13,8 +36,8 @@ From the repo root:
 
 ```bash
 bun install
-bun run compile showcases/procode                          # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-ant-... bun run run showcases/procode # opens REPL in cwd
+bun run compile starters/showcases/procode                          # writes dist/agent.ts
+ANTHROPIC_API_KEY=sk-ant-... bun run run starters/showcases/procode # opens REPL in cwd
 ```
 
 Or, to point it at a specific project, `cd` there first and run the
@@ -22,7 +45,7 @@ compiled bundle directly:
 
 ```bash
 cd ~/my-project
-ANTHROPIC_API_KEY=sk-ant-... bun /path/to/demos/hello-procode/dist/agent.ts
+ANTHROPIC_API_KEY=sk-ant-... bun /path/to/demos/starters/showcases/procode/dist/agent.ts
 ```
 
 The agent's CWD is the project under analysis. `.crewhaus/commands/`
@@ -59,6 +82,23 @@ file → plan → edit → dispatch `test-runner` → verify.
 ```
 Plan-only mode — produces a multi-step plan without editing anything.
 
+```
+/ultracode then audit this repo for security issues
+```
+Exhaustive mode — fans out `security-auditor` + `reviewer` in parallel
+and merges severity-tagged findings.
+
+```
+/workflow find every place we talk to an external API and assess the risk
+```
+One-off multi-agent fan-out, synthesized into one ranked report.
+
+```
+/loop all tests pass and `npm run typecheck` is clean
+```
+Goal mode — iterates until an independent `verifier` confirms the
+condition holds.
+
 ## Swap the model
 
 The `model:` field is a provider-prefixed string. Edit
@@ -73,7 +113,12 @@ The `model:` field is a provider-prefixed string. Edit
 | AWS Bedrock | `bedrock/anthropic.claude-sonnet-4-20250514-v1:0` | `AWS_*` |
 | Local (OpenAI-compatible) | `local/llama-3.3-70b@http://localhost:8080/v1` | — |
 
-Recompile (`bun run compile showcases/procode`) after any change to the spec.
+Recompile (`bun run compile starters/showcases/procode`) after any change to the spec.
+
+Sub-agent `model:` fields are independent of the main agent's — point the
+read-only workers at any provider string (the fleet here runs them on
+`claude-haiku-4-5-20251001` while the main agent and `orchestrator` stay
+on the primary model).
 
 ## What this slice exercises
 
@@ -84,12 +129,19 @@ Catalog modules touched (per factory's
 - F2 `compiler-core`, `target-cli-bundle`, `codegen-templates`
 - R1 `runtime-orchestrator` (streaming chat loop, session persistence)
 - R2 `model-adapter` (provider-agnostic), `prompt-cache-manager`
-- R3 `tool-catalog` (read, write, edit, glob, grep, bash, webSearch, webFetch)
+- R3 `tool-catalog` (read, write, edit, glob, grep, bash, webSearch,
+  webFetch, todoWrite, codegraph*) — `todoWrite` drives the visible
+  plan/progress list; the `codegraph*` tools do AST symbol lookup and
+  blast-radius/impact analysis before a refactor
 - R8 `permission-engine` — tier-ordered `alwaysDeny > alwaysAsk > alwaysAllow`
 - R9 `hooks-engine`, `slash-commands`, `skills-registry` (auto-discovered
-  from `.crewhaus/`)
-- R13 `sub-agent-spawner` — `code-explorer` and `test-runner` dispatched
-  via the `Task` tool with scoped permissions
+  from `.crewhaus/`), plus `cli.banner` — a cold-start banner with
+  rotating taglines (suppressed on resume)
+- R13 `sub-agent-spawner` — an 8-agent fleet (`code-explorer`,
+  `test-runner`, `orchestrator`, `reviewer`, `security-auditor`,
+  `debugger`, `docs-writer`, `verifier`) dispatched via the `Task` tool
+  with per-agent models and scoped permissions; parallel fan-out is
+  driven by the runtime's concurrent `Task` batching
 - R17 `compaction-autocompact` — Haiku summarises older turns to keep the
   window cheap
 
@@ -109,6 +161,16 @@ Catalog modules touched (per factory's
   `.crewhaus/commands/` or a `SKILL.md` into
   `.crewhaus/skills/<name>/` and it appears at startup. No recompile
   needed.
+- **Workflows over single shots** — large or high-stakes tasks fan out
+  to a fleet of scoped sub-agents and synthesize, the way `claude`
+  workflows do, instead of grinding through one conversation.
+- **Independent verification** — ULTRACODE and goal mode route the final
+  "is it done?" judgment through a separate `verifier` agent, so the
+  worker never grades its own paper (the same reason Claude Code's goal
+  loop uses an independent evaluator).
+- **Durable goals** — `/loop` writes the completion condition to
+  `GOAL.md` on disk; the file outlives the conversation context, and
+  `/resume-goal` re-reads it to continue in a fresh session.
 
 ## Fork and extend
 
@@ -129,6 +191,5 @@ Three high-leverage extensions:
    mutate the spec for measurable accuracy gains
    ([walkthrough 42](../../../walkthroughs/42-active-optimization.md)).
 
-See [`hello-harness-designer`](../hello-harness-designer/) for a
-companion harness that DESIGNS new harnesses by interviewing you about
-intent.
+See [`harness-designer`](../../harness-designer/) for a companion
+harness that DESIGNS new harnesses by interviewing you about intent.

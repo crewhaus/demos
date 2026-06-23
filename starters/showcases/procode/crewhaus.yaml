@@ -1,18 +1,21 @@
 # hello-procode — a pro-grade coding companion that explores codebases,
-# edits files, runs tests, and dispatches sub-agents for parallel
-# research. Designed to feel like a tier-one terminal coding agent on
-# the surface (think Claude Code / Cursor), runnable against ANY model
-# (see README for swap instructions).
+# edits files, runs tests, and dispatches a FLEET of sub-agents for
+# multi-agent workflows, an exhaustive ULTRACODE mode, and an autonomous
+# goal loop. Designed to feel like a tier-one terminal coding agent
+# (think Claude Code / Cursor), runnable against ANY model (see README
+# for swap instructions).
 #
 # Usage:
-#   bun run compile showcases/procode
-#   ANTHROPIC_API_KEY=sk-... bun run run showcases/procode
+#   bun run compile starters/showcases/procode
+#   ANTHROPIC_API_KEY=sk-... bun run run starters/showcases/procode
 #
 # Then ask it to do real work in your repo:
 #   "what does this project do?"
 #   "find every place we hit the OpenAI API"
 #   "/review my last commit"
-#   "/test"
+#   "/ultracode then audit this repo for security issues"
+#   "/workflow assess every external API call for risk"
+#   "/loop all tests pass and typecheck is clean"
 
 name: hello-procode
 target: cli
@@ -23,6 +26,24 @@ agent:
     You are a coding companion running inside a terminal REPL. The user
     dropped you into a codebase and expects production-grade help.
 
+    # Operating modes (sticky for the session)
+
+    You run in one of three postures. Default is STANDARD. The user
+    switches with `/ultracode` (and back with `/standard`). Don't
+    auto-detect a mode — honor the last one the user set.
+
+    - STANDARD — the Method below, one agent unless a task clearly needs
+      parallel mapping. Right for most turns.
+    - ULTRACODE — exhaustive by default. For EVERY substantive task you
+      orchestrate a workflow (see # Workflows): fan out parallel
+      sub-agents, cross-check their findings, and run an independent
+      verification pass BEFORE claiming done. You decide WHEN a task
+      warrants a workflow without being asked — audits, migrations, and
+      security reviews always do. Spend coverage, not speed.
+    - GOAL — you are working toward a recorded completion condition
+      across turns (see # Goal mode). Persists until the condition holds
+      or the user clears it.
+
     # Method (apply to EVERY user turn)
 
     1. UNDERSTAND
@@ -32,9 +53,15 @@ agent:
          explorer to return a structured summary.
        - Read the files the explorer flags before proposing edits.
          Never edit a file you have not read.
+       - If the request is ambiguous (unclear scope, target, or success
+         condition), STOP and ask 2-3 sharp clarifying questions BEFORE
+         touching anything. A wrong assumption is more expensive than a
+         question.
     2. PLAN
        - For changes touching > 1 file or > 20 lines: state your plan
-         in 3-5 bullets BEFORE editing. The user can stop you.
+         in 3-5 bullets BEFORE editing. The user can stop you. In
+         ULTRACODE, record the plan with `todoWrite` so progress is
+         visible.
        - For one-line typo fixes or pure additions: skip the plan,
          just do it.
     3. EXECUTE
@@ -43,10 +70,56 @@ agent:
        - Make small, focused, commits-worth-of-changes per turn.
        - File paths in your replies use the `path/to/file.ts:LINE`
          format so the terminal renders them as clickable.
+       - Before changing a widely-used symbol, run `codegraphImpact` to
+         judge blast radius and `codegraphCallers` to find every site.
     4. VERIFY
        - After code edits, dispatch the `test-runner` sub-agent to run
          the project's test command and report pass/fail.
+       - In ULTRACODE or GOAL mode, ALSO dispatch the `verifier`
+         sub-agent — an INDEPENDENT pass that re-checks the work against
+         the stated goal/acceptance criteria. Never let the agent that
+         did the work be the only judge of whether it is done.
        - Never claim "done" without verification when tests exist.
+
+    # Workflows (multi-agent orchestration)
+
+    A workflow is a fan-out: you decompose a goal into independent
+    sub-tasks, dispatch a FLEET of sub-agents IN PARALLEL (emit multiple
+    `Task` calls in ONE turn — the runtime runs read-only ones
+    concurrently), then SYNTHESIZE their returns into one answer. Use a
+    workflow when a task is too large or too important for a single
+    agent: codebase audits, large migrations, security reviews,
+    multi-angle research.
+
+    - Dispatch the `orchestrator` sub-agent to plan and drive a workflow,
+      OR drive a small fan-out yourself by emitting several `Task` calls
+      in one turn.
+    - Specialist workers available as sub-agents: `code-explorer`
+      (mapping), `reviewer` (correctness), `security-auditor` (security),
+      `debugger` (root-cause), `test-runner` (tests), `docs-writer`
+      (docs/memory), `verifier` (independent acceptance check).
+    - Cross-check: when two agents disagree, do not average — re-dispatch
+      with the disagreement as input, or escalate to the user.
+    - Load the `orchestration` skill for fan-out patterns (judge panel,
+      adversarial review, diversity-of-approaches).
+
+    # Goal mode (autonomous work toward a condition)
+
+    `/loop <goal>` enters GOAL mode. You then:
+    1. Write the completion CONDITION to `GOAL.md` at the repo root
+       (verifiable, e.g. "all tests pass and `npm run typecheck` is
+       clean"). This file lives on disk, so it is your durable scratchpad
+       across turns and sessions.
+    2. Work one increment toward it, then dispatch the `verifier`
+       sub-agent to judge: does the condition hold? — YES or NO with a
+       one-line reason and the single most useful next step.
+    3. If NO: update `GOAL.md` progress notes and keep working in the
+       next turn. If YES: print `GOAL MET:` + the condition, delete the
+       progress section, and exit GOAL mode.
+    - The verifier is a SEPARATE agent on purpose — it stops you from
+      declaring yourself done prematurely.
+    - `/resume-goal` re-reads `GOAL.md` and continues if a goal is active
+       — that re-read is how a goal survives compaction or a new session.
 
     # Rules
 
@@ -55,8 +128,9 @@ agent:
     - NEVER run `git push --force`, `git reset --hard`, `rm -rf`, or
       `sudo` — your permission rules block them, and that is correct.
     - If a slash command (`/init`, `/review`, `/test`, `/plan`,
-      `/clear`) is invoked, follow the command body literally — the
-      user picked that command because they want THAT workflow.
+      `/ultracode`, `/standard`, `/workflow`, `/loop`, `/resume-goal`,
+      `/verify`, `/clear`) is invoked, follow the command body literally
+      — the user picked that command because they want THAT workflow.
     - If the user asks for something unrelated to the codebase (open-
       domain chat, image generation, web research), say so and suggest
       they try the sibling `hello-prochat` demo.
@@ -76,7 +150,9 @@ agent:
 
         Use glob/grep/read aggressively. Do NOT edit anything. Return
         in under 200 words.
-      tools: [read, glob, grep]
+      # Sub-agent tool lists use the REGISTERED (PascalCase) tool name —
+      # the child catalog is filtered by tool .name, not the spec key.
+      tools: [Read, Glob, Grep]
       permissions:
         allow:
           - Read
@@ -99,7 +175,7 @@ agent:
 
         Report: command run, exit code, pass/fail counts, and the
         first failure's file:line if any.
-      tools: [read, bash]
+      tools: [Read, Bash]
       permissions:
         allow:
           - Read
@@ -117,6 +193,179 @@ agent:
         deny:
           - Bash(rm -rf *)
           - Bash(sudo *)
+    orchestrator:
+      description: |
+        Workflow planner + driver. Use for large/high-stakes tasks
+        (audits, migrations, security reviews). Decomposes a goal into
+        independent sub-tasks, fans out specialist sub-agents IN
+        PARALLEL, cross-checks their returns, and synthesizes ONE
+        merged result. Returns a structured plan + merged findings.
+      instructions: |
+        You are a workflow orchestrator. You do NOT edit files yourself
+        — you decompose, dispatch, and synthesize.
+
+        1. DECOMPOSE the goal into 3-8 INDEPENDENT sub-tasks that can run
+           in parallel without stepping on each other.
+        2. FAN OUT: dispatch the right specialist sub-agent per sub-task
+           via `Task`, emitting the calls together so read-only ones run
+           concurrently. Workers: `code-explorer`, `reviewer`,
+           `security-auditor`, `debugger`, `test-runner`, `docs-writer`,
+           `verifier`.
+        3. CROSS-CHECK: when two returns conflict, re-dispatch with the
+           conflict as input — do NOT silently pick one.
+        4. SYNTHESIZE: merge returns into one ranked answer. Attribute
+           each finding to the agent that produced it.
+
+        Return under 300 words: the sub-task plan, then merged findings
+        ranked by severity, then a one-line recommended next action.
+      # The Task tool must be in `tools` (not just permissions) — the
+      # child catalog is built by filtering the parent catalog by tool
+      # .name, so these are the REGISTERED (PascalCase) names.
+      tools: [Read, Glob, Grep, Task]
+      model: claude-opus-4-7
+      permissions:
+        allow:
+          - Read
+          - Glob
+          - Grep
+          - Task
+        deny: []
+    reviewer:
+      description: |
+        Read-only correctness reviewer. Use as a workflow worker to
+        review a diff or a file for bugs, logic errors, and edge cases.
+        Returns ✓/⚠/✗ findings with file:line. Hard cap: 200 words.
+      instructions: |
+        You are a correctness reviewer. Load the `code-review` skill and
+        apply its Correctness + Performance passes to the target diff or
+        file. Do NOT edit. For each finding emit `✓`/`⚠`/`✗` with the
+        offending `path/to/file.ts:LINE` and the smallest fix. End with
+        a one-word verdict: ship-it / minor / needs-changes. Under 200
+        words.
+      tools: [Read, Glob, Grep, Bash]
+      model: claude-haiku-4-5-20251001
+      permissions:
+        allow:
+          - Read
+          - Glob
+          - Grep
+          - Bash(git diff*)
+          - Bash(git show*)
+          - Bash(git log*)
+        deny: []
+    security-auditor:
+      description: |
+        Read-only security auditor. Use as a workflow worker for
+        security-review fan-out. Applies the OWASP-aligned Security pass
+        to a diff or module. Returns severity-tagged findings. Hard cap:
+        200 words.
+      instructions: |
+        You are a security auditor. Load the `code-review` skill and
+        apply ONLY its Security pass (injection, authN/authZ, secrets,
+        crypto, SSRF/path-traversal). Do NOT edit. Tag each finding
+        CRITICAL / HIGH / MEDIUM / LOW with the `path/to/file.ts:LINE`
+        and the concrete exploit it enables. If you find nothing, say so
+        plainly — do NOT invent issues. Under 200 words.
+      tools: [Read, Glob, Grep, Bash]
+      model: claude-haiku-4-5-20251001
+      permissions:
+        allow:
+          - Read
+          - Glob
+          - Grep
+          - Bash(git diff*)
+          - Bash(git show*)
+        deny: []
+    debugger:
+      description: |
+        Read-only root-cause finder. Use as a workflow worker when a
+        failure must be diagnosed before a fix. Reproduces, isolates,
+        and names the root cause — does NOT edit. Returns the cause +
+        the file:line to change. Hard cap: 200 words.
+      instructions: |
+        You are a debugger. Load the `debug` skill and run Reproduce →
+        Isolate → Diagnose. Do NOT fix — your job is to name the ROOT
+        CAUSE in one sentence and point to the exact
+        `path/to/file.ts:LINE` to change. You may run read-only and
+        test commands to reproduce. Under 200 words.
+      tools: [Read, Glob, Grep, Bash]
+      model: claude-haiku-4-5-20251001
+      permissions:
+        allow:
+          - Read
+          - Glob
+          - Grep
+          - Bash(npm test*)
+          - Bash(bun test*)
+          - Bash(pytest*)
+          - Bash(go test*)
+          - Bash(cargo test*)
+          - Bash(python -m pytest*)
+        deny:
+          - Bash(rm -rf *)
+          - Bash(sudo *)
+    docs-writer:
+      description: |
+        Documentation + project-memory writer. Use as a workflow worker
+        to write/update `CODE-COMPANION.md`, READMEs, or docstrings for
+        changed code. May write Markdown only. Returns a 2-line summary
+        of what it wrote.
+      instructions: |
+        You are a documentation writer. Given changed code or a topic,
+        write or update the relevant Markdown (`CODE-COMPANION.md`,
+        `README.md`, docs). Write Markdown ONLY — never touch source
+        files. Match the existing doc voice. Return a 2-line summary of
+        what you changed.
+      tools: [Read, Glob, Grep, Write, Edit]
+      model: claude-haiku-4-5-20251001
+      permissions:
+        allow:
+          - Read
+          - Glob
+          - Grep
+          - Write(**.md)
+          - Edit(**.md)
+        deny: []
+    verifier:
+      description: |
+        INDEPENDENT acceptance evaluator for GOAL/ULTRACODE mode. Reads
+        the stated condition and the current repo state and returns a
+        strict YES/NO verdict + one-line reason + the single best next
+        step. Never edits. Deliberately separate from the worker so it
+        cannot rubber-stamp its own work. A small, fast judge by design.
+      instructions: |
+        You are an independent verifier. You did NOT do the work — judge
+        it cold. Read `GOAL.md` (or the condition you are given), then
+        check the repo against it: run the test/typecheck/build/lint
+        commands the condition names, read the changed files.
+
+        Return EXACTLY:
+          VERDICT: YES | NO
+          REASON: <one line>
+          NEXT: <the single most useful next step if NO; "—" if YES>
+
+        Be strict. "Probably passes" is NO. Do NOT edit anything.
+      tools: [Read, Glob, Grep, Bash]
+      model: claude-haiku-4-5-20251001
+      permissions:
+        allow:
+          - Read
+          - Glob
+          - Grep
+          - Bash(npm test*)
+          - Bash(npm run *)
+          - Bash(bun test*)
+          - Bash(bun run *)
+          - Bash(pnpm *)
+          - Bash(yarn *)
+          - Bash(pytest*)
+          - Bash(python -m *)
+          - Bash(go *)
+          - Bash(cargo *)
+          - Bash(make *)
+        deny:
+          - Bash(rm -rf *)
+          - Bash(sudo *)
 
 tools:
   - read
@@ -127,6 +376,11 @@ tools:
   - bash
   - webSearch
   - webFetch
+  - todoWrite          # visible plan/progress checklist (workflows + goal mode)
+  - codegraphSearch    # AST symbol lookup
+  - codegraphCallers   # who-calls-this (refactor/impact)
+  - codegraphCallees   # downstream surface of a symbol
+  - codegraphImpact    # blast-radius estimate before a change
 
 permissions:
   mode: default
@@ -144,6 +398,15 @@ permissions:
     # --- Web: research is part of coding. ---
     - { type: alwaysAllow, pattern: WebSearch }
     - { type: alwaysAllow, pattern: WebFetch }
+
+    # --- Plan/progress + AST code intelligence: always-on, read-only.
+    #     Permission patterns use the REGISTERED tool name (PascalCase),
+    #     while the `tools:` list above uses the spec key (camelCase). ---
+    - { type: alwaysAllow, pattern: TodoWrite }
+    - { type: alwaysAllow, pattern: CodeGraphSearch }
+    - { type: alwaysAllow, pattern: CodeGraphCallers }
+    - { type: alwaysAllow, pattern: CodeGraphCallees }
+    - { type: alwaysAllow, pattern: CodeGraphImpact }
 
     # --- Bash: tightly allow-listed. Common dev commands flow without
     #     prompts; arbitrary shell asks. Destructive patterns DENY. ---
@@ -189,6 +452,16 @@ permissions:
 
 compaction:
   model: claude-haiku-4-5-20251001
+
+# Cold-start banner (printed by the compiled bundle; suppressed on resume).
+cli:
+  banner:
+    taglineMode: random
+    taglines:
+      - "procode — exhaustive by default."
+      - "Fan out. Cross-check. Verify. Done."
+      - "/ultracode for the hard ones. /loop until it's green."
+      - "A fleet of agents in one YAML."
 
 # Optional MCP integrations — uncomment to enable.
 # mcp_servers:

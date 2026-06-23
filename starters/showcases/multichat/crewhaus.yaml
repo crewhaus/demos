@@ -111,7 +111,9 @@ agent:
 
         Under 150 words. Do NOT execute any tool yourself. Your job
         is purely to plan; the main agent executes.
-      tools: [read, webSearch, webFetch]
+      # Sub-agent tool lists use the REGISTERED (PascalCase) tool name —
+      # the child catalog is filtered by tool .name, not the spec key.
+      tools: [Read, WebSearch, WebFetch]
       permissions:
         allow:
           - Read
