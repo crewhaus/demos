@@ -91,6 +91,15 @@ Keep this comparison in mind as you read the recipe — every later step
 adds fields to the YAML on the left and lines to the TypeScript on the
 right. When something feels magical, open `dist/agent.ts` and look.
 
+One optional field worth knowing early: the `cli` agent block also takes
+`max_tokens:` — the per-turn cap on how much the model may *output*
+(default 8,192; raise it, up to the model's output ceiling, for turns
+that write several files at once). It's omitted from the minimal spec
+above for brevity, and adds a `maxTokens:` line to the `runChatLoop`
+call when set. A turn that hits the cap mid-tool-call doesn't wedge the
+session — the runtime drops the truncated call and asks the model to
+continue.
+
 <details>
 <summary><strong>Architectural context</strong> — why <code>cli</code> is the right shape to learn on</summary>
 
