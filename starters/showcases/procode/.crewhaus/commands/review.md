@@ -14,6 +14,11 @@ all uncommitted changes since the last commit).
 2. Load the `code-review` skill (it has the security / correctness /
    performance / style checklist).
 
+2b. In ULTRACODE mode, instead of reviewing solo, dispatch the
+   `reviewer` AND `security-auditor` sub-agents in parallel on this diff
+   (one turn, two `Task` calls) and merge their findings before the hunk
+   walk below.
+
 3. Walk the diff hunk by hunk. For each hunk, emit either:
    - `✓ <hunk header>: looks good` — no concerns, OR
    - `⚠ <hunk header>:<line>` followed by 1-3 lines explaining the concern
