@@ -7,16 +7,14 @@ per inbound message, and replies in-thread.
 
 ## Run it
 
-From the repo root:
-
 ```bash
-bun install
-bun run compile channel                       # writes dist/{daemon,gateway,session-router,agent}.ts
+cd starters/channel                           # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/{daemon,gateway,session-router,agent}.ts
 
 # Real Slack workspace mode — set both creds in .env first.
 SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   ANTHROPIC_AUTH_TOKEN=sk-ant-oat... \
-  bun run run channel
+  bun dist/daemon.ts
 
 # The daemon listens on PORT (default 3000). Point your Slack app's
 # Event Subscription Request URL at https://<public-host>/slack/events
@@ -30,9 +28,20 @@ the live Anthropic API):
 bun run smoke:section-12
 ```
 
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile channel
+bun run run channel
+```
+
+</details>
+
 ## What this slice exercises
 
-Catalog modules touched (per `docs/MODULE-CATALOG.md`):
+Catalog modules touched (per [`docs/MODULE-CATALOG.md`](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md)):
 - F1 `spec-schema`, `spec-parser`, `spec-validator`, `ir-model` (channel target + IrSecretRef)
 - F2 `compiler-core`, **`target-channel-bot`** (multi-file codegen — first target with >1 emitted file), `codegen-templates`
 - R1 `runtime-orchestrator` — `runChatLoop({ singleTurn: true, resume })` (lifted from REPL-only in Section 12)

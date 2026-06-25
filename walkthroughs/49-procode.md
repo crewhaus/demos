@@ -58,6 +58,16 @@ a skill" — not "fork the compiler."
 
 ## Step 1 — Run it first, read it second
 
+Standalone (from the harness directory):
+
+```bash
+cd starters/showcases/procode
+bunx crewhaus compile crewhaus.yaml -o dist
+ANTHROPIC_API_KEY=sk-ant-... bunx crewhaus run crewhaus.yaml   # or: bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
+
 ```bash
 bun install
 bun run compile starters/showcases/procode

@@ -57,29 +57,37 @@ Factory has zero references back to this repo — the dependency is one-way (dem
 
 ## Run
 
+Every starter is a **self-contained harness** — there are two ways to run one.
+
+### Standalone (the way starters are meant to be used)
+
+Install the `crewhaus` CLI once (npm / Homebrew / Scoop / winget / apt — see the channels listed above), then run any starter from inside its own directory. Because the CLI is resolved by `bunx crewhaus` and every runtime path is resolved from the working directory, a starter copied anywhere on disk still works:
+
+```bash
+cd starters/cli            # or any starter; copy it elsewhere first if you like
+bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/agent.ts
+bunx crewhaus run crewhaus.yaml               # or: bun dist/agent.ts
+```
+
+The runtime resolves the spec, local data sources, MCP servers, and the `.crewhaus/` session store from the directory you run in — so always run from inside the starter directory (where its `crewhaus.yaml` and `.env` live).
+
+### Contributors — in-tree dev loop
+
+From the demos repo root the `bun run` scripts resolve the CLI via the precedence above (sibling `../factory` → `node_modules/crewhaus` → `bunx crewhaus`) and auto-load `demos/.env`:
+
 ```bash
 # from the demos/ directory
 bun install
-
-# see every available starter
-bun run list
-
-# compile and run any starter (pass the path printed by `bun run list`)
+bun run list                                       # see every available starter
 bun run compile starters/cli                       # → starters/cli/dist/agent.ts
 bun run run starters/cli                           # runs the compiled agent
 bun run compile starters/channels/discord          # nested channel adapter
 bun run compile starters/showcases/procode         # nested showcase
-
-# showcase aliases for muscle memory
-bun run compile:procode  # ↔ bun run compile starters/showcases/procode
-bun run compile:prochat
-bun run compile:multichat
-
-# validate every recipe
-bun run walkthroughs:test
+bun run compile:procode                            # showcase alias (↔ compile starters/showcases/procode)
+bun run walkthroughs:test                          # validate every recipe
 ```
 
-Adding a new starter: drop a directory under `starters/` with a `crewhaus.yaml`, then `bun run compile starters/<path>` and `bun run run starters/<path>` work immediately — no package.json edit required.
+Adding a new starter: drop a directory under `starters/` with a `crewhaus.yaml`; the standalone `cd starters/<path> && bunx crewhaus compile crewhaus.yaml` works immediately, and so does `bun run compile starters/<path>` from the repo root — no package.json edit required.
 
 ## Layout
 

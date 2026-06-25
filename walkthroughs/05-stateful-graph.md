@@ -122,7 +122,17 @@ The shape:
   `.crewhaus/graphs/<graphRunId>/`, and exits; you resume from that
   checkpoint to continue.
 
-Run it:
+Run it.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/graph
+bunx crewhaus compile crewhaus.yaml -o dist
+echo "Should we adopt a 4-day work week?" | bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/graph

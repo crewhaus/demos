@@ -6,13 +6,22 @@ the in-memory queue adapter, so no external broker is required.
 
 ## Run it
 
-From the repo root:
-
 ```bash
-bun install
-bun run compile batch                       # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-... bun run run batch  # consumes the queue
+cd starters/batch                                  # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist        # writes dist/agent.ts
+ANTHROPIC_API_KEY=sk-... bunx crewhaus run crewhaus.yaml   # consumes the queue
 ```
 
-See [`walkthroughs/08-batch-worker.md`](../../walkthroughs/08-batch-worker.md) for the
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile batch
+bun run run batch
+```
+
+</details>
+
+See [the batch-worker walkthrough](https://github.com/crewhaus/demos/blob/main/walkthroughs/08-batch-worker.md) for the
 narrative walkthrough, dataset shape, and graceful-shutdown semantics.

@@ -5,15 +5,28 @@ The smallest possible demonstration of the `target: managed` shape — a long-ru
 ## Run it
 
 ```bash
+cd starters/managed          # if copied elsewhere, cd into that copy
+
 # 1. Compile the spec to a gateway daemon.
-bun run compile managed
+bunx crewhaus compile crewhaus.yaml -o dist
 
 # 2. Start the daemon. Binds to :3000 (override with PORT=...).
 #    First stdout line prints the auto-generated JWT secret — copy it.
-bun run run managed
+bun dist/daemon.ts
 ```
 
 Set `CREWHAUS_GATEWAY_JWT_SECRET=<at least 16 chars>` ahead of time to pin the secret across restarts. A Claude credential (`ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY`) is required for the model to actually run.
+
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile managed
+bun run run managed
+```
+
+</details>
 
 ## Drive traffic
 
@@ -66,4 +79,4 @@ This example is the smallest concrete proof that the managed gateway:
 - Hash-chains the audit log so tampering is detectable.
 - Rebase-isolates storage so `tenant-a` can never read `tenant-b`'s sessions.
 
-See [`walkthroughs/11-managed-multitenant.md`](../../walkthroughs/11-managed-multitenant.md) for the full gateway protocol (`runs.continue`, `runs.cancel`, `sessions.fork`, `audit.tail`), policy hook integration, and SOC 2 evidence-export workflow.
+See [`walkthroughs/11-managed-multitenant.md`](https://github.com/crewhaus/demos/blob/main/walkthroughs/11-managed-multitenant.md) for the full gateway protocol (`runs.continue`, `runs.cancel`, `sessions.fork`, `audit.tail`), policy hook integration, and SOC 2 evidence-export workflow.

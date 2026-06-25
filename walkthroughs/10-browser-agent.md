@@ -138,7 +138,16 @@ The shape:
 
 ## Compile and run
 
-Compile the spec to a standalone TypeScript file:
+Compile the spec to a standalone TypeScript file.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/browser
+bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/browser   # writes starters/browser/dist/agent.ts
@@ -164,9 +173,18 @@ bun smoke/section-25-smoke/fixture-server.ts
 # [fixture] listening on http://127.0.0.1:7325/
 ```
 
-In **terminal B** (also `cd`'d to the `demos/` repo root, so
-`./.env` resolves to `demos/.env` — see [Conventions](INDEX.md#conventions)),
-invoke the compiled agent with a task:
+In **terminal B**, invoke the compiled agent with a task.
+
+Standalone (from the harness directory — `.env` must live in `starters/browser/`):
+
+```bash
+cd starters/browser
+set -a; source .env; set +a    # exports ANTHROPIC_AUTH_TOKEN to this shell
+bunx crewhaus run crewhaus.yaml --prompt "Click the green Submit button on the page."   # or: bun dist/agent.ts --prompt "..."
+```
+
+Or, working inside the demos checkout, from the repo root (so `./.env`
+resolves to `demos/.env` — see [Conventions](INDEX.md#conventions)):
 
 ```bash
 set -a; source .env; set +a    # loads demos/.env, exports ANTHROPIC_AUTH_TOKEN to this shell
@@ -212,10 +230,14 @@ bun run smoke:section-25
 ### Point it at your own page
 
 Pointing the spec at a different URL is a one-line change to
-`driver.startUrl`, then `bun run compile starters/browser` again and
-`bun run run starters/browser -- --prompt "..."` for whatever's on that
-page. The fixture exists only to give the recipe something
-deterministic to click — anything Chromium can render works.
+`driver.startUrl`, then recompile and run again for whatever's on that
+page — standalone (from `starters/browser/`) that's
+`bunx crewhaus compile crewhaus.yaml -o dist` then
+`bunx crewhaus run crewhaus.yaml --prompt "..."`; from the demos repo
+root it's `bun run compile starters/browser` then
+`bun run run starters/browser -- --prompt "..."`. The fixture exists
+only to give the recipe something deterministic to click — anything
+Chromium can render works.
 
 ## The vision-grounding loop
 

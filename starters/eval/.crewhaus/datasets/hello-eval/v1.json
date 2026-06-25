@@ -1,0 +1,23 @@
+{
+  "name": "hello-eval",
+  "version": "v1",
+  "splits": {
+    "train": [
+      { "id": "t1", "input": "What is 2+2?", "expected_output": "4" },
+      { "id": "t2", "input": "What is 7*8?", "expected_output": "56" }
+    ],
+    "dev": [
+      { "id": "d1", "input": "What is 10-3?", "expected_output": "7" },
+      { "id": "d2", "input": "What is 15/3?", "expected_output": "5" },
+      { "id": "d3", "input": "What is 9*9?", "expected_output": "81" },
+      { "id": "d4", "input": "What is 100/4?", "expected_output": "25" },
+      { "id": "d5", "input": "What is 13+19?", "expected_output": "32" },
+      { "id": "d6", "input": "What is 50-17?", "expected_output": "33" }
+    ],
+    "test": [
+      { "id": "x1", "input": "What is 17+25?", "expected_output": "42" }
+    ]
+  },
+  "sampleHashes": {},
+  "createdAt": "2026-05-25T00:00:00Z"
+}

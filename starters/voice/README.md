@@ -7,17 +7,26 @@ streaming code.
 
 ## Run it
 
-From the repo root:
-
 ```bash
-bun install
-bun run compile voice                       # writes dist/{daemon,voice-loop,agent}.ts
-OPENAI_API_KEY=sk-... bun run run voice     # starts the voice daemon
+cd starters/voice          # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/{daemon,voice-loop,agent}.ts
+OPENAI_API_KEY=sk-... bun dist/daemon.ts      # starts the voice daemon
 ```
 
 The provider is OpenAI by default; switch with the `voice.provider:` field
 in `crewhaus.yaml` (`openai`, `elevenlabs`, etc.).
 
-See [`walkthroughs/09-voice-agent.md`](../../walkthroughs/09-voice-agent.md) for the
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile voice
+bun run run voice
+```
+
+</details>
+
+See [`walkthroughs/09-voice-agent.md`](https://github.com/crewhaus/demos/blob/main/walkthroughs/09-voice-agent.md) for the
 push-to-talk vs. always-on modes, VAD configuration, and how the runtime
 interleaves audio with tool calls.

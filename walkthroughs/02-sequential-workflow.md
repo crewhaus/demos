@@ -110,7 +110,17 @@ Note the differences from a CLI spec:
   for interactive approval)` in the session JSONL and the model will
   produce a confused message claiming the environment is restricted.
 
-Compile and run:
+Compile and run.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/workflow
+bunx crewhaus compile crewhaus.yaml -o dist
+bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/workflow
