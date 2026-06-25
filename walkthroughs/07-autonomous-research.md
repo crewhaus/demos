@@ -112,7 +112,17 @@ The shape:
   the agent can read via `Source(file://...)`. For web research, use
   `retrieve.allowedOrigins: ["https://docs.example.com"]` instead.
 
-Run it:
+Run it.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/research
+bunx crewhaus compile crewhaus.yaml -o dist
+bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/research
@@ -188,7 +198,16 @@ Each `state.json` carries:
 - The full citation table (uri, snippet, citation id).
 - The `Source(uri)` cache (so the resume doesn't re-fetch).
 
-Resume with:
+Resume with.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/research
+bunx crewhaus run crewhaus.yaml --resume run_<id>      # or: bun dist/agent.ts --resume run_<id>
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run run starters/research -- --resume run_<id>

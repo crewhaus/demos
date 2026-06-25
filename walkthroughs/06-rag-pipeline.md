@@ -131,7 +131,17 @@ The shape:
   without prompting (which is almost always what you want in a RAG
   pipeline).
 
-Run it:
+Run it.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/rag
+bunx crewhaus compile crewhaus.yaml -o dist
+bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/rag

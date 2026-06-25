@@ -10,13 +10,21 @@ below.
 
 ## Run it
 
-From the repo root:
+```bash
+cd starters/showcases/prochat          # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist            # writes dist/agent.ts
+ANTHROPIC_API_KEY=sk-ant-... bunx crewhaus run crewhaus.yaml  # opens REPL
+```
+
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
 
 ```bash
-bun install
-bun run compile starters/showcases/prochat                          # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-ant-... bun run run starters/showcases/prochat # opens REPL
+bun run compile showcases/prochat
+bun run run showcases/prochat
 ```
+</details>
 
 ## Try this
 
@@ -84,7 +92,7 @@ The `model:` field is a provider-prefixed string. Edit
 | AWS Bedrock | `bedrock/anthropic.claude-sonnet-4-20250514-v1:0` | `AWS_*` |
 | Local (OpenAI-compatible) | `local/llama-3.3-70b@http://localhost:8080/v1` | — |
 
-Recompile (`bun run compile starters/showcases/prochat`) after any change to the spec.
+Recompile (`bunx crewhaus compile crewhaus.yaml -o dist`) after any change to the spec.
 
 > **Vision note**: `ReadImage` works on any model. For URL-fetched
 > images, vision-capable models (GPT-4o, Claude Sonnet/Opus, Gemini)
@@ -134,7 +142,7 @@ Three high-leverage extensions:
 
 1. **Add knowledge** — wire in a `pipeline`-target RAG over your
    personal documents (see
-   [`hello-rag`](../hello-rag/)) and use the `Retrieve` tool here too.
+   [`hello-rag`](https://github.com/crewhaus/demos/blob/main/starters/rag/)) and use the `Retrieve` tool here too.
 2. **Add an MCP connector** — `mcp_servers:` in the YAML for Gmail,
    Drive, calendar, Linear, GitHub, etc. New tools appear as
    `<server>__<tool>` automatically.
@@ -142,6 +150,6 @@ Three high-leverage extensions:
    wire up `channels.slack`, recompile. Same prompt, different
    surface — the value proposition of the CrewHaus compiler.
 
-See [`hello-procode`](../hello-procode/) for the sibling pro-grade
-coding companion and [`hello-multichat`](../hello-multichat/) for the
+See [`hello-procode`](https://github.com/crewhaus/demos/blob/main/starters/showcases/procode/) for the sibling pro-grade
+coding companion and [`hello-multichat`](https://github.com/crewhaus/demos/blob/main/starters/showcases/multichat/) for the
 multi-channel always-on personal assistant.

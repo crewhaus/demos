@@ -6,27 +6,35 @@ end to end (spec → IR → codegen → runtime).
 
 ## Run it
 
-From the repo root:
-
 ```bash
-bun install
-bun run compile workflow                       # writes dist/agent.ts
-ANTHROPIC_AUTH_TOKEN=sk-ant-oat... bun run run workflow
+cd starters/workflow                           # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist    # writes dist/agent.ts
+ANTHROPIC_AUTH_TOKEN=sk-ant-oat... bunx crewhaus run crewhaus.yaml
 ```
 
-Or directly:
+Or run the compiled entrypoint directly:
 
 ```bash
-bun ../../apps/cli/src/index.ts compile crewhaus.yaml -o dist
 ANTHROPIC_AUTH_TOKEN=sk-ant-oat... bun dist/agent.ts
 ```
+
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile workflow
+bun run run workflow
+```
+
+</details>
 
 The agent runs both steps in order and exits. Step 1's terminal assistant
 text is threaded into step 2's user message as context.
 
 ## What this slice exercises
 
-Catalog modules touched (per `docs/MODULE-CATALOG.md`):
+Catalog modules touched (per [`MODULE-CATALOG.md`](https://github.com/crewhaus/factory/blob/main/docs/MODULE-CATALOG.md)):
 - F1 `spec-schema` (workflow variant), `spec-parser`, `spec-validator`, `ir-model` (`IrWorkflowV0`)
 - F2 `compiler-core` (workflow dispatch), `target-workflow`, `codegen-templates`
 - F4 `spec-cli`

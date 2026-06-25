@@ -32,12 +32,10 @@ Three Claude-Code-class capabilities, all expressed in the same spec:
 
 ## Run it
 
-From the repo root:
-
 ```bash
-bun install
-bun run compile starters/showcases/procode                          # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-ant-... bun run run starters/showcases/procode # opens REPL in cwd
+cd starters/showcases/procode      # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist               # writes dist/agent.ts
+ANTHROPIC_API_KEY=sk-ant-... bunx crewhaus run crewhaus.yaml  # opens REPL in cwd
 ```
 
 Or, to point it at a specific project, `cd` there first and run the
@@ -47,6 +45,16 @@ compiled bundle directly:
 cd ~/my-project
 ANTHROPIC_API_KEY=sk-ant-... bun /path/to/demos/starters/showcases/procode/dist/agent.ts
 ```
+
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile showcases/procode
+bun run run showcases/procode
+```
+</details>
 
 The agent's CWD is the project under analysis. `.crewhaus/commands/`
 and `.crewhaus/skills/` ship inside this demo — drop your own there to
@@ -113,7 +121,7 @@ The `model:` field is a provider-prefixed string. Edit
 | AWS Bedrock | `bedrock/anthropic.claude-sonnet-4-20250514-v1:0` | `AWS_*` |
 | Local (OpenAI-compatible) | `local/llama-3.3-70b@http://localhost:8080/v1` | — |
 
-Recompile (`bun run compile starters/showcases/procode`) after any change to the spec.
+Recompile (`bunx crewhaus compile crewhaus.yaml -o dist`) after any change to the spec.
 
 Sub-agent `model:` fields are independent of the main agent's — point the
 read-only workers at any provider string (the fleet here runs them on
@@ -189,7 +197,7 @@ Three high-leverage extensions:
    `bunx crewhaus optimize crewhaus.yaml --dataset dataset.jsonl
    --graders graders.yaml --write-back` to let the eval-driven optimizer
    mutate the spec for measurable accuracy gains
-   ([walkthrough 42](../../../walkthroughs/42-active-optimization.md)).
+   ([walkthrough 42](https://github.com/crewhaus/demos/blob/main/walkthroughs/42-active-optimization.md)).
 
-See [`harness-designer`](../../harness-designer/) for a companion
+See [`harness-designer`](https://github.com/crewhaus/demos/blob/main/starters/harness-designer/) for a companion
 harness that DESIGNS new harnesses by interviewing you about intent.

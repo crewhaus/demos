@@ -6,15 +6,24 @@ short user task (e.g. "fill out this form, click submit").
 
 ## Run it
 
-From the repo root:
-
 ```bash
-bun install
-bun run compile browser                       # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-... bun run run browser  # launches Chromium
+cd starters/browser                                 # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist         # writes dist/agent.ts
+ANTHROPIC_API_KEY=sk-... bunx crewhaus run crewhaus.yaml  # launches Chromium
 ```
 
 The browser runs headed by default; set `BROWSER_HEADLESS=1` for CI.
 
-See [`walkthroughs/10-browser-agent.md`](../../walkthroughs/10-browser-agent.md) for the
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile browser
+bun run run browser
+```
+
+</details>
+
+See [`walkthroughs/10-browser-agent.md`](https://github.com/crewhaus/demos/blob/main/walkthroughs/10-browser-agent.md) for the
 narrative walkthrough, screenshot pipeline, and selector strategy.

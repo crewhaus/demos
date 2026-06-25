@@ -160,7 +160,15 @@ tries to write `~/.zshrc`, the rule list converts that to an `ask`.
 
 ## Step 2 — Compile and run
 
-From the repo root:
+Standalone (from the harness directory):
+
+```bash
+cd starters/harness-designer
+bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/agent.ts
+ANTHROPIC_AUTH_TOKEN=... bunx crewhaus run crewhaus.yaml   # or: bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/harness-designer   # writes dist/agent.ts
@@ -212,14 +220,17 @@ you ask for something CrewHaus can't do.
 > `alwaysDeny Bash(rm -rf *)`. Header cites recipes 03, 14, 29, 41.
 > Also writes `.env.example` listing `SLACK_BOT_TOKEN`,
 > `SLACK_APP_TOKEN`, `GITHUB_TOKEN`, `ANTHROPIC_AUTH_TOKEN`, and a
-> `README.md`. Runs `bunx crewhaus compile slack-pr-reviewer/crewhaus.yaml
-> --emit-ir` — it passes.)* Done. Shape: `channel` (Slack). Tools:
-> `read`, `bash`. Bash gated to `gh` commands by default; everything
-> else asks. Run:
+> `README.md` whose run instructions are standalone. Validates from
+> inside the new directory — `cd slack-pr-reviewer && bunx crewhaus
+> compile crewhaus.yaml --emit-ir` — it passes.)* Done. Shape:
+> `channel` (Slack). Tools: `read`, `bash`. Bash gated to `gh` commands
+> by default; everything else asks. The harness is self-contained — run
+> it from its own directory:
 >
 > ```
-> bun apps/cli/src/index.ts compile slack-pr-reviewer/crewhaus.yaml -o slack-pr-reviewer/dist
-> SLACK_BOT_TOKEN=… SLACK_APP_TOKEN=… GITHUB_TOKEN=… ANTHROPIC_AUTH_TOKEN=… bun slack-pr-reviewer/dist/daemon.ts
+> cd slack-pr-reviewer
+> bunx crewhaus compile crewhaus.yaml -o dist
+> SLACK_BOT_TOKEN=… SLACK_APP_TOKEN=… GITHUB_TOKEN=… ANTHROPIC_AUTH_TOKEN=… bun dist/daemon.ts
 > ```
 >
 > Do you have example PR diffs and the reviews you'd want the bot to
@@ -251,25 +262,29 @@ in user terms, not compiler terms.
 >
 > **You:** `./reg-filings-rag`
 >
-> **Designer:** *(writes `target: pipeline`, `documents.path: ./pdfs`,
+> **Designer:** *(copies your PDF folder into `reg-filings-rag/pdfs/`
+> so the harness is self-contained, then writes `target: pipeline`,
+> `documents.path: ./pdfs` (harness-relative — no `../`),
 > `indexing.chunkStrategy: markdown`, `chunkSize: 1000`,
 > `chunkOverlap: 200`, `retrieve.defaultK: 5`,
-> `retrieve.persist: true`. Compile passes.)* Done. Shape: `pipeline`
-> with persistent vector store. Defaults from Recipe 06.
+> `retrieve.persist: true`. Validates with `cd reg-filings-rag &&
+> bunx crewhaus compile crewhaus.yaml --emit-ir`.)* Done. Shape:
+> `pipeline` with persistent vector store. Defaults from Recipe 06.
 >
 > Do you have example questions and the answers you'd expect?
 >
 > **You:** Yes — `golden-qa.jsonl` has about 40 of them.
 >
 > **Designer:** *(scaffolds `reg-filings-rag/dataset.jsonl` by copying
-> from `golden-qa.jsonl`, writes
+> from `golden-qa.jsonl` (vendored in, not referenced in place), writes
 > `reg-filings-rag/graders.yaml` with `string_contains` graders
-> (template from Recipe 12). Runs:)*
+> (template from Recipe 12). Runs, from inside the harness directory:)*
 >
 > ```
-> bunx crewhaus optimize reg-filings-rag/crewhaus.yaml \
->   --dataset reg-filings-rag/dataset.jsonl \
->   --graders reg-filings-rag/graders.yaml \
+> cd reg-filings-rag
+> bunx crewhaus optimize crewhaus.yaml \
+>   --dataset dataset.jsonl \
+>   --graders graders.yaml \
 >   --iterations 3 --write-back
 > ```
 >
@@ -302,9 +317,10 @@ shoehorn the request into a shape that almost-but-not-quite fits.
 
 ## Step 4 — Why validation is strict
 
-The Method's step 6 is "run `bunx crewhaus compile <generated>/crewhaus.yaml
---emit-ir`. If it errors, patch and retry — up to 3 attempts. Never
-hand the user a spec you have not seen the in-tree compiler accept."
+The Method's step 6 is "validate from inside the generated directory —
+`cd <generated> && bunx crewhaus compile crewhaus.yaml --emit-ir`. If it
+errors, patch and retry — up to 3 attempts. Never hand the user a spec
+you have not seen the compiler accept."
 The `--emit-ir` flag is in the spec's `alwaysAllow` list. The model
 runs it, catches schema errors (e.g. `tools` placed under `agent`
 when the target requires it at top level, or vice versa), patches the
@@ -391,7 +407,17 @@ bun run walkthroughs:test    # static link + spec-fence validation
 bun run walkthroughs:smoke   # compile:starters/harness-designer in CI mode
 ```
 
-Manual end-to-end:
+Manual end-to-end.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/harness-designer
+bunx crewhaus compile crewhaus.yaml -o dist
+ANTHROPIC_AUTH_TOKEN=... bunx crewhaus run crewhaus.yaml   # or: bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/harness-designer
@@ -407,8 +433,12 @@ Then paste any of the three dialogue intents above. Confirm:
   generating.
 - The generated YAML has a header comment block citing intent +
   consulted recipes.
-- `bunx crewhaus compile <generated>/crewhaus.yaml --emit-ir` exits 0
-  on the spec the designer hands back.
+- `cd <generated> && bunx crewhaus compile crewhaus.yaml --emit-ir`
+  exits 0 on the spec the designer hands back.
+- The generated harness is standalone: its README runs from inside its
+  own directory (`cd <generated>` + `bunx crewhaus ... crewhaus.yaml`),
+  and any local data source is copied in and referenced harness-relative
+  (no `../`), not pointed at from outside.
 
 ## Future hardening
 

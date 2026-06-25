@@ -109,7 +109,17 @@ The shape:
   hash) stays in the seen cache. Within that window, duplicate jobs
   return the cached result without re-invoking the model.
 
-Run it:
+Run it.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/batch
+bunx crewhaus compile crewhaus.yaml -o dist
+bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/batch

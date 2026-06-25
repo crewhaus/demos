@@ -17,13 +17,30 @@ below.
 
 ### Conventions
 
-**Run every shell snippet from the `demos/` repo root.** All paths
-(`starters/browser`, `smoke/section-25-smoke/...`) are relative to it,
-and the `.env` that holds `ANTHROPIC_AUTH_TOKEN` is expected at
-`demos/.env`. Bun auto-loads `./.env` on every `bun run` invocation,
-so if your cwd is the root, credentials are picked up automatically;
-if you `cd` into a starter directory first, Bun will look for an
-unrelated `starters/<name>/.env` and silently start unauthenticated.
+**Each starter is a standalone harness.** To run one on its own — the
+way you'd ship it — install the `crewhaus` CLI (npm / Homebrew / Scoop /
+winget / apt) and run from inside the starter directory:
+
+```bash
+cd starters/<name>
+cp .env.example .env       # add ANTHROPIC_AUTH_TOKEN (if the starter ships one)
+bunx crewhaus compile crewhaus.yaml -o dist
+bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
+```
+
+The runtime resolves the spec, local data sources, MCP servers, and the
+`.crewhaus/` session store from the directory you run in, so always run
+from inside the harness directory.
+
+**Convention used by the snippets below.** For brevity, the walkthrough
+shell snippets are written to run from the **`demos/` repo root** using
+the in-tree `bun run compile <name>` / `bun run run <name>` scripts —
+they resolve the sibling `../factory` checkout and auto-load `demos/.env`
+(Bun loads `./.env` on every `bun run`). All relative paths
+(`starters/browser`, `smoke/section-25-smoke/...`) are repo-root-relative.
+Every `bun run compile starters/<name>` has the standalone equivalent
+`cd starters/<name> && bunx crewhaus compile crewhaus.yaml` (and likewise
+for `run`).
 
 ---
 

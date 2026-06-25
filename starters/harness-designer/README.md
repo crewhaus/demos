@@ -5,13 +5,21 @@ you about intent.
 
 ## Run it
 
-From the repo root:
+```bash
+cd starters/harness-designer          # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist
+ANTHROPIC_AUTH_TOKEN=... bunx crewhaus run crewhaus.yaml
+```
+
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
 
 ```bash
-bun install
-bun run compile harness-designer       # writes dist/agent.ts
-ANTHROPIC_AUTH_TOKEN=... bun run run harness-designer
+bun run compile harness-designer
+bun run run harness-designer
 ```
+</details>
 
 Describe what you want in plain English — e.g. "a Slack bot that
 reviews PRs" or "an agent that watches USDC transfers and pings me on
@@ -36,6 +44,6 @@ Catalog modules touched (per factory's [docs/MODULE-CATALOG.md](https://github.c
   every other `Bash` call gates through `ask`
 - R15 `eval-runner`, `prompt-optimizer` (when the user has a dataset)
 
-See [Recipe 48](../../walkthroughs/48-harness-designer.md) for the full
+See [Recipe 48](https://github.com/crewhaus/demos/blob/main/walkthroughs/48-harness-designer.md) for the full
 walkthrough, including three worked dialogues and the rationale behind
 the intent-driven interview pattern.

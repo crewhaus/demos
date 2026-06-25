@@ -10,19 +10,28 @@ whatever surface is convenient at the moment.
 
 ## Run it
 
-From the repo root:
-
 ```bash
-bun install
-bun run compile starters/showcases/multichat                    # writes dist/{daemon,gateway,session-router,agent}.ts
+cd starters/showcases/multichat          # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist     # writes dist/{daemon,gateway,session-router,agent}.ts
 
 # Minimum: one channel's creds. Provide all three to listen on all.
 ANTHROPIC_API_KEY=sk-ant-... \
   SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \
   DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_PUBLIC_KEY=... \
-  bun run run starters/showcases/multichat
+  bun dist/daemon.ts
 ```
+
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile showcases/multichat
+bun run run showcases/multichat
+```
+
+</details>
 
 The daemon listens on `PORT` (default `3000`). Point each platform's
 webhook there (Slack Event Subscriptions, Telegram setWebhook, Discord
@@ -133,7 +142,7 @@ Catalog modules touched (per factory's
 
 ## How the feature flags fit together
 
-- **Always-on daemon** — once you `bun run run starters/showcases/multichat`, the
+- **Always-on daemon** — once you `bun dist/daemon.ts`, the
   process listens forever. No "open a terminal" / "start a chat"
   ceremony.
 - **Multi-channel presence** — same agent answers on whichever surface
@@ -163,8 +172,8 @@ Catalog modules touched (per factory's
    or any of the [reference MCP servers](https://github.com/modelcontextprotocol/servers).
 2. **Add more channels** — `channels:` already supports `whatsapp:`
    and `imessage:` blocks (see
-   [hello-channel-whatsapp](../hello-channel-whatsapp/) and
-   [hello-channel-imessage](../hello-channel-imessage/) for the
+   [channels/whatsapp](https://github.com/crewhaus/demos/blob/main/starters/channels/whatsapp/) and
+   [channels/imessage](https://github.com/crewhaus/demos/blob/main/starters/channels/imessage/) for the
    credential shape).
 3. **Add custom skills** — drop a `SKILL.md` into
    `.crewhaus/skills/<name>/` and the model can self-load it when
@@ -179,5 +188,5 @@ Catalog modules touched (per factory's
    --graders graders.yaml --write-back` to let the eval-driven
    optimizer mutate the instructions for measurable accuracy gains.
 
-See [`hello-procode`](../hello-procode/) and
-[`hello-prochat`](../hello-prochat/) for the sibling heavy-hitter demos.
+See [`procode`](https://github.com/crewhaus/demos/blob/main/starters/showcases/procode/) and
+[`prochat`](https://github.com/crewhaus/demos/blob/main/starters/showcases/prochat/) for the sibling heavy-hitter demos.

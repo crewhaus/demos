@@ -19,7 +19,7 @@ Six probes exercise the federation surface end-to-end (no docker required, no li
 5. In-process two-server demo over HTTP.
 6. Docker-compose fixture (gated on `CREWHAUS_FEDERATION_LIVE=1`).
 
-The full smoke source lives at [`smoke/section-34-federation-smoke/smoke.ts`](../../smoke/section-34-federation-smoke/smoke.ts).
+The full smoke source lives at [`smoke/section-34-federation-smoke/smoke.ts`](https://github.com/crewhaus/demos/blob/main/smoke/section-34-federation-smoke/smoke.ts).
 
 ## How production wires peers
 
@@ -30,4 +30,4 @@ There is **no `spec.federation.*` block** — the spec schema (`packages/spec/sr
 
 `credentials` is an `MtlsCredentials` value — PEM **strings** (`caCertPem`, `clientCertPem`, `clientKeyPem`) plus the peer's 64-char hex `pinnedFingerprint`, not file paths. Source them however your deployment supplies secrets; the walkthrough's router example reads them from env vars (`CREWHAUS_FED_CA_CERT`, `CREWHAUS_FED_CLIENT_CERT`, `CREWHAUS_FED_CLIENT_KEY`, `CREWHAUS_FED_PEER_FINGERPRINT`). Peers are discovered at call time via DNS SRV + `.well-known/crewhaus.json`, not declared in a spec.
 
-See [`walkthroughs/27-federation.md`](../../walkthroughs/27-federation.md) for the envelope shape, mTLS pinning, traceparent propagation, and error-classification details.
+See [walkthrough 27 — Federation](https://github.com/crewhaus/demos/blob/main/walkthroughs/27-federation.md) for the envelope shape, mTLS pinning, traceparent propagation, and error-classification details.

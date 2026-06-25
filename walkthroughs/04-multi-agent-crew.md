@@ -117,7 +117,17 @@ Three things to notice:
    picks the next role dynamically. Adding deterministic routing is
    covered later.
 
-Compile and run:
+Compile and run.
+
+Standalone (from the harness directory):
+
+```bash
+cd starters/crew
+bunx crewhaus compile crewhaus.yaml -o dist
+echo "Topic: rolling out vector-search to production" | bun dist/agent.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/crew

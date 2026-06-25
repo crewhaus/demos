@@ -154,7 +154,15 @@ block; `|` preserves the linebreaks.
 
 ## Step 2 — Compile and run
 
-From the repo root:
+Standalone (from the harness directory):
+
+```bash
+cd starters/cli
+bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/agent.ts
+bunx crewhaus run crewhaus.yaml               # opens an interactive REPL (or: bun dist/agent.ts)
+```
+
+Or, working inside the demos checkout, from the repo root:
 
 ```bash
 bun run compile starters/cli   # writes starters/cli/dist/agent.ts

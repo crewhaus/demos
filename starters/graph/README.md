@@ -7,14 +7,22 @@ are ready, and persists state per-execution.
 
 ## Run it
 
-From the repo root:
-
 ```bash
-bun install
-bun run compile graph                       # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-... bun run run graph  # runs the graph end-to-end
+cd starters/graph                                       # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist             # writes dist/agent.ts
+ANTHROPIC_API_KEY=sk-... bunx crewhaus run crewhaus.yaml  # runs the graph end-to-end
 ```
 
-See [`walkthroughs/05-stateful-graph.md`](../../walkthroughs/05-stateful-graph.md) for the
+<details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
+
+From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
+
+```bash
+bun run compile graph
+bun run run graph
+```
+</details>
+
+See [`walkthroughs/05-stateful-graph.md`](https://github.com/crewhaus/demos/blob/main/walkthroughs/05-stateful-graph.md) for the
 node-and-edge model, conditional edges, fan-out/fan-in, and the difference
 between graph and crew.

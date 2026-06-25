@@ -183,6 +183,16 @@ work in your environment.
 
 ## Step 4 — Run against your tunnel
 
+Standalone (from the harness directory):
+
+```bash
+cd starters/channel
+bunx crewhaus compile crewhaus.yaml -o dist
+bun dist/daemon.ts
+```
+
+Or, working inside the demos checkout, from the repo root:
+
 ```bash
 bun run compile starters/channel
 bun run run starters/channel

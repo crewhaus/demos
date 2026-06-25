@@ -39,6 +39,18 @@ starters/
 
 ## Usage
 
+Each starter is self-contained. The standard way to run one is from
+inside its own directory, with the published CLI (copy the directory
+anywhere and it still works):
+
+```bash
+cd cli                                  # or any starter directory
+bunx crewhaus compile crewhaus.yaml -o dist
+bunx crewhaus run crewhaus.yaml         # or: bun dist/agent.ts
+```
+
+<details><summary><strong>Contributors</strong> — in-tree dev loop (from the demos repo root)</summary>
+
 ```bash
 bun run list                 # see every available starter with its target
 bun run compile cli          # → starters/cli/dist/agent.ts
@@ -46,6 +58,7 @@ bun run run cli              # runs the compiled agent (REPL)
 bun run compile channels/discord
 bun run compile showcases/procode
 ```
+</details>
 
 Each starter directory has a `crewhaus.yaml` (the spec), a `README.md`
 explaining the shape, and a compiled `dist/` output (gitignored).

@@ -25,7 +25,9 @@ goal: |
 branchingFactor: 3
 maxDurationMs: 240000
 retrieve:
+  # Harness-relative: the source docs live in ./sources/ inside this
+  # starter, so it works when run from this directory (or copied anywhere).
   allowedFileRoots:
-    - examples/hello-research/sources
+    - sources
 permissions:
   mode: default
