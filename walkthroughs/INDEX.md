@@ -1,7 +1,7 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 56 recipes are **complete** as of 2026-05-28. Every recipe is
+> All 57 recipes are **complete** as of 2026-07-01. Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`.
@@ -46,7 +46,7 @@ for `run`).
 
 ## Pick a recipe — diagnostic decision tree
 
-The 56 recipes cover a lot of ground. Most readers don't need to scan
+The 57 recipes cover a lot of ground. Most readers don't need to scan
 the table of contents; they need to find the shape that matches the
 problem they brought. Walk this tree from the top:
 
@@ -98,6 +98,10 @@ problem they brought. Walk this tree from the top:
    DSPy-style spec mutation (the empirical result that motivates the
    project: measurable accuracy gains from program-layer prompt
    optimization).
+7.5. **No labelled dataset — but real users rating real answers?** →
+   [Recipe 56 — Response Ratings](56-response-ratings.md). `crewhaus
+   rate` / web-UI thumbs / Slack 👍👎 become the dataset and grader
+   that Recipe 42's loop consumes (`optimize --ratings`).
 8. **Are you running long-horizon autonomous work (research, batch
    jobs)?** → [Recipe 07 — Autonomous Research](07-autonomous-research.md)
    or [Recipe 08 — Batch Worker](08-batch-worker.md). Both lean on
@@ -293,6 +297,7 @@ Deeper cuts on the Pillar 2 (active eval) and Pillar 3 (security fabric) invaria
 | 53 | [Justification Gates](53-justification-gates.md)                | Pillar 3 — intent                       | complete |
 | 54 | [Codegraph Tool](54-codegraph-tool.md)                          | Corpus — `@colbymchenry/codegraph`      | complete |
 | 55 | [Egress Fabric](55-egress-fabric.md)                            | Pillar 3 — sink side                    | complete |
+| 56 | [Response Ratings](56-response-ratings.md)                      | Pillar 2 — ratings → evals              | complete |
 
 ---
 
@@ -311,6 +316,7 @@ a known scenario:
 - **RAG / research.** 06 → 07 → 12.
 - **Blockchain integration.** 43 → 44 → 46 → 45 → 47.
 - **Active optimization (DSPy-inspired).** 12 → 34 → 42 → 52.
+- **Closing the loop from user ratings.** 56 → 12 → 42.
 - **Pillar 3 hardening (defense-in-depth).** 29 → 41 → 53 → 55.
 - **Forking a tier-1 harness.** 49 (procode) or 50 (prochat) or 51 (multichat) → fork the matching showcase.
 - **Designing a new harness from intent.** 48 → (the recipe for the shape it picks) → 12 → 42.
@@ -360,7 +366,7 @@ thing to check when asking "is module X covered anywhere?".
 | **R12** | RAG / Retrieval / Knowledge | 06 · 07 |
 | **R13** | Channels & Messaging | 00 · 03 · 37–40 · 51 |
 | **R14** | Scheduling & Background | 08 · 19 · 51 |
-| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 |
+| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 · 56 |
 | **R16** | UI / TUI / Voice / Media | 09 · 11 · 35 |
 | **R17** | Infrastructure & Cross-Cutting | GS · 11 · 20 · 22 |
 | **R18** | Specialized / Advanced | 10 · 30 · 54 |
@@ -409,8 +415,8 @@ catalog name:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 56            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55) |
-| 56            | Walkthrough complete    |
+| 57            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-56) |
+| 57            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a
