@@ -1,6 +1,6 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): copy-pasteable [starters](./starters/) covering every target shape, 56 task-oriented [walkthroughs](./walkthroughs/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): copy-pasteable [starters](./starters/) covering every target shape, 62 task-oriented [walkthroughs](./walkthroughs/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## Showcase demos
 
@@ -103,10 +103,11 @@ demos/
       discord/  imessage/  telegram/  whatsapp/
     showcases/                 "full power" tier-1 harness imitations
       procode/  prochat/  multichat/
-  walkthroughs/                     56 task-oriented walkthrough docs
+  walkthroughs/                     62 task-oriented walkthrough docs
     01-cli-coding-agent.md
     …
     55-egress-fabric.md
+    56-self-improvement-flywheel.md … 61-self-building-evals.md  (0.2.0 automation)
     INDEX.md                   decision tree for picking a recipe
   smoke/                       contributor-facing per-section regression tests
     section-12-smoke/          single-file smokes (smoke.ts entry)
