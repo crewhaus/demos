@@ -15,9 +15,9 @@ all uncommitted changes since the last commit).
    performance / style checklist).
 
 2b. In ULTRACODE mode, instead of reviewing solo, dispatch the
-   `reviewer` AND `security-auditor` sub-agents in parallel on this diff
-   (one turn, two `Task` calls) and merge their findings before the hunk
-   walk below.
+   `reviewer` AND `security-auditor` sub-agents on this diff in one
+   batched turn (two `Task` calls together) and merge their findings
+   before the hunk walk below.
 
 3. Walk the diff hunk by hunk. For each hunk, emit either:
    - `✓ <hunk header>: looks good` — no concerns, OR

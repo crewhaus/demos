@@ -1,7 +1,9 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 57 recipes are **complete** as of 2026-07-01. Every recipe is
+> All 63 recipes are **complete** (56 through the v0.1 line, recipes
+> 56–61 for the v0.2.0 automation release, plus recipe 62 for response
+> ratings). Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`.
@@ -97,9 +99,11 @@ problem they brought. Walk this tree from the top:
    [Recipe 42 — Active Optimization](42-active-optimization.md) for
    DSPy-style spec mutation (the empirical result that motivates the
    project: measurable accuracy gains from program-layer prompt
-   optimization).
+   optimization). **Want that loop to run itself from real usage and
+   ship improvements as PRs?** → [Recipe 56 — The self-improvement
+   flywheel](56-self-improvement-flywheel.md).
 7.5. **No labelled dataset — but real users rating real answers?** →
-   [Recipe 56 — Response Ratings](56-response-ratings.md). `crewhaus
+   [Recipe 62 — Response Ratings](62-response-ratings.md). `crewhaus
    rate` / web-UI thumbs / Slack 👍👎 become the dataset and grader
    that Recipe 42's loop consumes (`optimize --ratings`).
 8. **Are you running long-horizon autonomous work (research, batch
@@ -297,7 +301,29 @@ Deeper cuts on the Pillar 2 (active eval) and Pillar 3 (security fabric) invaria
 | 53 | [Justification Gates](53-justification-gates.md)                | Pillar 3 — intent                       | complete |
 | 54 | [Codegraph Tool](54-codegraph-tool.md)                          | Corpus — `@colbymchenry/codegraph`      | complete |
 | 55 | [Egress Fabric](55-egress-fabric.md)                            | Pillar 3 — sink side                    | complete |
-| 56 | [Response Ratings](56-response-ratings.md)                      | Pillar 2 — ratings → evals              | complete |
+
+## Part L — Automation & self-improvement (0.2.0)
+
+The 0.2.0 "automation release" turned a pile of built-but-unwired
+engines into shipped commands: harnesses now build their own evals,
+tune themselves from real usage, heal their own operations, and stay
+safe — with manual control preserved everywhere (every automation is a
+default, an opt-out flag, or a propose-then-confirm flow). These
+recipes are the user-facing companions of that release. Recipes 56–58
+are the flagship path; 59–61 deepen model/cost, teams, and eval
+self-building. See [factory CHANGELOG `[0.2.0]`](https://github.com/crewhaus/factory/blob/main/CHANGELOG.md).
+Recipe 62 (response ratings, shipped in 0.1.8) joins them here as the
+ratings-driven on-ramp to the same self-improvement loop.
+
+| #  | Recipe                                                          | Theme                                  | Status   |
+| -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
+| 56 | [The self-improvement flywheel](56-self-improvement-flywheel.md) | Pillar 2 — `flywheel` / `distill --register` | complete |
+| 57 | [The advisor loop](57-advisor-loop.md)                          | Pillar 2 — `advise` / `optimize --from-advice` | complete |
+| 58 | [Safe production ops](58-safe-production-ops.md)                | Ops — `deploy canary` / `slo` / `sentinel` | complete |
+| 59 | [Model resilience & cost](59-model-resilience-and-cost.md)      | Model — `model_fallbacks` / `budget` / `right-size` | complete |
+| 60 | [Fleet & teams](60-fleet-and-teams.md)                          | Teams — `fleet` / `propose` / `knowledge sync` | complete |
+| 61 | [Self-building evals for any shape](61-self-building-evals.md)  | Pillar 2 — `scaffold-evals` / eval bridges | complete |
+| 62 | [Response Ratings](62-response-ratings.md)                      | Pillar 2 — ratings → evals              | complete |
 
 ---
 
@@ -316,7 +342,9 @@ a known scenario:
 - **RAG / research.** 06 → 07 → 12.
 - **Blockchain integration.** 43 → 44 → 46 → 45 → 47.
 - **Active optimization (DSPy-inspired).** 12 → 34 → 42 → 52.
-- **Closing the loop from user ratings.** 56 → 12 → 42.
+- **Closing the loop from user ratings.** 62 → 12 → 42.
+- **A harness that improves itself (0.2.0 automation).** 56 → 57 → 61 → 58.
+- **Model resilience, cost, and teams.** 59 → 60 → 21 → 58.
 - **Pillar 3 hardening (defense-in-depth).** 29 → 41 → 53 → 55.
 - **Forking a tier-1 harness.** 49 (procode) or 50 (prochat) or 51 (multichat) → fork the matching showcase.
 - **Designing a new harness from intent.** 48 → (the recipe for the shape it picks) → 12 → 42.
@@ -415,8 +443,8 @@ catalog name:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 57            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-56) |
-| 57            | Walkthrough complete    |
+| 63            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62) |
+| 63            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a

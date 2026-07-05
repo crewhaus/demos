@@ -1,9 +1,9 @@
 ---
 name: orchestration
 description: |
-  Multi-agent workflow patterns: fan-out parallelization, adversarial
-  review, judge panels, and synthesis. Loaded by /workflow, /ultracode,
-  and any "orchestrate" / "fan out" / "many agents" request.
+  Multi-agent workflow patterns: batched fan-out, adversarial review,
+  judge panels, and synthesis. Loaded by /workflow, /ultracode, and any
+  "orchestrate" / "fan out" / "many agents" request.
 triggers:
   - "workflow"
   - "orchestrate"
@@ -27,11 +27,21 @@ research.
 - Size each sub-task to one specialist's job: map / review / audit /
   debug / test / document / verify.
 
-## 2. Fan out (parallel dispatch)
+## 2. Fan out (batched dispatch)
 
-- Emit MULTIPLE `Task` calls in ONE turn. The runtime runs read-only,
-  concurrency-safe dispatches in parallel — serial dispatch throws away
-  the wall-clock win.
+- Emit MULTIPLE `Task` calls in ONE turn. Every result comes back
+  together — one round-trip for the whole fleet, instead of a model turn
+  per worker, and each worker gets its own isolated context.
+- READ-ONLY workers in the batch — those whose entire tool set is
+  read/glob/grep (`code-explorer`, a custom `perf-reviewer`) — execute
+  CONCURRENTLY, bounded to a few at once. Workers that can run commands
+  or write files (`reviewer`, `security-auditor`, `test-runner`,
+  `docs-writer`, `verifier`) execute serially: a tool that can shell out
+  or mutate isn't safe to parallelize, so those never overlap.
+- The wall-clock win therefore comes from read-only fan-out. To
+  parallelize, decompose the mapping/exploration work into several
+  read-only dispatches; a mixed batch still runs its command/write
+  workers one at a time.
 - Match each sub-task to the right worker: `code-explorer`, `reviewer`,
   `security-auditor`, `debugger`, `test-runner`, `docs-writer`,
   `verifier`. Read-only workers run on cheaper models — that is by
@@ -57,10 +67,10 @@ research.
 
 ## Anti-patterns to avoid
 
-- Fanning out sub-tasks that depend on each other — they serialize
-  anyway and you pay for the agents twice.
-- Dispatching agents serially when they are independent. One turn, many
-  `Task` calls.
+- Fanning out sub-tasks that depend on each other — the later worker
+  can't see the earlier one's output, so you pay for the agents twice.
+- Dispatching agents one per turn when they are independent. One turn,
+  many `Task` calls.
 - Letting the agent that did the work also declare it done. Always route
   the final judgment through the independent `verifier`.
 - Averaging conflicting findings into mush instead of resolving the

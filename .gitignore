@@ -7,12 +7,17 @@ dist/
 .env
 .env.local
 # .crewhaus/ — only runtime artifacts are ignored. User-authored
-# slash commands, skills, hooks, and settings under .crewhaus/ ARE
-# source code and committed (drives the showcase demos).
-.crewhaus/sessions/
-.crewhaus/tool-results/
-.crewhaus/events.jsonl
-.crewhaus/*.jsonl
-.crewhaus/cache/
+# slash commands, skills, sub-agents, and settings under .crewhaus/ ARE
+# source code and committed (drives the showcase demos). The **/ forms
+# matter: running a demo from inside its own directory writes runtime
+# artifacts into that demo's nested .crewhaus/.
+**/.crewhaus/sessions/
+**/.crewhaus/tool-results/
+**/.crewhaus/events.jsonl
+**/.crewhaus/*.jsonl
+**/.crewhaus/cache/
+**/.crewhaus/evals/
+**/.crewhaus/memories/
+**/.crewhaus/feedback/
+.crewhaus/specs/
 .claude/
-.crewhaus/evals/

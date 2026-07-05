@@ -1,4 +1,4 @@
-# Recipe 56 — Response ratings: rate → distill → eval → optimize (Pillar 2)
+# Recipe 62 — Response ratings: rate → distill → eval → optimize (Pillar 2)
 
 **Pillar:** Pillar 2 — eval is active, not passive.
 **Catalog modules:** `eval-runner` (109), `dataset-registry` (110), `grader-registry` (111), `prompt-optimizer` (114), `spec-patch` (278), `eval-optimizer-orchestrator` (279), `prompt-optimizer-claude` (280), plus the CLI's response-feedback core ([`apps/cli/src/feedback.ts`](https://github.com/crewhaus/factory/blob/main/apps/cli/src/feedback.ts), brief 291).
