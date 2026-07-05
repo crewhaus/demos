@@ -5,7 +5,7 @@ argument-hint: ""
 Leave ULTRACODE / GOAL mode and return to STANDARD posture.
 
 Apply the normal Method (UNDERSTAND → PLAN → EXECUTE → VERIFY), one agent
-per turn unless a task clearly needs parallel mapping. Do not auto-fan-out
+per turn unless a task clearly needs a mapping fan-out. Do not auto-fan-out
 and do not run the independent `verifier` pass unless the user asks.
 
 Confirm with the literal line: `STANDARD on.`

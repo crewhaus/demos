@@ -6,7 +6,7 @@ Produce an implementation plan for: **$ARGUMENTS**
 
 You are in plan-only mode for this turn. You may:
 - Read files (`Read`, `Glob`, `Grep`)
-- Dispatch the `code-explorer` sub-agent for parallel mapping
+- Dispatch the `code-explorer` sub-agent for scoped mapping
 - Run read-only bash commands (`git status`, `git diff`, `ls`, `cat`, etc.)
 
 You may NOT:

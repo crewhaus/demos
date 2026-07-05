@@ -2,33 +2,52 @@
 
 A full coding agent — codebase exploration, file editing, test
 execution, **multi-agent workflows**, an **exhaustive ULTRACODE mode**,
-and an **autonomous goal loop** — compiled from a single
-[`crewhaus.yaml`](crewhaus.yaml). It feels tier-one (think Claude Code /
-Cursor) on the surface and runs against **any model** (Claude, GPT-4o,
-Gemini, Bedrock, local) — see [Swap the model](#swap-the-model) below.
+an **autonomous goal loop**, and **persistent cross-session memory** —
+compiled from a single [`crewhaus.yaml`](crewhaus.yaml). It feels
+tier-one (think Claude Code / Cursor) on the surface and runs against
+**any model** (Claude, GPT-4o, Gemini, Bedrock, local) — see
+[Swap the model](#swap-the-model) below.
 
-## What's new — workflows, ULTRACODE, and goal loop
+## What's inside — workflows, ULTRACODE, goal loop, memory
 
-Three Claude-Code-class capabilities, all expressed in the same spec:
+Claude-Code-class capabilities, all expressed in the same spec:
 
 - **Multi-agent workflows** — `/workflow <goal>` dispatches an
   `orchestrator` that DECOMPOSES the goal, FANS OUT a fleet of specialist
-  sub-agents in parallel (`reviewer`, `security-auditor`, `debugger`,
-  `docs-writer`, `verifier`, plus the original `code-explorer` /
-  `test-runner`), CROSS-CHECKS their returns, and SYNTHESIZES one ranked
-  answer. Read-only workers run on a cheaper model by design.
+  sub-agents (`reviewer`, `security-auditor`, `debugger`, `docs-writer`,
+  `verifier`, plus the original `code-explorer` / `test-runner`),
+  CROSS-CHECKS their returns, and SYNTHESIZES one ranked answer. Emitted
+  as ONE batched turn, every worker's result comes back together;
+  **read-only workers** (`code-explorer`, and the drop-in `perf-reviewer`)
+  run **concurrently** — bounded to a few at once — while workers that can
+  run commands or write files serialize (a tool that can execute or mutate
+  isn't safe to parallelize). Read-only workers also run on a cheaper
+  model by design.
 - **ULTRACODE mode** — `/ultracode` flips the agent to exhaustive-by-
   default: every substantive task becomes a verified workflow without you
   asking. Audits, migrations, and security reviews always fan out.
-  `/standard` flips it back. For the deepest REASONING budget, pair it
-  with `crewhaus run --effort xhigh` (the runtime effort lever — it is
-  not a spec field).
+  `/standard` flips it back. Depth comes from orchestration plus a raised
+  per-turn output budget (`agent.max_tokens: 16384`; the runtime default
+  is 8192).
 - **Goal loop** — `/loop <condition>` records a verifiable completion
   condition to `GOAL.md` and works toward it across turns, judged each
   turn by an INDEPENDENT `verifier` sub-agent (it cannot rubber-stamp its
   own work). `/resume-goal` picks the loop back up in a new session;
   `/verify` runs the independent pass on demand. Because `GOAL.md` lives
-  on disk, the goal outlives the conversation context.
+  on disk, the goal outlives the conversation context — and
+  `crewhaus run crewhaus.yaml --continue` reopens the conversation
+  itself. `model_fallbacks` keeps long runs alive through provider
+  hiccups.
+- **Persistent memory** — the `memory:` block wires `Remember`/`Recall`
+  tools, auto-captures durable facts at session teardown, and auto-recalls
+  the top matches into every future session
+  (`.crewhaus/memories/hello-procode.jsonl`). `/init` additionally writes
+  a `CODE-COMPANION.md` the runtime auto-loads at session start.
+- **Self-improvement loop** — the `feedback:` block adds a one-keystroke
+  exit rating to `crewhaus run` and auto-distills accumulated ratings into
+  a `hello-procode-ratings` dataset that
+  `crewhaus optimize --dataset registry:hello-procode-ratings` can learn
+  from. Your thumbs-up/down literally becomes training signal.
 
 ## Run it
 
@@ -56,9 +75,16 @@ bun run run showcases/procode
 ```
 </details>
 
-The agent's CWD is the project under analysis. `.crewhaus/commands/`
-and `.crewhaus/skills/` ship inside this demo — drop your own there to
-add custom slash commands and skills.
+Useful `crewhaus run` companions: `--continue` (resume the most recent
+session for this spec), `--resume <sessionId>` (resume a specific one),
+and `--permission-mode plan|auto|bypass` (`plan` = read-only
+investigation, `auto` = reads flow / destructive still asks, `bypass` =
+flag-only, never expressible in the spec).
+
+The agent's CWD is the project under analysis. `.crewhaus/commands/`,
+`.crewhaus/skills/`, and `.crewhaus/sub-agents/` ship inside this demo —
+drop your own `.md` files there to add slash commands, skills, and
+fleet workers without touching the spec or recompiling.
 
 ## Try this
 
@@ -93,8 +119,8 @@ Plan-only mode — produces a multi-step plan without editing anything.
 ```
 /ultracode then audit this repo for security issues
 ```
-Exhaustive mode — fans out `security-auditor` + `reviewer` in parallel
-and merges severity-tagged findings.
+Exhaustive mode — fans out `security-auditor` + `reviewer` in one batched
+turn and merges severity-tagged findings.
 
 ```
 /workflow find every place we talk to an external API and assess the risk
@@ -135,39 +161,66 @@ Catalog modules touched (per factory's
 
 - F1 `spec-schema`, `spec-parser`, `spec-validator`, `ir-model`
 - F2 `compiler-core`, `target-cli-bundle`, `codegen-templates`
-- R1 `runtime-orchestrator` (streaming chat loop, session persistence)
-- R2 `model-adapter` (provider-agnostic), `prompt-cache-manager`
-- R3 `tool-catalog` (read, write, edit, glob, grep, bash, webSearch,
-  webFetch, todoWrite, codegraph*) — `todoWrite` drives the visible
-  plan/progress list; the `codegraph*` tools do AST symbol lookup and
+- R1 `runtime-orchestrator` (streaming chat loop, session persistence +
+  `--continue`/`--resume` session resume)
+- R2 `model-adapter` (provider-agnostic), `prompt-cache-manager`, plus
+  `model_fallbacks` + circuit breaker (provider failover for long runs)
+- R3 `tool-catalog` (read, write, edit, glob, grep, bash, bashOutput,
+  killShell, webSearch, webFetch, readImage, todoWrite, codegraph*) —
+  `todoWrite` drives the visible plan/progress list; `readImage` lets
+  the model SEE screenshots and design mocks; `bash(background: true)` +
+  `bashOutput` + `killShell` run and poll long-lived processes (dev
+  servers, watchers); the `codegraph*` tools do AST symbol lookup and
   blast-radius/impact analysis before a refactor
-- R8 `permission-engine` — tier-ordered `alwaysDeny > alwaysAsk > alwaysAllow`
-- R9 `hooks-engine`, `slash-commands`, `skills-registry` (auto-discovered
-  from `.crewhaus/`), plus `cli.banner` — a cold-start banner with
-  rotating taglines (suppressed on resume)
-- R13 `sub-agent-spawner` — an 8-agent fleet (`code-explorer`,
+- R8 `permission-engine` — tier-ordered `alwaysDeny > alwaysAsk >
+  alwaysAllow`, plus runtime `--permission-mode plan|auto|bypass`
+- R9 `hooks-engine` (the committed
+  [`.crewhaus/settings.json`](.crewhaus/settings.json) ships a `pre-tool`
+  hook that blocks destructive Bash even if a rule slips),
+  `slash-commands`, `skills-registry` (auto-discovered from
+  `.crewhaus/`), plus `cli.banner` — a cold-start banner with rotating
+  taglines, printed once at bundle boot
+- R13 `sub-agent-spawner` — an 8-agent inline fleet (`code-explorer`,
   `test-runner`, `orchestrator`, `reviewer`, `security-auditor`,
-  `debugger`, `docs-writer`, `verifier`) dispatched via the `Task` tool
-  with per-agent models and scoped permissions; parallel fan-out is
-  driven by the runtime's concurrent `Task` batching
-- R17 `compaction-autocompact` — Haiku summarises older turns to keep the
-  window cheap
+  `debugger`, `docs-writer`, `verifier`) plus a drop-in disk worker
+  ([`.crewhaus/sub-agents/perf-reviewer.md`](.crewhaus/sub-agents/perf-reviewer.md)),
+  dispatched via the `Task` tool with per-agent models and scoped
+  permissions; a fan-out is ONE batched turn returning all results
+  together, with read-only workers (`code-explorer`, `perf-reviewer`)
+  run concurrently (bounded, default 4) and command/write workers
+  serialized
+- R17 `compaction-autocompact` — automatic at 85% of the context window
+  (snip old turns first, then summarize on `compaction.model`, a cheap
+  model, falling back to the primary if unset)
+- `memory:` block — `Remember`/`Recall` tools + auto-capture at teardown
+  + auto-recall at session start; `/init`'s `CODE-COMPANION.md` rides the
+  project-memory auto-load (M3.1)
+- `feedback:` block — exit ratings → `autoDistill` →
+  `hello-procode-ratings` registry dataset → `optimize --ratings`
 
 ## What makes it feel pro-grade (Claude-Code-style)
 
-- **Sub-agent parallelism** — exploration runs in a sandboxed read-only
-  agent rather than blocking the main turn. Verification runs in a
-  bash-allow-listed agent that can ONLY invoke the project's test command.
-- **Project memory bootstrap** — `/init` writes a `CODE-COMPANION.md` at
-  the repo root the same way `claude /init` writes `CLAUDE.md`. The
-  runtime auto-loads it at every future session start (M3.1).
+- **Sub-agent fan-out** — exploration runs in a scoped read-only agent
+  with its own context window rather than polluting the main one.
+  Verification runs in a bash-allow-listed agent that can ONLY invoke
+  the project's test command. Dispatch several read-only explorers in
+  one turn and they run concurrently (bounded, default 4); workers that
+  can run commands or write serialize.
+- **Two layers of memory** — `/init` writes a `CODE-COMPANION.md` at
+  the repo root the same way `claude /init` writes `CLAUDE.md` (the
+  runtime auto-loads it every session, M3.1), and the `memory:` block
+  gives the agent `Remember`/`Recall` plus automatic capture/recall of
+  incremental facts across sessions.
 - **Defense-in-depth permissions** — common dev commands flow without
   prompts (`git status`, `bun test`, `cargo build`), arbitrary shell
   asks once per pattern, destructive patterns (`rm -rf`, `git push -f`,
-  `sudo`) are denied even if the model is jailbroken.
-- **Skills + slash commands** — drop a `.md` file into
-  `.crewhaus/commands/` or a `SKILL.md` into
-  `.crewhaus/skills/<name>/` and it appears at startup. No recompile
+  `sudo`) are denied even if the model is jailbroken — and a `pre-tool`
+  hook in [`.crewhaus/settings.json`](.crewhaus/settings.json) backstops
+  the rules in a separate process the model can't talk its way past.
+- **Skills, slash commands, and fleet workers on disk** — drop a `.md`
+  file into `.crewhaus/commands/`, a `SKILL.md` into
+  `.crewhaus/skills/<name>/`, or a worker into
+  `.crewhaus/sub-agents/` and it appears at startup. No recompile
   needed.
 - **Workflows over single shots** — large or high-stakes tasks fan out
   to a fleet of scoped sub-agents and synthesize, the way `claude`
@@ -176,9 +229,17 @@ Catalog modules touched (per factory's
   "is it done?" judgment through a separate `verifier` agent, so the
   worker never grades its own paper (the same reason Claude Code's goal
   loop uses an independent evaluator).
-- **Durable goals** — `/loop` writes the completion condition to
-  `GOAL.md` on disk; the file outlives the conversation context, and
-  `/resume-goal` re-reads it to continue in a fresh session.
+- **Durable goals + resumable sessions** — `/loop` writes the completion
+  condition to `GOAL.md` on disk; the file outlives the conversation
+  context, `/resume-goal` re-reads it, and
+  `crewhaus run --continue` reopens the conversation itself.
+- **Long-running work that survives** — bash calls take an explicit
+  `timeout` up to 10 minutes for slow suites; `bash(background: true)`
+  detaches dev servers and watchers and returns a `bash_id` you poll
+  with `BashOutput` and stop with `KillShell`; `model_fallbacks` rides
+  out provider failures; and the optional `budget:` block hard-caps
+  unattended spend. For scripting, `crewhaus run --prompt "<task>"`
+  runs one turn and prints the reply (no REPL).
 
 ## Fork and extend
 
@@ -189,9 +250,11 @@ Three high-leverage extensions:
    filesystem, or any of the
    [reference MCP servers](https://github.com/modelcontextprotocol/servers).
    New tools appear as `<server>__<tool>` automatically.
-2. **Add a skill** — create
-   `.crewhaus/skills/code-review/SKILL.md` and the model can self-load
-   it when relevant. The shipped skills are starter templates.
+2. **Add a skill or a fleet worker** — create
+   `.crewhaus/skills/<name>/SKILL.md` and the model can self-load it when
+   relevant, or drop a sub-agent into `.crewhaus/sub-agents/<name>.md`
+   (see the shipped `perf-reviewer`) and dispatch it via `Task`. The
+   shipped skills and workers are starter templates.
 3. **Optimize the prompt** — once you have inputs + expected outputs in
    a `dataset.jsonl`, run
    `bunx crewhaus optimize crewhaus.yaml --dataset dataset.jsonl
