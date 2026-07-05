@@ -35,6 +35,8 @@ Enter GOAL mode with the completion condition: **$ARGUMENTS**
 
 > Note: state lives in `GOAL.md` on disk, so the goal outlives the
 > conversation context — re-read it (or run `/resume-goal`) to recover
-> after compaction or in a new session. For fully unattended cross-turn
-> execution, run `crewhaus run` in an autonomous permission mode: the
-> spec governs behavior, the runtime governs unattended looping.
+> after compaction or in a new session. The session itself also resumes:
+> `crewhaus run crewhaus.yaml --continue` reopens this exact
+> conversation. For low-friction unattended iteration, launch with
+> `crewhaus run --permission-mode auto` (reads auto-allowed, destructive
+> still asks) and consider the spec's optional `budget:` spend cap.

@@ -7,8 +7,9 @@ Run a multi-agent workflow for: **$ARGUMENTS**
 1. Load the `orchestration` skill for fan-out patterns.
 2. Dispatch the `orchestrator` sub-agent via `Task` with the goal
    `$ARGUMENTS`. It will DECOMPOSE the goal, FAN OUT specialist
-   sub-agents in parallel, CROSS-CHECK their returns, and SYNTHESIZE one
-   merged result.
+   sub-agents in one batched dispatch (read-only workers run
+   concurrently, command/write workers serially), CROSS-CHECK their
+   returns, and SYNTHESIZE one merged result.
    - For a small fan-out (2-3 independent angles) you may dispatch the
      workers yourself in one turn instead of going through the
      orchestrator.

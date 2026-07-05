@@ -7,7 +7,7 @@ test:
 
 Build a pro-grade coding companion — the kind of agent Claude Code and
 Cursor have set the bar for — from a single YAML file: sub-agents for
-parallel codebase exploration, a `test-runner` that detects your test
+scoped codebase exploration, a `test-runner` that detects your test
 command, allow-listed bash for common dev loops, hard-denied
 destructive patterns, slash commands (`/init`, `/review`, `/test`,
 `/plan`), skills (`debug`, `code-review`, `refactor`), and a
@@ -15,7 +15,8 @@ project-memory bootstrap.
 
 By the end you'll have an agent that can:
 
-- Explore a codebase in parallel via a read-only sub-agent.
+- Explore a codebase via a read-only sub-agent that keeps the file-dump
+  noise out of your main context.
 - Edit files with permission gating.
 - Run your project's tests via a scoped sub-agent that detects the
   test command from `package.json` / `Cargo.toml` / `pyproject.toml`.
@@ -38,7 +39,8 @@ commands from 16, permission tiers from 29) wired into a single
 coherent spec that mirrors a tier-one production harness.
 
 The empirical claim: the gap between "starters/cli" and a Claude-Code-
-style pro coding agent is ~190 lines of YAML, not a separate runtime.
+style pro coding agent is a few hundred lines of YAML, not a separate
+runtime.
 If your spec is missing something a tier-one harness has, the answer
 is almost always "add a permission rule" or "add a sub-agent" or "add
 a skill" — not "fork the compiler."
@@ -82,13 +84,19 @@ explore this repo and tell me what it does in 5 bullets
 ```
 
 The first thing you'll see is `Task(code-explorer, …)` — the agent
-dispatching a read-only sub-agent that fans out across glob/grep/read
-in parallel. That's the recipe's flagship move.
+dispatching a read-only sub-agent that maps the repo in its own context
+via glob/grep/read. That's the recipe's flagship move. Because
+`code-explorer` is fully read-only, emitting several of them in one turn
+runs them concurrently (the runtime caps how many at once, default 4) —
+that's how you map several subsystems in parallel. Workers that can run
+commands or write (`test-runner`, `reviewer`, …) serialize instead.
 
 ## Step 2 — The sub-agents
 
 Open [`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml) and
-look at the `agent.sub_agents:` map. Two roles:
+look at the `agent.sub_agents:` map. It's a fleet (orchestrator,
+reviewer, security-auditor, debugger, docs-writer, verifier, …) — here
+are the two foundational roles:
 
 ```yaml
 sub_agents:
@@ -97,14 +105,15 @@ sub_agents:
       Read-only codebase mapper. ...
     instructions: |
       You are a read-only codebase explorer. ...
-    tools: [read, glob, grep]
+    # Sub-agent tool lists use the REGISTERED (PascalCase) tool names.
+    tools: [Read, Glob, Grep]
     permissions:
       allow: [Read, Glob, Grep]
       deny: []
   test-runner:
     description: |
       Runs the project's test command exactly once ...
-    tools: [read, bash]
+    tools: [Read, Bash]
     permissions:
       allow:
         - Read
@@ -190,9 +199,10 @@ compaction:
 ```
 
 A coding session can easily hit 100k input tokens (file reads, test
-output, diff inspection). Without compaction, every turn re-bills the
-full history. Pointing compaction at Haiku keeps the running cost low
-without losing context.
+output, diff inspection). The runtime auto-compacts at 85% of the
+context window — snipping old turns first, then summarizing on
+`compaction.model` (a cheap model keeps the running cost down; it falls
+back to the primary model when unset) — so long sessions never brick.
 
 ## Step 6 — Swap the model
 
@@ -211,12 +221,14 @@ Recompile after every spec edit.
 
 ## What makes it feel pro-grade (Claude-Code-style)
 
-1. **Sub-agent parallelism** — exploration in a sandboxed read-only
+1. **Sub-agent fan-out** — exploration in a sandboxed read-only
    agent; verification in a bash-allow-listed agent. The main loop
-   stays clean while specialists do focused work.
+   stays clean while specialists do focused work, and read-only
+   explorers dispatched together run concurrently (bounded, default 4)
+   while command/write workers serialize.
 2. **Project-memory bootstrap** — `/init` writes a CODE-COMPANION.md
-   the same way `claude /init` writes CLAUDE.md. (Auto-loading the
-   file at next session-start is the open Phase 2 §3.1 work item.)
+   the same way `claude /init` writes CLAUDE.md, and the runtime
+   auto-loads it at every future session start (M3.1).
 3. **Defense-in-depth permissions** — common dev commands flow
    without prompts; arbitrary shell asks; destructive patterns are
    denied even if the model is jailbroken.
