@@ -4,14 +4,22 @@ Wrap each model adapter in a circuit breaker. Consecutive failures
 trip the breaker open; your wiring cascades to the next provider
 when the primary is degraded. Automatic recovery via probe success.
 
-One thing to be clear about up front: **fallback is a TypeScript-level
-pattern, not a spec field.** The agent schema is strict —
-`agent.model`, `agent.instructions`, `agent.sub_agents`, nothing
-else — so there is no `fallbackModels:` YAML to reach for. What ships
-is the building blocks: `@crewhaus/model-router` resolves any model
-string to an adapter, and `@crewhaus/circuit-breaker` wraps an adapter
-so it fail-fasts when degraded. The cascade loop is ~15 lines of your
-own code, shown below.
+One thing to be clear about up front: **since crewhaus 0.2.0, fallback
+is a spec field.** `agent.model_fallbacks` declares the ordered
+candidate list, `agent.circuit_breaker` tunes the per-candidate
+breakers, and the compiled runtime wires the whole chain for you — see
+[Recipe 59 — Model resilience & cost](59-model-resilience-and-cost.md)
+for the declarative blocks (failover, `budget:`, `model_tiers`). Reach
+for those first.
+
+This recipe covers the machinery underneath, as a TypeScript-level
+pattern you wire yourself. It's still the right tool on pre-0.2.0
+releases, or when you need per-call control the spec blocks don't
+expose — a custom `isFailure` predicate, different breaker tuning per
+candidate, or your own candidate ordering. The building blocks:
+`@crewhaus/model-router` resolves any model string to an adapter, and
+`@crewhaus/circuit-breaker` wraps an adapter so it fail-fasts when
+degraded. The cascade loop is ~15 lines of your own code, shown below.
 
 You'd reach for this when:
 
@@ -267,7 +275,7 @@ hold a fallback slot for tool-calling agents.
 
 | Symptom                                                              | Better tool                                       |
 | -------------------------------------------------------------------- | ------------------------------------------------- |
-| Want a cheaper model first, the expensive one only for hard prompts. | A workflow with a router step in front.            |
+| Want a cheaper model first, the expensive one only for hard prompts. | `agent.model_tiers` ([Recipe 59](59-model-resilience-and-cost.md)), or a workflow with a router step in front. |
 | Want different models per role / step.                                | Per-role / per-step `model:` overrides.            |
 | Want geo-routed providers (US users → US Anthropic).                  | Bedrock with a regional model id, or federation.   |
 
@@ -277,9 +285,10 @@ optimization. Use it as a safety net; not as a routing strategy.
 ## Local development
 
 For local dev, you usually want **no** fallback — failures should be
-loud so you fix the actual problem. Since the breaker is wiring you
-add (not something the compiled bundle injects), the dev posture is
-simply: don't `wrap()`. Gate the wrapping on your own env flag if you
+loud so you fix the actual problem. In this hand-wired pattern the
+breaker is wiring you add (the compiled bundle only injects breakers
+when the spec declares `circuit_breaker` / `model_fallbacks`), so the
+dev posture is simply: don't `wrap()`. Gate the wrapping on your own env flag if you
 want one binary for both:
 
 ```typescript
@@ -291,6 +300,7 @@ provider error message.
 
 ## What to read next
 
+- **The declarative path.** [Recipe 59 — Model resilience & cost](59-model-resilience-and-cost.md) — `model_fallbacks`, `circuit_breaker`, `budget:`, and `model_tiers` as spec blocks.
 - **Per-provider rate limiting.** [Recipe 19 — Rate Limiting and Budgets](19-rate-limiting-and-budgets.md).
 - **Watch the breaker.** [Recipe 17 — Observability](17-observability.md).
 - **Local models as the fallback.** [Recipe 32 — Local Models](32-local-models.md).

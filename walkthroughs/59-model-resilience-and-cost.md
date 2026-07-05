@@ -4,9 +4,9 @@
 **Shipped:** crewhaus 0.2.0 (`agent.model_fallbacks` + `circuit_breaker`, `budget:`, `model_tiers`, `crewhaus model-scan`, `crewhaus model right-size`).
 
 [Recipe 18 — Multi-Provider Fallback](18-multi-provider-fallback.md)
-opened with a caveat: "fallback is a TypeScript-level pattern, not a
-spec field... there is no `fallbackModels:` YAML to reach for." 0.2.0
-changed that. Provider failover, a run-level budget cap with a
+originally opened with a caveat: "fallback is a TypeScript-level
+pattern, not a spec field... there is no `fallbackModels:` YAML to
+reach for." 0.2.0 changed that. Provider failover, a run-level budget cap with a
 degradation ladder, and a two-tier turn-difficulty router are all
 **declarative spec blocks** now — no hand-wiring. This recipe is the
 declarative counterpart to Recipe 18's manual approach; reach for the
