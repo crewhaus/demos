@@ -1,8 +1,9 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 62 recipes are **complete** (56 through the v0.1 line plus recipes
-> 56–61 for the v0.2.0 automation release). Every recipe is
+> All 63 recipes are **complete** (56 through the v0.1 line, recipes
+> 56–61 for the v0.2.0 automation release, plus recipe 62 for response
+> ratings). Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`.
@@ -47,7 +48,7 @@ for `run`).
 
 ## Pick a recipe — diagnostic decision tree
 
-The 56 recipes cover a lot of ground. Most readers don't need to scan
+The 57 recipes cover a lot of ground. Most readers don't need to scan
 the table of contents; they need to find the shape that matches the
 problem they brought. Walk this tree from the top:
 
@@ -101,6 +102,10 @@ problem they brought. Walk this tree from the top:
    optimization). **Want that loop to run itself from real usage and
    ship improvements as PRs?** → [Recipe 56 — The self-improvement
    flywheel](56-self-improvement-flywheel.md).
+7.5. **No labelled dataset — but real users rating real answers?** →
+   [Recipe 62 — Response Ratings](62-response-ratings.md). `crewhaus
+   rate` / web-UI thumbs / Slack 👍👎 become the dataset and grader
+   that Recipe 42's loop consumes (`optimize --ratings`).
 8. **Are you running long-horizon autonomous work (research, batch
    jobs)?** → [Recipe 07 — Autonomous Research](07-autonomous-research.md)
    or [Recipe 08 — Batch Worker](08-batch-worker.md). Both lean on
@@ -307,6 +312,8 @@ default, an opt-out flag, or a propose-then-confirm flow). These
 recipes are the user-facing companions of that release. Recipes 56–58
 are the flagship path; 59–61 deepen model/cost, teams, and eval
 self-building. See [factory CHANGELOG `[0.2.0]`](https://github.com/crewhaus/factory/blob/main/CHANGELOG.md).
+Recipe 62 (response ratings, shipped in 0.1.8) joins them here as the
+ratings-driven on-ramp to the same self-improvement loop.
 
 | #  | Recipe                                                          | Theme                                  | Status   |
 | -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
@@ -316,6 +323,7 @@ self-building. See [factory CHANGELOG `[0.2.0]`](https://github.com/crewhaus/fac
 | 59 | [Model resilience & cost](59-model-resilience-and-cost.md)      | Model — `model_fallbacks` / `budget` / `right-size` | complete |
 | 60 | [Fleet & teams](60-fleet-and-teams.md)                          | Teams — `fleet` / `propose` / `knowledge sync` | complete |
 | 61 | [Self-building evals for any shape](61-self-building-evals.md)  | Pillar 2 — `scaffold-evals` / eval bridges | complete |
+| 62 | [Response Ratings](62-response-ratings.md)                      | Pillar 2 — ratings → evals              | complete |
 
 ---
 
@@ -334,6 +342,7 @@ a known scenario:
 - **RAG / research.** 06 → 07 → 12.
 - **Blockchain integration.** 43 → 44 → 46 → 45 → 47.
 - **Active optimization (DSPy-inspired).** 12 → 34 → 42 → 52.
+- **Closing the loop from user ratings.** 62 → 12 → 42.
 - **A harness that improves itself (0.2.0 automation).** 56 → 57 → 61 → 58.
 - **Model resilience, cost, and teams.** 59 → 60 → 21 → 58.
 - **Pillar 3 hardening (defense-in-depth).** 29 → 41 → 53 → 55.
@@ -385,7 +394,7 @@ thing to check when asking "is module X covered anywhere?".
 | **R12** | RAG / Retrieval / Knowledge | 06 · 07 |
 | **R13** | Channels & Messaging | 00 · 03 · 37–40 · 51 |
 | **R14** | Scheduling & Background | 08 · 19 · 51 |
-| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 |
+| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 · 56 |
 | **R16** | UI / TUI / Voice / Media | 09 · 11 · 35 |
 | **R17** | Infrastructure & Cross-Cutting | GS · 11 · 20 · 22 |
 | **R18** | Specialized / Advanced | 10 · 30 · 54 |
@@ -434,8 +443,8 @@ catalog name:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 62            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61) |
-| 62            | Walkthrough complete    |
+| 63            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62) |
+| 63            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a
