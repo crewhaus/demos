@@ -5,7 +5,9 @@
  * Compile-smoke is handled by `bun run recipes:smoke` via the recipe's
  * frontmatter (walkthroughs/49-procode.md). This script adds a LIVE
  * runtime check: actually spawn the compiled bundle, send one prompt to
- * stdin, and assert the agent produces non-empty output within 60s.
+ * stdin, and assert the agent echoes the expected reply ("pong") within
+ * 60s. Non-empty stdout alone is NOT a pass — a banner plus an auth
+ * error must fail.
  *
  * Run: `bun smoke/hello-procode-smoke/smoke.ts`
  * Requires: `ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY` in env.
@@ -68,7 +70,12 @@ child.stderr.on("data", (d) => {
 
 // Use a simple non-tool-requiring prompt so the smoke doesn't hinge on
 // MCP availability, web search, or filesystem state.
-child.stdin.write("Reply with exactly the word: pong\n");
+const PROMPT = "Reply with exactly the word: pong";
+child.stdin.write(`${PROMPT}\n`);
+
+// The ONLY pass condition: the model's reply contains "pong". Strip any
+// echo of our own prompt line first so it can't satisfy the check.
+const sawPong = (): boolean => /pong/i.test(stdout.split(PROMPT).join(""));
 
 const result = await new Promise<{ ok: boolean; reason: string }>((resolveP) => {
   const timeout = setTimeout(() => {
@@ -77,9 +84,7 @@ const result = await new Promise<{ ok: boolean; reason: string }>((resolveP) => 
   }, 60_000);
 
   const checkInterval = setInterval(() => {
-    // Heuristic: if we've seen the model's reply mention "pong" (or any
-    // non-empty alpha sequence beyond the cwd echo), the loop is alive.
-    if (/pong/i.test(stdout)) {
+    if (sawPong()) {
       clearTimeout(timeout);
       clearInterval(checkInterval);
       child.kill("SIGTERM");
@@ -87,14 +92,17 @@ const result = await new Promise<{ ok: boolean; reason: string }>((resolveP) => 
     }
   }, 500);
 
-  child.on("exit", () => {
+  child.on("exit", (code) => {
     clearTimeout(timeout);
     clearInterval(checkInterval);
-    if (!stdout.length) {
-      resolveP({ ok: false, reason: "process exited with no stdout" });
+    // Re-check on exit: a fast clean run can finish between interval
+    // ticks. Anything else — banner-only stdout, auth errors, crashes —
+    // is a FAIL even if stdout is non-empty.
+    if (sawPong()) {
+      resolveP({ ok: true, reason: "received pong" });
       return;
     }
-    resolveP({ ok: stdout.length > 0, reason: stdout.length > 0 ? "non-empty output" : "empty" });
+    resolveP({ ok: false, reason: `process exited (code ${code}) without replying "pong"` });
   });
 });
 
