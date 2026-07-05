@@ -1,7 +1,7 @@
 # Recipe 59 — Model resilience & cost
 
-**Catalog modules:** `model-router`, `circuit-breaker`, `model-market-scan`, `model-right-size`, `pricing-feed`, `cost-tracker`.
-**Shipped:** crewhaus 0.2.0 (`agent.model_fallbacks` + `circuit_breaker`, `budget:`, `model_tiers`, `crewhaus model-scan`, `crewhaus model right-size`).
+**Catalog modules:** `model-router`, `routing-store`, `circuit-breaker`, `model-market-scan`, `model-right-size`, `pricing-feed`, `cost-tracker`.
+**Shipped:** crewhaus 0.2.0 (`agent.model_fallbacks` + `circuit_breaker`, `budget:`, `model_tiers`, `crewhaus model-scan`, `crewhaus model right-size`); `agent.model_pool` + `crewhaus route` in 0.2.1.
 
 [Recipe 18 — Multi-Provider Fallback](18-multi-provider-fallback.md)
 originally opened with a caveat: "fallback is a TypeScript-level
@@ -153,6 +153,58 @@ byte-identical bundles.
 > routing strategy. Use both; they compose (a tier's model can itself
 > have a fallback chain).
 
+## Adaptive model pool (learns which model wins)
+
+`model_tiers` is two models split by a fixed heuristic. **`model_pool`**
+(v0.2.1) generalises it: declare *N* candidates and a selection `policy`,
+and — with `policy: learned` — the harness learns which model wins each
+kind of turn the more you run it. It is the superset of `model_tiers`, so
+it *replaces* it (and is mutually exclusive with `model_fallbacks`):
+
+```yaml
+name: support-agent
+target: cli
+version: 1
+agent:
+  model: claude-sonnet-4-5
+  instructions: Answer the user's support question.
+  model_pool:
+    policy: learned              # static | heuristic (default) | learned
+    candidates:
+      - { model: claude-haiku-4-5, tags: [cheap] }
+      - { model: claude-sonnet-4-5, tags: [balanced] }
+      - { model: claude-opus-4-1, tags: [strong] }
+    objective: { quality: 0.7, cost: 0.2, latency: 0.1 }
+    learning: { minSamplesPerArm: 25 }
+tools: []
+```
+
+- **`static`** always uses the first candidate.
+- **`heuristic`** (the default) routes hard turns to a `strong`-tagged
+  candidate and easy turns to a `cheap` one — the same difficulty signals
+  as `model_tiers`, applied over your tags.
+- **`learned`** keeps a durable reward scoreboard at
+  `.crewhaus/routing/arms.jsonl`, keyed by `(difficulty band, model)`.
+  Each turn it folds the outcome — success, latency, and cost (a *failed*
+  turn scores 0, so a fast failure can't out-rank a reliable model) — back
+  in, exploring each candidate a few times (`minSamplesPerArm`) before
+  exploiting the best. So the choice **improves the more you run the
+  harness**, and it stays deterministic: replayable from the scoreboard,
+  no randomness.
+
+Every pick is a `model_route` trace event. Inspect what the pool has
+learned, or wipe it, from the CLI:
+
+```bash
+crewhaus route status   # per-band arms, best-per-band starred
+crewhaus route reset    # kill switch
+```
+
+> The candidate roster is yours — learning only tunes selection *within*
+> the set you declare, never the set itself (model fields stay outside the
+> optimizer's reach). Per-candidate fallback chains are a planned
+> follow-up; today a pool candidate is a single model.
+
 ## Right-size: is a cheaper model good enough?
 
 `crewhaus model right-size` runs a downshift search — enumerate cheaper
@@ -229,6 +281,7 @@ Each cell writes to `<out>/<model-slug>/` and the run emits a
 | The agent to survive a provider outage.                | `agent.model_fallbacks` + `circuit_breaker` |
 | A hard per-run dollar ceiling.                          | `budget:` / `run --budget-usd`             |
 | Cheap model for easy turns, full model for hard ones.   | `agent.model_tiers`                        |
+| The harness to learn which of N models wins each turn.  | `agent.model_pool` (`policy: learned`)     |
 | To know if a cheaper model still passes.                | `crewhaus model right-size`                |
 | To know if a better model shipped.                      | `crewhaus model-scan`                      |
 | A side-by-side model comparison.                        | `crewhaus eval --models`                   |
@@ -243,7 +296,8 @@ Each cell writes to `<out>/<model-slug>/` and the run emits a
 
 ## Pointers to source
 
-- **Model router:** [`packages/model-router`](https://github.com/crewhaus/factory/blob/main/packages/model-router).
+- **Model router:** [`packages/model-router`](https://github.com/crewhaus/factory/blob/main/packages/model-router) (failover / tier / pool routers).
+- **Routing store:** [`packages/routing-store`](https://github.com/crewhaus/factory/blob/main/packages/routing-store) (the `learned` reward scoreboard).
 - **Circuit breaker:** [`packages/circuit-breaker`](https://github.com/crewhaus/factory/blob/main/packages/circuit-breaker).
 - **Cost tracker + pricing:** [`packages/cost-tracker`](https://github.com/crewhaus/factory/blob/main/packages/cost-tracker).
 - **Module catalog reference:** §17, §27 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).
