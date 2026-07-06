@@ -1,7 +1,7 @@
 # Recipe 59 — Model resilience & cost
 
 **Catalog modules:** `model-router`, `routing-store`, `circuit-breaker`, `model-market-scan`, `model-right-size`, `pricing-feed`, `cost-tracker`.
-**Shipped:** crewhaus 0.2.0 (`agent.model_fallbacks` + `circuit_breaker`, `budget:`, `model_tiers`, `crewhaus model-scan`, `crewhaus model right-size`); `agent.model_pool` + `crewhaus route` in 0.2.1.
+**Shipped:** crewhaus 0.2.0 (`agent.model_fallbacks` + `circuit_breaker`, `budget:`, `model_tiers`, `crewhaus model-scan`, `crewhaus model right-size`); `agent.model_pool` + `crewhaus route` in 0.2.1; online exploration (`learning.bandit` — ε-greedy / Thompson), `crewhaus route explain`, the pipeline/research/batch/browser rollout, and advise scoreboard-mining in 0.2.2.
 
 [Recipe 18 — Multi-Provider Fallback](18-multi-provider-fallback.md)
 originally opened with a caveat: "fallback is a TypeScript-level
@@ -159,7 +159,10 @@ byte-identical bundles.
 (v0.2.1) generalises it: declare *N* candidates and a selection `policy`,
 and — with `policy: learned` — the harness learns which model wins each
 kind of turn the more you run it. It is the superset of `model_tiers`, so
-it *replaces* it (and is mutually exclusive with `model_fallbacks`):
+it *replaces* it (and is mutually exclusive with `model_fallbacks`). As of
+v0.2.2 it works on the `cli`, `channel`, `managed`, `pipeline`, `research`,
+`batch`, and `browser` shapes, and routes on both compiled bundles and the
+interpreted `crewhaus run` path:
 
 ```yaml
 name: support-agent
@@ -175,7 +178,10 @@ agent:
       - { model: claude-sonnet-4-5, tags: [balanced] }
       - { model: claude-opus-4-1, tags: [strong] }
     objective: { quality: 0.7, cost: 0.2, latency: 0.1 }
-    learning: { minSamplesPerArm: 25 }
+    learning:
+      minSamplesPerArm: 25
+      bandit: thompson           # epsilon-greedy (default) | thompson   (v0.2.2)
+      explorationRate: 0.05      # ε for epsilon-greedy; ignored by thompson
 tools: []
 ```
 
@@ -189,16 +195,31 @@ tools: []
   turn scores 0, so a fast failure can't out-rank a reliable model) — back
   in, exploring each candidate a few times (`minSamplesPerArm`) before
   exploiting the best. So the choice **improves the more you run the
-  harness**, and it stays deterministic: replayable from the scoreboard,
-  no randomness.
+  harness**.
+
+Once every candidate in a band is warmed up, a `learned` pool would exploit
+the best arm forever — which never notices when a model drifts or improves.
+Since **v0.2.2** it keeps exploring online (`learning.bandit`): the default
+`epsilon-greedy` tries a non-best arm `explorationRate` of the time, and
+`thompson` draws each arm from its reward posterior and self-balances (no ε
+to tune). Both are seeded from the transcript, so exploration is still
+**replayable and deterministic** — `explorationRate: 0` reproduces the
+pre-0.2.2 exploit-only behaviour byte-for-byte.
 
 Every pick is a `model_route` trace event. Inspect what the pool has
-learned, or wipe it, from the CLI:
+learned, replay one run's decisions, or wipe the scoreboard, from the CLI:
 
 ```bash
-crewhaus route status   # per-band arms, best-per-band starred
-crewhaus route reset    # kill switch
+crewhaus route status              # per-band arms, best-per-band starred
+crewhaus route explain <session>   # replay one run's per-turn decisions (v0.2.2)
+crewhaus route reset               # kill switch
 ```
+
+You don't have to tune the pool by hand: **`crewhaus advise` mines the
+scoreboard** and proposes policy tweaks — flip `policy` to `learned` once a
+band has enough samples, or add an `explorationRate` to a converged pool —
+as eval-gated SpecPatches you apply through `optimize --from-advice`. (It
+never edits the candidate roster; that stays yours.)
 
 > The candidate roster is yours — learning only tunes selection *within*
 > the set you declare, never the set itself (model fields stay outside the
