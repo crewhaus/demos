@@ -1,9 +1,9 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 63 recipes are **complete** (56 through the v0.1 line, recipes
-> 56–61 for the v0.2.0 automation release, plus recipe 62 for response
-> ratings). Every recipe is
+> All 64 recipes are **complete** (56 through the v0.1 line, recipes
+> 56–61 for the v0.2.0 automation release, recipe 62 for response
+> ratings, and recipe 63 for the session-knowledge commands). Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`.
@@ -324,6 +324,7 @@ ratings-driven on-ramp to the same self-improvement loop.
 | 60 | [Fleet & teams](60-fleet-and-teams.md)                          | Teams — `fleet` / `propose` / `knowledge sync` | complete |
 | 61 | [Self-building evals for any shape](61-self-building-evals.md)  | Pillar 2 — `scaffold-evals` / eval bridges | complete |
 | 62 | [Response Ratings](62-response-ratings.md)                      | Pillar 2 — ratings → evals              | complete |
+| 63 | [Harness self-knowledge](63-harness-self-knowledge.md)          | Pillar 2 — `fewshot` / `faq` / `lessons` / `sessions summarize` | complete |
 
 ---
 
