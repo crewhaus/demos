@@ -1,0 +1,174 @@
+# hello-expert (daemon) — the SAME self-teaching expert as crewhaus.yaml,
+# compiled to an always-on channel daemon. Two things change versus the cli:
+#
+#   1. heartbeat — every 6h a synthetic tick fires and the expert runs a
+#      STUDY or REFLECT pass on its own (rotating via HEARTBEAT.md). This is
+#      the "regularly reads sources" + "regular reflections" cadence, with no
+#      human in the loop.
+#   2. channel — it answers questions in Slack threads, and 👍/👎 reactions
+#      on its replies become rating signal for the flywheel.
+#
+# The knowledge base, the wiki MCP, the curriculum, and the exam are shared
+# with crewhaus.yaml — this is the same brain on a schedule.
+#
+# Usage (from inside this directory):
+#   cp .env.example .env   # add THREDZ_API_KEY, ANTHROPIC_API_KEY, SLACK_*
+#   bunx crewhaus compile daemon.yaml -o dist
+#   bunx crewhaus run daemon.yaml
+# For a fast local heartbeat while testing, drop `heartbeat.every` to "5m".
+
+name: hello-expert-daemon
+target: channel
+
+agent:
+  model: claude-sonnet-4-6
+  model_fallbacks:
+    - claude-haiku-4-5-20251001
+  instructions: |
+    You are a SELF-TEACHING DOMAIN EXPERT running as an always-on daemon.
+    Your field is:
+
+        specialty coffee brewing & extraction science
+
+    Your long-term memory is a Thredz wiki reached through the `thredz__*`
+    tools (semantic + keyword search, durable upsert-by-slug articles,
+    quality signals). Your head is empty between turns; the wiki is not.
+
+    You wake for two reasons — an inbound message, or a scheduled heartbeat.
+
+    ── INBOUND MESSAGE (someone asked a question in a thread) ──
+    1. RECALL FIRST: call `thredz__wiki_recall` (and semantic/keyword search
+       as needed) BEFORE answering. Answer from what you recalled and CITE
+       the article slugs you used, e.g. "(coffee/extraction-yield)".
+    2. Keep it to 1-3 sentences unless asked for depth. Reply in-thread.
+    3. KNOW YOUR EDGE: if the wiki doesn't support a confident answer, say
+       what you don't know and call `thredz__log_knowledge_gap` with the
+       topic. Never bluff domain facts. A logged gap seeds the next study
+       tick. If the asker corrects you, commit the fix with
+       `thredz__wiki_write`.
+
+    ── HEARTBEAT TICK (scheduled, no human waiting) ──
+    Read `HEARTBEAT.md` in the working directory and follow it. It rotates
+    you through STUDY and REFLECT passes so the expert improves on a
+    schedule. The heartbeat is autonomous work, not chatter — do the pass,
+    write to the wiki, and log a one-line result. If there is genuinely
+    nothing useful to do this tick, log `heartbeat: idle` and stop.
+
+    STUDY pass (summary — full playbook in HEARTBEAT.md):
+      - Choose WHAT to learn by priority: (1) open knowledge gaps you logged,
+        (2) the next rung in `curriculum.md`, (3) recent high-quality
+        developments. Never scattershot.
+      - Research from HIGH-QUALITY sources (curriculum allowlist + `sources/`
+        + web for the latest; weight primary/peer-reviewed/standards over
+        blogs). Dispatch several `researcher` sub-agents in one tick to cover
+        a topic in parallel, then synthesise.
+      - Separate TIME-TESTED from FRONTIER knowledge, and commit durable,
+        high-value knowledge with `thredz__wiki_write` — stable slug, a
+        `## Sources` section, tags, and an honest `confidenceScore`. Upsert;
+        don't duplicate.
+
+    REFLECT pass (summary):
+      - Surface stale / low-confidence articles (`thredz__wiki_list`),
+        reconcile contradictions and duplicates (`thredz__wiki_related`),
+        re-verify shaky claims against a primary source, and update signals
+        (`thredz__wiki_set_signals`).
+      - Curate `curriculum.md` (tick mastered rungs, add rungs for recurring
+        gaps) and `eval/dataset.jsonl` (add questions for newly-learned
+        topics; never delete one you merely failed).
+
+    ── Always ──
+    - Precision over fluency; numbers and units are load-bearing in this
+      field. No source, no wiki commit. One article per concept (upsert).
+
+  sub_agents:
+    researcher:
+      description: |
+        Read-only source researcher. Give it ONE narrow sub-question. It
+        searches/fetches high-quality sources and returns 2-4 verbatim,
+        cited snippets — no synthesis. Hard cap: 180 words.
+      instructions: |
+        You research ONE narrow question against high-quality sources.
+        Prefer primary literature, standards bodies, and canonical texts.
+        Return 2-4 SHORT verbatim snippets, each with its source, and one
+        line on time-tested vs frontier. Do NOT synthesise. Under 180 words.
+      tools: [webSearch, webFetch, read]
+      model: claude-haiku-4-5-20251001
+      permissions:
+        allow: [WebSearch, WebFetch, Read]
+        deny: []
+  tools:
+    - read
+    - edit
+    - webSearch
+    - webFetch
+    - todoWrite
+    # Remember / Recall are wired by the `memory:` block below (not listed here).
+  tool_config:
+    mcp:
+      thredz:
+        wiki_write: { destructive: true }
+        wiki_set_signals: { destructive: true }
+        log_knowledge_gap: { sideEffect: audit-and-allow }
+
+# One inbound message = one agent turn; isolate sessions per Slack thread.
+channels:
+  slack:
+    botToken: $SLACK_BOT_TOKEN
+    signingSecret: $SLACK_SIGNING_SECRET
+routing:
+  sessionKey: thread
+
+# The scheduled learning cadence. Every tick reads HEARTBEAT.md and runs a
+# STUDY or REFLECT pass. Bump to "5m" for a live demo; "6h" for production.
+heartbeat:
+  every: 6h
+  instructions: |
+    Heartbeat tick. Read HEARTBEAT.md and run the pass it selects (STUDY or
+    REFLECT) for the domain. Do real work — research and commit to the wiki,
+    or reconcile and re-verify — then log a one-line result. If there's
+    nothing useful to do, log `heartbeat: idle` and stop.
+
+# 👍/👎 on the bot's replies become rating signal for the flywheel.
+feedback:
+  channelReactions: true
+  autoDistill: true
+
+memory:
+  enabled: true
+  autoCapture: true
+  autoRecall: true
+  recallK: 5
+
+# A tiny status page for the daemon (health, turn counts, heartbeat ticks).
+gateway:
+  port: 4173
+  ui: true
+
+mcp_servers:
+  thredz:
+    transport: stdio
+    command: bun
+    args: ["thredz-mcp/server.ts"]
+
+permissions:
+  mode: default
+  rules:
+    - { type: alwaysAllow, pattern: Read }
+    - { type: alwaysAllow, pattern: WebSearch }
+    - { type: alwaysAllow, pattern: WebFetch }
+    - { type: alwaysAllow, pattern: TodoWrite }
+    - { type: alwaysAllow, pattern: Remember }
+    - { type: alwaysAllow, pattern: Recall }
+    - { type: alwaysAllow, pattern: thredz__wiki_recall }
+    - { type: alwaysAllow, pattern: thredz__wiki_semantic_search }
+    - { type: alwaysAllow, pattern: thredz__wiki_search }
+    - { type: alwaysAllow, pattern: thredz__wiki_get }
+    - { type: alwaysAllow, pattern: thredz__wiki_list }
+    - { type: alwaysAllow, pattern: thredz__wiki_related }
+    - { type: alwaysAllow, pattern: thredz__wiki_stats }
+    - { type: alwaysAllow, pattern: thredz__wiki_write }
+    - { type: alwaysAllow, pattern: thredz__wiki_set_signals }
+    - { type: alwaysAllow, pattern: thredz__log_knowledge_gap }
+    - { type: alwaysAllow, pattern: Edit(curriculum.md) }
+    - { type: alwaysAllow, pattern: Edit(eval/**) }
+    - { type: alwaysAllow, pattern: Edit(sources/**) }
