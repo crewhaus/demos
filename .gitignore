@@ -19,5 +19,8 @@ dist/
 **/.crewhaus/evals/
 **/.crewhaus/memories/
 **/.crewhaus/feedback/
-.crewhaus/specs/
+**/.crewhaus/specs/
+**/.crewhaus/audit/
+**/.crewhaus/graphs/
+**/.crewhaus/research/
 .claude/

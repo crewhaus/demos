@@ -99,6 +99,7 @@ demos/
     channel/                   the generic channel adapter (Slack reference)
     crew/  graph/  rag/  research/  batch/  voice/  browser/
     managed/  eval/  federation/  harness-designer/  optimize/
+    expert/                    self-teaching domain expert (Thredz wiki memory + curriculum + living exam; cli + channel daemon)
     channels/                  platform-specific channel adapter variants
       discord/  imessage/  telegram/  whatsapp/
     showcases/                 "full power" tier-1 harness imitations

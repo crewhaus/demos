@@ -17,7 +17,8 @@
 name: hello-harness-designer
 target: cli
 agent:
-  model: claude-opus-4-7
+  model: claude-fable-5
+  max_tokens: 100000
   instructions: |
     You are a CrewHaus harness designer. Your job is to interview a user
     about their INTENT and produce a complete, validated `crewhaus.yaml`

@@ -1,0 +1,40 @@
+# The competency exam's rubric. A knowledge exam grades PROSE answers
+# against a gold answer, so a per-sample llm_judge is the right grader — it
+# sees each question's `expected_output` and scores the expert's answer
+# against it. (Deterministic graders like `contains`/`exact_match` apply one
+# fixed check to EVERY sample, which doesn't fit open-ended domain answers.)
+#
+# The expert curates this over time: `/reflect` tightens the rubric and
+# `/exam` adds questions as its expertise grows. `crewhaus flywheel run`
+# uses this exam + user ratings as the fitness function for gated,
+# human-reviewed spec improvements.
+graders:
+  - name: domain_correctness
+    type: llm_judge
+    rubric:
+      passing_score: 4
+      criteria:
+        - name: factual_correctness
+          description: >
+            Is the answer factually correct for specialty-coffee brewing
+            science, and consistent with the gold expected_output? Judge the
+            substance, not the wording. Numbers, ranges, and units must be
+            right — a plausible answer with a wrong number is NOT correct.
+          anchors:
+            "1": "Wrong or misleading; contradicts the gold answer or gets key numbers/units wrong."
+            "2": "Partly relevant but a core fact, number, or unit is wrong or missing."
+            "3": "Roughly right but imprecise, or missing an important qualifier from the gold answer."
+            "4": "Correct and consistent with the gold answer, with the key numbers/units right."
+            "5": "Correct, precise, and complete — matches the gold answer and adds no errors."
+        - name: grounded_not_bluffed
+          description: >
+            Does the answer stay within what a careful expert would assert —
+            citing knowledge rather than bluffing? An answer that confidently
+            invents specifics it shouldn't know scores low even if fluent. An
+            honest 'I'm not certain' on something genuinely uncertain is fine.
+          anchors:
+            "1": "Confidently fabricates specifics; overclaims certainty."
+            "2": "Mostly unsupported assertion with a confident tone."
+            "3": "Reasonable but doesn't distinguish solid facts from guesses."
+            "4": "Grounded; asserts what's well-established and hedges what isn't."
+            "5": "Well-grounded and appropriately calibrated; cites/knows its basis."

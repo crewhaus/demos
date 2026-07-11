@@ -301,6 +301,7 @@ Deeper cuts on the Pillar 2 (active eval) and Pillar 3 (security fabric) invaria
 | 53 | [Justification Gates](53-justification-gates.md)                | Pillar 3 — intent                       | complete |
 | 54 | [Codegraph Tool](54-codegraph-tool.md)                          | Corpus — `@colbymchenry/codegraph`      | complete |
 | 55 | [Egress Fabric](55-egress-fabric.md)                            | Pillar 3 — sink side                    | complete |
+| 64 | [The self-teaching expert](64-self-teaching-expert.md)          | Corpus — self-grown Thredz wiki + living exam | complete |
 
 ## Part L — Automation & self-improvement (0.2.0)
 
