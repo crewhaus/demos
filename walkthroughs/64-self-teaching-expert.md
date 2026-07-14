@@ -10,6 +10,34 @@ test:
 
 # Recipe 64 — The self-teaching expert (memory + curriculum + a growing exam)
 
+> **TODO — rewrite for the v0.3.0 learning surface.** The starter this
+> recipe walks through has been rewritten on top of the first-class
+> `thredz:` and `learning:` blocks, and this text still describes the
+> pre-0.3.0 scaffolding. The delta to fold in:
+>
+> - `starters/expert/crewhaus.yaml` is now two knobs plus domain content:
+>   `thredz: true` + a `learning:` block (domain, curriculum, sources,
+>   exam) + a short domain persona. The ~150-line four-mode mechanism
+>   prompt is gone — the shipped `learning-loop` skill carries it, with
+>   domain/curriculum/sources substituted at compile time.
+> - The vendored `thredz-mcp/server.ts` is deleted; `thredz: true`
+>   synthesizes the `npx thredz-mcp` server, delivers `THREDZ_API_KEY` to
+>   it (fail-fast at boot), and registers the tools under bare names
+>   (`wiki_recall`, not `thredz__wiki_recall`).
+> - `/study` `/reflect` `/exam` are real built-in slash commands now, and
+>   `/exam` drives the first-class `run_exam` tool — a programmatic
+>   eval-runner invocation, not a Bash shell-out to `crewhaus eval`; the
+>   `bash` tool and its `crewhaus eval*` allowlist are gone from the spec.
+>   Exam failures are logged as knowledge gaps automatically.
+> - "No source, no commit" is enforced: with `learning:` on, `wiki_write`
+>   rejects bodies without a `## Sources` section.
+> - The daemon's HEARTBEAT.md playbook is now the built-in
+>   `learning.study.on_heartbeat` rotation (gaps first, ~3:1
+>   study:reflect, bounded ticks), baked into the compiled daemon; the
+>   daemon currently learns into the local wiki (channel-shape thredz
+>   wiring is a follow-up).
+> - The examiner sub-agent is superseded by the exam graders.
+
 **Pillar:** Pillar 2 — eval is active, not passive (an expert that *measures*
 its expertise and improves it).
 **Catalog modules:** `mcp-host` (§9), `memory-store`, `eval-runner`,
