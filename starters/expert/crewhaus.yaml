@@ -1,173 +1,49 @@
-# hello-expert — a self-teaching DOMAIN EXPERT that grows a verifiable
-# body of knowledge over time. It reads high-quality sources, commits the
-# durable, time-tested bits to its own wiki (Thredz, via a local MCP
-# server), recalls the right slice of that wiki with vector search on every
-# question, reflects on what it knows to reconcile and prune, and keeps a
-# living competency exam so its expertise is *measurable*, not asserted.
+# hello-expert — a self-teaching DOMAIN EXPERT on the v0.3.0 learning fabric.
 #
-# This file is the INTERACTIVE expert (`target: cli`) — ask it things and it
-# answers from memory with citations. Its sibling `daemon.yaml`
-# (`target: channel`) is the same brain wired to run the study + reflection
-# loops on a schedule and answer in Slack. Same expert, two shapes.
+# Two knobs do all the work:
+#   thredz:    — the hosted wiki that is the expert's long-term memory
+#                (bare-name wiki_* tools, synthesized MCP server, one env var)
+#   learning:  — the shipped `learning-loop` skill (ANSWER / STUDY / REFLECT /
+#                EXAM), the /study /reflect /exam commands, Sources-required
+#                wiki writes, and the first-class in-process exam
 #
-# ────────────────────────────────────────────────────────────────────────
-#  THE ONE KNOB — the domain.  Everything below is written to be domain-
-#  agnostic; the seed domain is "specialty coffee brewing & extraction
-#  science" (evergreen fundamentals + fast-moving research, crisp verifiable
-#  facts, a real certification curriculum). To retarget the expert, change
-#  the domain sentence in `agent.instructions`, then reseed `curriculum.md`,
-#  `sources/`, and `eval/dataset.jsonl`. See README.md § "Point it at your
-#  field".
-# ────────────────────────────────────────────────────────────────────────
+# Everything that used to be a ~150-line mechanism prompt here now ships with
+# CrewHaus itself. What remains below is the DOMAIN: one sentence of identity,
+# the curriculum + sources + exam files, and a research sub-agent.
 #
 # Usage (from inside this directory — see README):
-#   cp .env.example .env    # add THREDZ_API_KEY + ANTHROPIC_API_KEY
-#   bunx crewhaus compile crewhaus.yaml -o dist
+#   cp .env.example .env      # THREDZ_API_KEY + ANTHROPIC_API_KEY
 #   bunx crewhaus run crewhaus.yaml
-# Then try:
-#   "What grind size and ratio for a balanced V60?"        (recall + cite)
-#   "/study"     — run one learning pass (pick a topic, research, commit)
-#   "/reflect"   — reconcile, re-verify, prune, update the curriculum
-#   "/exam"      — grade yourself against eval/dataset.jsonl
+# Then try a question, /study, /reflect, /exam.
 
 name: hello-expert
 target: cli
 
+thredz: true # ≡ api_key: $THREDZ_API_KEY — THE one argument
+
+learning:
+  domain: specialty coffee brewing & extraction science
+  curriculum: curriculum.md
+  sources: ["sca.coffee", "*.edu", "baristahustle.com"]
+  exam: { dataset: eval/dataset.jsonl, graders: eval/graders.yaml }
+
 agent:
   model: claude-sonnet-4-6
   max_tokens: 16384
-  # Long unattended study/reflect passes survive a provider hiccup.
-  model_fallbacks:
-    - claude-haiku-4-5-20251001
+  model_fallbacks: [claude-haiku-4-5-20251001] # long study passes survive a provider hiccup
   instructions: |
-    You are a SELF-TEACHING DOMAIN EXPERT. Your field is:
-
-        specialty coffee brewing & extraction science
-
-    You are not a chatbot that guesses. You are an expert who (a) answers
-    only from a knowledge base you have personally verified, (b) knows the
-    edge of your own knowledge, and (c) closes that edge over time by
-    studying the right things and reflecting on what you learn.
-
-    Your long-term memory is a wiki reachable through the `thredz__*` tools
-    (a Thredz wiki: semantic + keyword search, durable upsert-by-slug
-    articles, quality signals). Treat it as the single source of truth about
-    what you know. Your head is empty between turns; the wiki is not.
-
-    You operate in FOUR modes. Default is ANSWER. The user switches modes
-    with a leading slash command; honour the one they pick.
-
-    ═══════════════════════════════════════════════════════════════════════
-    ANSWER  — the default. The user asked a question in your field.
-    ═══════════════════════════════════════════════════════════════════════
-    1. RECALL FIRST. Call `thredz__wiki_recall` with the question before you
-       write a word. For conceptual questions also try
-       `thredz__wiki_semantic_search`; for exact terms/numbers use
-       `thredz__wiki_search`. Open the most relevant article in full with
-       `thredz__wiki_get` when a snippet isn't enough.
-    2. ANSWER FROM WHAT YOU RECALLED. Cite the wiki articles you used by
-       their slug, e.g. "(coffee/extraction-yield)". Ground every claim.
-    3. KNOW YOUR EDGE. If recall returns nothing relevant, or you are not
-       confident the wiki actually supports the answer:
-         - say plainly what you do NOT confidently know, and
-         - call `thredz__log_knowledge_gap` with the specific topic, so the
-           next study pass prioritises it.
-       Do NOT bluff domain facts from general pretraining and present them
-       as expert knowledge. A logged gap is worth more than a confident
-       guess. (You MAY answer general/meta questions about how you work.)
-    4. If the user later corrects you, that correction is gold — commit the
-       corrected fact with `thredz__wiki_write` and, if the exam should
-       cover it, add a question in `/reflect`.
-
-    ═══════════════════════════════════════════════════════════════════════
-    STUDY  (`/study [topic]`) — learn something, deliberately.
-    ═══════════════════════════════════════════════════════════════════════
-    Do NOT pick topics at random. Choose WHAT to learn, in this priority:
-      1. Open knowledge gaps — anything you logged via `log_knowledge_gap`
-         (recall them from the wiki / your Thredz tasks first).
-      2. The next rung on the learning ladder in `curriculum.md` (read it
-         with `Read`). It encodes a real curriculum for the field — the
-         time-tested fundamentals first, frontier topics later — so you
-         build expertise in a defensible order, not scattershot.
-      3. "What's new" — recent, high-quality developments in the field.
-
-    For the chosen topic:
-      - Gather from HIGH-QUALITY sources only. Prefer the source allowlist
-        in `curriculum.md` (primary literature, standards bodies, canonical
-        texts) and the local notes in `sources/`. Use `WebSearch`/`WebFetch`
-        for the latest, but weight peer-reviewed / primary / standards
-        sources over blogs. For breadth, dispatch several `researcher`
-        sub-agents in ONE turn (they are read-only, so they run in
-        parallel) and synthesise their findings.
-      - Separate TIME-TESTED knowledge (established, unlikely to change)
-        from FRONTIER knowledge (recent, provisional). Say which is which.
-      - Commit durable, high-value knowledge with `thredz__wiki_write`:
-        a stable `slug` (e.g. `coffee/extraction-yield`), a clear `title`,
-        a Markdown `body` that ENDS WITH a `## Sources` section listing
-        every citation, relevant `tags`, and an honest `confidenceScore`
-        (0–1). Upsert — refine the existing article rather than duplicating.
-      - Do NOT commit low-value ephemera (news of the day, opinions). The
-        wiki is for knowledge that will still be true and useful later.
-    Finish with a 3-5 line summary: what you learned, what you committed
-    (slugs), and what you now want to learn next.
-
-    ═══════════════════════════════════════════════════════════════════════
-    REFLECT  (`/reflect`) — improve the knowledge itself.
-    ═══════════════════════════════════════════════════════════════════════
-    Learning is not just accumulation. Periodically:
-      - Surface the STALEST and LOWEST-CONFIDENCE articles with
-        `thredz__wiki_list` (sort=updated order=asc; and by confidenceScore).
-      - For a handful of them, use `thredz__wiki_related` to find neighbours,
-        detect CONTRADICTIONS or DUPLICATES, and reconcile: merge, correct,
-        or supersede. Re-check shaky claims against a primary source.
-      - Update quality signals with `thredz__wiki_set_signals`: mark an
-        article `verified: true` once you've checked it against a primary
-        source; raise/lower its `confidenceScore` to match reality.
-      - Update `curriculum.md` (via `Edit`): tick off rungs you've mastered,
-        add rungs for gaps you keep hitting. This is you deciding what to
-        learn NEXT — from both the formal path and your own blind spots.
-      - Keep the exam honest: add `eval/dataset.jsonl` questions for topics
-        you now know but weren't tested on, and fix any stale gold answers
-        (see the EXAM mode below). Never delete a question just because you
-        fail it — that is the gap you must close.
-    Finish with a reflection note: contradictions reconciled, articles
-    re-verified, curriculum/exam changes, and the top open gap.
-
-    ═══════════════════════════════════════════════════════════════════════
-    EXAM  (`/exam`) — prove it, don't assert it.
-    ═══════════════════════════════════════════════════════════════════════
-    Your expertise must be MEASURABLE. `eval/dataset.jsonl` is a competency
-    exam and `eval/graders.yaml` its rubric.
-      - To grade yourself against it, run (via `Bash`):
-            crewhaus eval crewhaus.yaml \
-              --dataset eval/dataset.jsonl --graders eval/graders.yaml \
-              --concurrency 1
-        Report the pass-rate and every failed item verbatim.
-      - Each FAILURE is a diagnosed knowledge gap: call
-        `thredz__log_knowledge_gap` for it, so `/study` picks it up.
-      - When you learn something new and durable, ADD a question for it so
-        the exam grows with your expertise. The exam should always be a
-        fair, current test of a real expert in this field.
-      - The self-improvement flywheel (`crewhaus flywheel run`) turns this
-        exam + your user ratings into a gated, reviewable spec patch — see
-        README § "The flywheel". You never auto-merge; a human reviews.
-
-    ─── Always ───
-    - Precision over fluency. Numbers, ranges, and units matter in this
-      field — get them right or say you're unsure.
-    - Every durable claim in the wiki carries its sources. No source, no
-      commit.
-    - Prefer `Edit`/upsert over `Write`/duplicate. One article per concept.
-
-  # Read-only research workers. Emitting several in one turn runs them in
-  # parallel — that is how a study pass covers a topic from several angles.
+    You are the resident specialty-coffee expert. Precision over fluency:
+    grind size, brew ratios, extraction yields, TDS, and water chemistry are
+    load-bearing numbers in this field — get them right, with units, or say
+    you are unsure. Prefer SCA standards and peer-reviewed extraction
+    science; treat blogs and forums as leads to verify, not sources. Local
+    field notes live in sources/.
   sub_agents:
     researcher:
       description: |
-        Read-only source researcher. Give it ONE narrow sub-question and
-        the source allowlist. It searches/fetches high-quality sources and
-        returns 2-4 verbatim, cited snippets — no synthesis, no opinions.
-        Hard cap: 180 words.
+        Read-only source researcher. Give it ONE narrow sub-question and the
+        source allowlist. It returns 2-4 verbatim, cited snippets — no
+        synthesis, no opinions. Hard cap: 180 words.
       instructions: |
         You research ONE narrow question against high-quality sources.
         Prefer primary literature, standards bodies, and canonical texts
@@ -180,107 +56,41 @@ agent:
       permissions:
         allow: [WebSearch, WebFetch, Read]
         deny: []
-    examiner:
-      description: |
-        Independent grader for a single exam question. Given the question,
-        the gold answer, and the expert's answer, returns PASS/FAIL + a
-        one-line reason. Deliberately separate from the expert so it can't
-        rubber-stamp its own work.
-      instructions: |
-        You grade ONE exam answer against a gold answer for correctness in
-        this domain. Be strict about numbers, ranges, and units. Return
-        EXACTLY:
-          VERDICT: PASS | FAIL
-          REASON: <one line>
-        "Roughly right" with a wrong number is FAIL. Do not edit anything.
-      tools: [read]
-      model: claude-haiku-4-5-20251001
-      permissions:
-        allow: [Read]
-        deny: []
 
-tools:
-  - read
-  - write
-  - edit
-  - glob
-  - grep
-  - bash            # run `crewhaus eval` in EXAM mode
-  - webSearch       # latest developments (needs CREWHAUS_SEARCH_* — see .env.example)
-  - webFetch
-  - todoWrite       # visible plan for multi-step study/reflect passes
-  # Remember / Recall are wired by the `memory:` block below (not listed here).
+tools: [read, write, edit, glob, grep, webSearch, webFetch, todoWrite]
 
-# The expert's long-term memory: a Thredz wiki behind a local MCP server.
-# The runtime spawns `bun thredz-mcp/server.ts` and exposes its tools as
-# `thredz__*`. The server reads THREDZ_API_KEY / THREDZ_API_BASE from the
-# environment (Bun auto-loads ./.env from this directory).
-mcp_servers:
-  thredz:
-    transport: stdio
-    command: bun
-    args: ["thredz-mcp/server.ts"]
-
-# Per-tool flags: writing to / re-signalling the wiki mutates durable
-# memory, so mark those calls so the permission + audit layers see them.
-tool_config:
-  mcp:
-    thredz:
-      wiki_write: { destructive: true }
-      wiki_set_signals: { destructive: true }
-      log_knowledge_gap: { sideEffect: audit-and-allow }
-
-# User ratings on answers become training data for the flywheel (§ EXAM /
-# README). autoDistill folds accumulated ratings into a
-# `hello-expert-ratings` registry dataset at run teardown.
+# User ratings on answers feed the self-improvement flywheel (README).
 feedback:
   modality: stars
   scale: { min: 1, max: 5 }
   autoDistill: true
 
-# How-to-study notes survive across sessions (NOT domain facts — those live
-# in the wiki). e.g. "the SCA cupping protocol PDF is the canonical source".
-memory:
-  enabled: true
-  autoCapture: true
-  autoRecall: true
-  recallK: 5
-
 permissions:
   mode: default
   rules:
-    # Reading + research: friction-free (this is a learning agent).
+    # Research + recall: friction-free (this is a learning agent). Wiki
+    # writes are the job — allowed, but justification-gated + audited by the
+    # runtime (wiki_write / wiki_set_signals are destructive by default).
     - { type: alwaysAllow, pattern: Read }
     - { type: alwaysAllow, pattern: Glob }
     - { type: alwaysAllow, pattern: Grep }
     - { type: alwaysAllow, pattern: WebSearch }
     - { type: alwaysAllow, pattern: WebFetch }
     - { type: alwaysAllow, pattern: TodoWrite }
-    - { type: alwaysAllow, pattern: Remember }
-    - { type: alwaysAllow, pattern: Recall }
-
-    # Wiki memory: recall is free; writes/signals are allowed (that IS the
-    # job) but flagged destructive above so they're audited.
-    - { type: alwaysAllow, pattern: thredz__wiki_recall }
-    - { type: alwaysAllow, pattern: thredz__wiki_semantic_search }
-    - { type: alwaysAllow, pattern: thredz__wiki_search }
-    - { type: alwaysAllow, pattern: thredz__wiki_get }
-    - { type: alwaysAllow, pattern: thredz__wiki_list }
-    - { type: alwaysAllow, pattern: thredz__wiki_related }
-    - { type: alwaysAllow, pattern: thredz__wiki_stats }
-    - { type: alwaysAllow, pattern: thredz__wiki_write }
-    - { type: alwaysAllow, pattern: thredz__wiki_set_signals }
-    - { type: alwaysAllow, pattern: thredz__log_knowledge_gap }
-
-    # Curriculum + exam edits: the expert curates these; Markdown/JSONL only.
+    - { type: alwaysAllow, pattern: wiki_recall }
+    - { type: alwaysAllow, pattern: wiki_semantic_search }
+    - { type: alwaysAllow, pattern: wiki_search }
+    - { type: alwaysAllow, pattern: wiki_get }
+    - { type: alwaysAllow, pattern: wiki_list }
+    - { type: alwaysAllow, pattern: wiki_related }
+    - { type: alwaysAllow, pattern: wiki_stats }
+    - { type: alwaysAllow, pattern: wiki_write }
+    - { type: alwaysAllow, pattern: wiki_set_signals }
+    - { type: alwaysAllow, pattern: log_knowledge_gap }
+    - { type: alwaysAllow, pattern: task_list } # open gaps at study time
+    - { type: alwaysAllow, pattern: run_exam } # the first-class /exam (no Bash)
+    # Curriculum + exam curation: Markdown/JSONL only.
     - { type: alwaysAllow, pattern: Edit(curriculum.md) }
     - { type: alwaysAllow, pattern: Edit(eval/**) }
     - { type: alwaysAllow, pattern: Write(eval/**) }
     - { type: alwaysAllow, pattern: Edit(sources/**) }
-
-    # EXAM mode runs the eval harness; everything else on the shell asks.
-    - { type: alwaysAllow, pattern: Bash(crewhaus eval*) }
-    - { type: alwaysAllow, pattern: Bash(bunx crewhaus eval*) }
-    - { type: alwaysAsk, pattern: Bash(**) }
-    - { type: alwaysDeny, pattern: Bash(rm -rf *) }
-    - { type: alwaysDeny, pattern: Bash(sudo *) }
