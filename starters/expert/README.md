@@ -40,7 +40,7 @@ and a real certification curriculum. See
 
 > Walkthrough:
 > [64 — The self-teaching expert](../../walkthroughs/64-self-teaching-expert.md)
-> (being rewritten for the v0.3.0 surface — see the note at its top).
+> walks this starter end to end on the v0.3.0 surface.
 
 ## The loop
 
