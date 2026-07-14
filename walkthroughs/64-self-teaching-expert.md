@@ -88,7 +88,7 @@ entire integration is:
 thredz: true    # ≡ api_key: $THREDZ_API_KEY
 ```
 
-The compiler synthesizes the MCP server entry (`npx -y thredz-mcp`), delivers
+The compiler synthesizes the MCP server entry (`npx -y thredz-mcp@0.2.0`), delivers
 `THREDZ_API_KEY` into the child process through the v0.3.0 secret machinery
 (fail-fast at boot with a clear message and exit 21 when it's missing — the
 key never lands in compiled artifacts), enforces `private` visibility by
