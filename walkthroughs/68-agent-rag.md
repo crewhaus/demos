@@ -165,6 +165,8 @@ channels:
   slack:
     botToken: $SLACK_BOT_TOKEN
     signingSecret: $SLACK_SIGNING_SECRET
+routing:
+  sessionKey: thread
 knowledge:
   sources:
     - glob: ./kb/**/*.md

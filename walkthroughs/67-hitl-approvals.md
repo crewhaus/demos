@@ -174,11 +174,15 @@ name: hello-channel
 target: channel
 agent:
   model: claude-sonnet-4-6
+  instructions: |
+    You are a helpful Slack bot. Use the shell when a question needs it.
   tools: [read, bash]
 channels:
   slack:
     botToken: $SLACK_BOT_TOKEN
     signingSecret: $SLACK_SIGNING_SECRET
+routing:
+  sessionKey: thread
 permissions:
   rules:
     - type: alwaysAllow

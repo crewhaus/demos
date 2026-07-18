@@ -44,7 +44,7 @@ your home screen for the PWA), or run it locally from the `studio-pwa` repo:
 ```bash
 cd studio-pwa
 bun install
-bun run dev        # astro dev --host → http://localhost:4321/builder
+bunx astro dev --host   # → http://localhost:4321/builder
 ```
 
 Everything except the network actions (Validate, Save, Deploy, Run) works fully
@@ -228,5 +228,3 @@ approval pause you designed showing up as a card you click.
 - **The loop-family gallery seeds:** [`studio-pwa/src/lib/gallery.ts`](https://github.com/crewhaus/studio-pwa/blob/main/src/lib/gallery.ts).
 - **Spec grammar the forms are ground-truthed against:** [`packages/spec/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec/src/index.ts).
 - **Headless approvals (`ask_mode: pause`, `crewhaus approvals`):** [`apps/cli/src/approvals-cli.ts`](https://github.com/crewhaus/factory/blob/main/apps/cli/src/approvals-cli.ts).
-</content>
-</invoke>
