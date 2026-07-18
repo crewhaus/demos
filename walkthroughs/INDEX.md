@@ -1,9 +1,11 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 64 recipes are **complete** (56 through the v0.1 line, recipes
+> All 71 recipes are **complete** (56 through the v0.1 line, recipes
 > 56–61 for the v0.2.0 automation release, recipe 62 for response
-> ratings, and recipe 63 for the session-knowledge commands). Every recipe is
+> ratings, recipe 63 for the session-knowledge commands, recipe 64 for
+> the self-teaching expert, and recipes 65–71 for the v0.4.0 loop
+> contract). Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`.
@@ -48,7 +50,7 @@ for `run`).
 
 ## Pick a recipe — diagnostic decision tree
 
-The 57 recipes cover a lot of ground. Most readers don't need to scan
+The 71 recipes cover a lot of ground. Most readers don't need to scan
 the table of contents; they need to find the shape that matches the
 problem they brought. Walk this tree from the top:
 
@@ -327,6 +329,27 @@ ratings-driven on-ramp to the same self-improvement loop.
 | 62 | [Response Ratings](62-response-ratings.md)                      | Pillar 2 — ratings → evals              | complete |
 | 63 | [Harness self-knowledge](63-harness-self-knowledge.md)          | Pillar 2 — `fewshot` / `faq` / `lessons` / `sessions summarize` | complete |
 
+## Part M — The loop contract (0.4.0)
+
+The 0.4.0 "loop contract" release made the agent loop's control knobs
+**expressible in the spec** and wired the dark engines (rate-limiter,
+grader-registry, compaction-curator, plugin-loader, PaaS adapters, …)
+that had shipped with zero production callers. The thesis: *agent loops
+have moved from prompt engineering to runtime engineering.* These
+recipes walk the seven build batches (A–G) plus the Studio Loop Builder.
+See [factory CHANGELOG `[0.4.0]`](https://github.com/crewhaus/factory/blob/main/CHANGELOG.md)
+and [AGENT-LOOPS-PLAN.md](https://github.com/crewhaus/factory/blob/main/AGENT-LOOPS-PLAN.md).
+
+| #  | Recipe                                                          | Theme                                  | Status   |
+| -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
+| 65 | [Bounding an agent loop](65-loop-contract.md)                   | Batch A — `limits:` / `agent.thinking` / `agent.rate_limits` / `agent.streaming` / `hooks:` | complete |
+| 66 | [Evaluation inside the loop](66-eval-in-loop.md)                | Batch B — `evaluation:` / `kind: judge` steps+nodes / `eval --repeats` (pass@k / pass^k) | complete |
+| 67 | [HITL approvals that survive headless](67-hitl-approvals.md)    | Batch C — `permissions.ask_mode: pause` / `approvals` / Slack Approve/Deny | complete |
+| 68 | [Retrieval-augmented agents](68-agent-rag.md)                   | Batch E — `knowledge:` RAG / `Retrieve` tool | complete |
+| 69 | [Deploying the real loop](69-deploy-real-loop.md)              | Batch F — `@crewhaus/worker-runtime` / `--emit-as cf-worker` / `deploy <fly\|render\|railway\|heroku>` | complete |
+| 70 | [MCP server + A2A](70-mcp-a2a.md)                               | Batch G — `serve --mcp` / `expose:` / A2A federation / `export claude-plugin` | complete |
+| 71 | [Building loops visually in the Studio](71-studio-builder.md)   | Studio Loop Builder — the `/builder` page | complete |
+
 ---
 
 ## Quick paths (for readers who already know the shape they want)
@@ -346,6 +369,8 @@ a known scenario:
 - **Active optimization (DSPy-inspired).** 12 → 34 → 42 → 52.
 - **Closing the loop from user ratings.** 62 → 12 → 42.
 - **A harness that improves itself (0.2.0 automation).** 56 → 57 → 61 → 58.
+- **Bounding & governing the loop (0.4.0 loop contract).** 65 → 66 → 67 → 68.
+- **Making a loop consumable / deployable (0.4.0).** 69 → 70 → 71.
 - **Model resilience, cost, and teams.** 59 → 60 → 21 → 58.
 - **Pillar 3 hardening (defense-in-depth).** 29 → 41 → 53 → 55.
 - **Forking a tier-1 harness.** 49 (procode) or 50 (prochat) or 51 (multichat) → fork the matching showcase.
@@ -445,8 +470,8 @@ catalog name:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 63            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62) |
-| 63            | Walkthrough complete    |
+| 72            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62 + session-knowledge 63 + self-teaching expert 64 + 0.4.0 loop contract 65-71) |
+| 72            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a
