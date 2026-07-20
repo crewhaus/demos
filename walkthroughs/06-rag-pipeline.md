@@ -138,7 +138,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/rag
 bunx crewhaus compile crewhaus.yaml -o dist
-bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
+bunx crewhaus run crewhaus.yaml      # or: bun install --cwd dist && bun dist/agent.ts
 ```
 
 Or, working inside the demos checkout, from the repo root:

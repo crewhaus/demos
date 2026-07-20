@@ -4,6 +4,7 @@
 #
 # Usage (standalone — run from this directory):
 #   bunx crewhaus compile crewhaus.yaml -o dist
+#   bun install --cwd dist     # installs the bundle's @crewhaus runtime deps
 #   ANTHROPIC_AUTH_TOKEN=... bun dist/agent.ts
 # Contributors inside the demos checkout can use the in-tree dev loop
 # from the repo root instead:
@@ -108,12 +109,19 @@ agent:
             ```bash
             cp .env.example .env       # then fill in the values
             bunx crewhaus compile crewhaus.yaml -o dist
+            bun install --cwd dist     # first run only — installs the bundle's @crewhaus deps
             bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
             ```
           (Adjust the run line to the shape — e.g. a `channel`/daemon
           shape uses `bun dist/daemon.ts`; a `graph` shape pipes input
-          into `bun dist/agent.ts`.) Any links to recipes/docs must be
-          absolute `https://...` URLs, not `../../walkthroughs/...`.
+          into `bun dist/agent.ts`.) `crewhaus compile` writes a
+          `package.json` beside the bundle pinning its `@crewhaus/*`
+          runtime deps, so the README MUST run `bun install --cwd
+          <out-dir>` once before any standalone `bun dist/...` launch —
+          one install per emitted bundle (a two-spec harness that also
+          compiles a daemon to `dist-daemon` needs `bun install --cwd
+          dist-daemon` too). Any links to recipes/docs must be absolute
+          `https://...` URLs, not `../../walkthroughs/...`.
     6. Validate from INSIDE the harness directory (so paths resolve the
        same way they will for the user):
          cd <chosen-name> && bunx crewhaus compile crewhaus.yaml --emit-ir

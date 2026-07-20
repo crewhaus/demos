@@ -129,6 +129,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/graph
 bunx crewhaus compile crewhaus.yaml -o dist
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 echo "Should we adopt a 4-day work week?" | bun dist/agent.ts
 ```
 

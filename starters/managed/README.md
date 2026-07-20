@@ -12,6 +12,7 @@ bunx crewhaus compile crewhaus.yaml -o dist
 
 # 2. Start the daemon. Binds to :3000 (override with PORT=...).
 #    First stdout line prints the auto-generated JWT secret — copy it.
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 bun dist/daemon.ts
 ```
 

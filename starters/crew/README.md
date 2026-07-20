@@ -10,6 +10,7 @@ permission scoping.
 ```bash
 cd starters/crew                                   # if copied elsewhere, cd into that copy
 bunx crewhaus compile crewhaus.yaml -o dist        # writes dist/{daemon,…}.ts
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 ANTHROPIC_API_KEY=sk-... bun dist/daemon.ts        # starts the crew daemon
 ```
 

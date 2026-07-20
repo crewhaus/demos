@@ -10,7 +10,7 @@ This starter is self-contained — run it from its own directory:
 ```bash
 cd starters/cli            # if you copied it elsewhere, cd into that copy
 bunx crewhaus compile crewhaus.yaml -o dist               # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-... bunx crewhaus run crewhaus.yaml  # or: bun dist/agent.ts
+ANTHROPIC_API_KEY=sk-... bunx crewhaus run crewhaus.yaml  # or: bun install --cwd dist && bun dist/agent.ts
 ```
 
 Type messages, get streaming replies, type `exit` to quit.

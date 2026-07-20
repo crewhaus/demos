@@ -46,7 +46,7 @@ anywhere and it still works):
 ```bash
 cd cli                                  # or any starter directory
 bunx crewhaus compile crewhaus.yaml -o dist
-bunx crewhaus run crewhaus.yaml         # or: bun dist/agent.ts
+bunx crewhaus run crewhaus.yaml         # or: bun install --cwd dist && bun dist/agent.ts
 ```
 
 <details><summary><strong>Contributors</strong> — in-tree dev loop (from the demos repo root)</summary>

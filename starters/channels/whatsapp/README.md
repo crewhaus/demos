@@ -10,6 +10,7 @@ endpoint. Sessions keyed by WhatsApp phone number.
 ```bash
 cd starters/channels/whatsapp          # if copied elsewhere, cd into that copy
 bunx crewhaus compile crewhaus.yaml -o dist
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 WHATSAPP_PHONE_NUMBER_ID=... WHATSAPP_ACCESS_TOKEN=... \
   WHATSAPP_VERIFY_TOKEN=... ANTHROPIC_AUTH_TOKEN=sk-ant-oat... \
   bun dist/daemon.ts

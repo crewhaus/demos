@@ -15,6 +15,7 @@ cd starters/showcases/multichat          # if copied elsewhere, cd into that cop
 bunx crewhaus compile crewhaus.yaml -o dist     # writes dist/{daemon,gateway,session-router,agent}.ts
 
 # Minimum: one channel's creds. Provide all three to listen on all.
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 ANTHROPIC_API_KEY=sk-ant-... \
   SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \

@@ -12,6 +12,7 @@ directory (or copied anywhere). Run it from here:
 ```bash
 cd starters/eval        # if you copied it elsewhere, cd into that copy
 bunx crewhaus compile crewhaus.yaml -o dist   # emits the eval bundle
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 ANTHROPIC_AUTH_TOKEN=... bun dist/agent.ts     # scores the dev split
 ```
 

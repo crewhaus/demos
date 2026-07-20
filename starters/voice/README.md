@@ -10,6 +10,7 @@ streaming code.
 ```bash
 cd starters/voice          # if copied elsewhere, cd into that copy
 bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/{daemon,voice-loop,agent}.ts
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 OPENAI_API_KEY=sk-... bun dist/daemon.ts      # starts the voice daemon
 ```
 

@@ -10,6 +10,7 @@ keyed by Telegram chat id.
 ```bash
 cd starters/channels/telegram          # if copied elsewhere, cd into that copy
 bunx crewhaus compile crewhaus.yaml -o dist
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 TELEGRAM_BOT_TOKEN=... ANTHROPIC_AUTH_TOKEN=sk-ant-oat... \
   bun dist/daemon.ts
 ```

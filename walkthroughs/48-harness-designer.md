@@ -165,7 +165,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/harness-designer
 bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/agent.ts
-ANTHROPIC_AUTH_TOKEN=... bunx crewhaus run crewhaus.yaml   # or: bun dist/agent.ts
+ANTHROPIC_AUTH_TOKEN=... bunx crewhaus run crewhaus.yaml   # or: bun install --cwd dist && bun dist/agent.ts
 ```
 
 Or, working inside the demos checkout, from the repo root:
@@ -230,6 +230,7 @@ you ask for something CrewHaus can't do.
 > ```
 > cd slack-pr-reviewer
 > bunx crewhaus compile crewhaus.yaml -o dist
+> bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 > SLACK_BOT_TOKEN=… SLACK_APP_TOKEN=… GITHUB_TOKEN=… ANTHROPIC_AUTH_TOKEN=… bun dist/daemon.ts
 > ```
 >
@@ -414,7 +415,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/harness-designer
 bunx crewhaus compile crewhaus.yaml -o dist
-ANTHROPIC_AUTH_TOKEN=... bunx crewhaus run crewhaus.yaml   # or: bun dist/agent.ts
+ANTHROPIC_AUTH_TOKEN=... bunx crewhaus run crewhaus.yaml   # or: bun install --cwd dist && bun dist/agent.ts
 ```
 
 Or, working inside the demos checkout, from the repo root:

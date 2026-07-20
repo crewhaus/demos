@@ -119,7 +119,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/research
 bunx crewhaus compile crewhaus.yaml -o dist
-bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
+bunx crewhaus run crewhaus.yaml      # or: bun install --cwd dist && bun dist/agent.ts
 ```
 
 Or, working inside the demos checkout, from the repo root:
@@ -204,7 +204,7 @@ Standalone (from the harness directory):
 
 ```bash
 cd starters/research
-bunx crewhaus run crewhaus.yaml --resume run_<id>      # or: bun dist/agent.ts --resume run_<id>
+bunx crewhaus run crewhaus.yaml --resume run_<id>      # or: bun install --cwd dist && bun dist/agent.ts --resume run_<id>
 ```
 
 Or, working inside the demos checkout, from the repo root:

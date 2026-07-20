@@ -168,7 +168,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/cli
 bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/agent.ts
-bunx crewhaus run crewhaus.yaml               # opens an interactive REPL (or: bun dist/agent.ts)
+bunx crewhaus run crewhaus.yaml               # opens an interactive REPL (or: bun install --cwd dist && bun dist/agent.ts)
 ```
 
 Or, working inside the demos checkout, from the repo root:

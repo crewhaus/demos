@@ -180,7 +180,7 @@ Standalone (from the harness directory — `.env` must live in `starters/browser
 ```bash
 cd starters/browser
 set -a; source .env; set +a    # exports ANTHROPIC_AUTH_TOKEN to this shell
-bunx crewhaus run crewhaus.yaml --prompt "Click the green Submit button on the page."   # or: bun dist/agent.ts --prompt "..."
+bunx crewhaus run crewhaus.yaml --prompt "Click the green Submit button on the page."   # or: bun install --cwd dist && bun dist/agent.ts --prompt "..."
 ```
 
 Or, working inside the demos checkout, from the repo root (so `./.env`

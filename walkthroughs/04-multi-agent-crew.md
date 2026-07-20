@@ -124,6 +124,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/crew
 bunx crewhaus compile crewhaus.yaml -o dist
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 echo "Topic: rolling out vector-search to production" | bun dist/agent.ts
 ```
 

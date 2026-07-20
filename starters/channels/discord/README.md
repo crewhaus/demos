@@ -10,6 +10,7 @@ inbound interaction; sessions keyed by Discord channel.
 ```bash
 cd starters/channels/discord          # if copied elsewhere, cd into that copy
 bunx crewhaus compile crewhaus.yaml -o dist
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 DISCORD_BOT_TOKEN=... DISCORD_APPLICATION_ID=... \
   ANTHROPIC_AUTH_TOKEN=sk-ant-oat... \
   bun dist/daemon.ts
