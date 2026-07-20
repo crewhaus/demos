@@ -29,7 +29,7 @@ winget / apt) and run from inside the starter directory:
 cd starters/<name>
 cp .env.example .env       # add ANTHROPIC_AUTH_TOKEN (if the starter ships one)
 bunx crewhaus compile crewhaus.yaml -o dist
-bunx crewhaus run crewhaus.yaml      # or: bun dist/agent.ts
+bunx crewhaus run crewhaus.yaml      # or: bun install --cwd dist && bun dist/agent.ts
 ```
 
 The runtime resolves the spec, local data sources, MCP servers, and the

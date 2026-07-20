@@ -15,6 +15,7 @@ ANTHROPIC_AUTH_TOKEN=sk-ant-oat... bunx crewhaus run crewhaus.yaml
 Or run the compiled entrypoint directly:
 
 ```bash
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 ANTHROPIC_AUTH_TOKEN=sk-ant-oat... bun dist/agent.ts
 ```
 

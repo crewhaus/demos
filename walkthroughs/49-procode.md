@@ -65,7 +65,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/showcases/procode
 bunx crewhaus compile crewhaus.yaml -o dist
-ANTHROPIC_API_KEY=sk-ant-... bunx crewhaus run crewhaus.yaml   # or: bun dist/agent.ts
+ANTHROPIC_API_KEY=sk-ant-... bunx crewhaus run crewhaus.yaml   # or: bun install --cwd dist && bun dist/agent.ts
 ```
 
 Or, working inside the demos checkout, from the repo root:

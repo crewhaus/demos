@@ -12,6 +12,7 @@ cd starters/channel                           # if copied elsewhere, cd into tha
 bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/{daemon,gateway,session-router,agent}.ts
 
 # Real Slack workspace mode — set both creds in .env first.
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   ANTHROPIC_AUTH_TOKEN=sk-ant-oat... \
   bun dist/daemon.ts

@@ -188,6 +188,7 @@ Standalone (from the harness directory):
 ```bash
 cd starters/channel
 bunx crewhaus compile crewhaus.yaml -o dist
+bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 bun dist/daemon.ts
 ```
 
