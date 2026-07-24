@@ -391,10 +391,36 @@ The routing key format the model sees is
 dispatches the tool call back through the daemon's registered
 channel adapter, which posts the message.
 
-A common pattern is to combine `SendMessage` with a scheduled trigger
-— either an external cron that hits `POST /agent/trigger` on the
-daemon, or a stand-alone `target: batch` worker (Recipe 08) that
-shares the same channel adapter configuration.
+A common pattern is to combine `SendMessage` with a **scheduled
+wake** the daemon fires itself — no external cron and no extra
+endpoint. Two blocks drive it, both of which synthesize a turn the
+agent handles like any other prompt (and from which it can call
+`SendMessage`):
+
+```yaml
+# interval wake — the simplest "every N" tick (channel shape only):
+heartbeat:
+  every: 6h
+  instructions: |
+    Summarize the day's merged PRs and post it to #eng with SendMessage.
+
+# — or — a cron/interval wake with timezone + jitter (the 0.4.0
+# `schedule:` block, also available on managed / batch shapes):
+schedule:
+  kind: cron
+  cron: "0 17 * * 1-5"        # 5pm ET on weekdays
+  timezone: America/New_York
+  instructions: |
+    Post the end-of-day summary to #eng with SendMessage.
+```
+
+Each tick runs in a fresh session — the daemon wakes, runs the
+`instructions` as a synthetic user message, acts, and sleeps — so
+standing context belongs in a wiki or a `HEARTBEAT.md` playbook, not
+in the tick history. [Recipe 73 §5](73-trading-advisor.md) is a full
+worked example (a market-scan `schedule:` that sends gated alerts).
+For heavier off-daemon jobs, a stand-alone `target: batch` worker
+(Recipe 08) can share the same channel adapter configuration instead.
 
 ## Step 8 — Production deployment
 
