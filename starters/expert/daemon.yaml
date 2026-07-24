@@ -9,23 +9,31 @@
 #   2. channel — it answers questions in Slack threads, and 👍/👎 reactions
 #      on its replies become rating signal for the flywheel.
 #
-# NOTE (v0.3.0): the one-knob `thredz:` backend is emit-wired on the cli
-# shape only in this release — the channel shape carries it but keeps local
-# files. This daemon therefore learns into the LOCAL wiki
-# (.crewhaus/wiki/hello-expert-daemon/). When channel thredz wiring lands,
-# `memory.wiki` below becomes `thredz: true` and the two shapes share one
-# hosted brain again.
+# WIKI BACKEND — a deliberate choice: this daemon uses the LOCAL wiki
+# (`memory.wiki`, files under .crewhaus/wiki/hello-expert-daemon/) while the
+# cli spec uses hosted `thredz: true`. As of CrewHaus 0.4.0 `thredz:` is
+# emit-wired on the channel shape too, so you CAN swap `memory.wiki` below
+# for `thredz: true` and the two shapes will share one hosted brain. Keeping
+# it local here shows off the other half of the story — on the local backend
+# `wiki_write` DETERMINISTICALLY rejects an uncited body (the `## Sources`
+# gate is enforced in code), whereas on the hosted thredz backend that same
+# discipline is the learning-loop skill's instruction, not a hard gate.
 #
-# Usage (from inside this directory):
+# Usage (from inside this directory) — `crewhaus run` is cli/browser-only and
+# will NOT serve a channel daemon, so compile and run the bundle (or use the
+# `crewhaus dev` supervised loop, which works here because this spec has no
+# local-relative-path MCP servers):
 #   cp .env.example .env   # ANTHROPIC_API_KEY + SLACK_*
-#   bunx crewhaus run daemon.yaml
+#   crewhaus dev daemon.yaml                       # supervised dev loop
+#   # — or, standalone:
+#   bunx crewhaus compile daemon.yaml -o dist && bun install --cwd dist && bun dist/daemon.ts
 # For a fast local heartbeat while testing, drop `heartbeat.every` to "5m".
 
 name: hello-expert-daemon
 target: channel
 
 memory:
-  wiki: { enabled: true, autoRecall: true } # the daemon's local wiki brain
+  wiki: { enabled: true, autoRecall: true } # the daemon's local wiki brain (see header — swap for `thredz: true` to share the cli's hosted brain)
 
 learning:
   domain: specialty coffee brewing & extraction science
@@ -63,13 +71,18 @@ agent:
         deny: []
   tools: [read, edit, webSearch, webFetch, todoWrite]
 
-# One inbound message = one agent turn; isolate sessions per Slack thread.
+# One inbound message = one agent turn. `sessionKey: user` gives each person
+# their own continuing session — and, crucially, lets 👍/👎 reactions become
+# rating signal: reaction feedback only lands under `channel`/`user` keys,
+# NOT `thread` (a reaction carries the bot reply's ts, not the thread root,
+# so a thread-keyed session can't be recovered from it — see recipe 62).
+# Replies still post in the triggering thread regardless of the session key.
 channels:
   slack:
     botToken: $SLACK_BOT_TOKEN
     signingSecret: $SLACK_SIGNING_SECRET
 routing:
-  sessionKey: thread
+  sessionKey: user
 
 # The scheduled learning cadence. The built-in study rotation is prepended
 # to these instructions at compile time (learning.study.on_heartbeat).
@@ -79,10 +92,13 @@ heartbeat:
     Do the pass the rotation selects, then log a one-line result. If there
     is genuinely nothing useful to do this tick, log `heartbeat: idle`.
 
-# 👍/👎 on the bot's replies become rating signal for the flywheel.
+# 👍/👎 on the bot's replies become rating signal for the flywheel (now that
+# sessionKey is `user`, above). NOTE: `autoDistill` runs at cli-run teardown
+# and is inert on a channel daemon — to fold these ratings into a dataset,
+# run `crewhaus distill --all-sessions --register hello-expert-ratings` from
+# this directory on a schedule (or in the flywheel workflow).
 feedback:
   channelReactions: true
-  autoDistill: true
 
 # A tiny status page for the daemon (health, turn counts, heartbeat ticks).
 gateway:

@@ -61,9 +61,9 @@ cd starters/cli
 bunx crewhaus run crewhaus.yaml
 ```
 
-The run prints its session id (`sess_` + 16 hex) on the first line of
-stderr; `.crewhaus/sessions/` has one `.jsonl` per session. Now rate a
-turn:
+Each run writes one `.jsonl` per session under `.crewhaus/sessions/`, so
+the session id (`sess_` + 16 hex) is the newest filename there
+(`ls -t .crewhaus/sessions | head -1`). Now rate a turn:
 
 ```bash
 # 👍/👎 the LAST turn of the session (the default when --turn is omitted)
