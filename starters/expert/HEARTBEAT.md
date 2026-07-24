@@ -27,9 +27,12 @@ drive the same passes interactively.
 
 ## Guardrails (enforced, not asked)
 
-- **No source, no commit** — `wiki_write` *rejects* bodies without a
-  `## Sources` section whenever `learning:` is on. What used to be prompt
-  discipline is now a hard gate.
+- **No source, no commit** — on this daemon's **local** `memory.wiki`
+  backend, `wiki_write` *rejects* a body without a `## Sources` section:
+  with `learning:` on, the tool layer enforces it deterministically, so
+  what used to be prompt discipline is a hard gate. (On the hosted
+  `thredz:` backend — what the cli spec uses — the same rule lives in the
+  `learning-loop` skill's instructions, not the tool layer.)
 - Wiki writes and signal changes are justification-gated and audited.
 - Don't commit ephemera (today's news, opinions) — only knowledge that will
   still be true and useful later.

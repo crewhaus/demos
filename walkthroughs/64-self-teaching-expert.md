@@ -153,9 +153,15 @@ one turn so they run in parallel — separates **time-tested** from
 with `wiki_write`: a stable slug, a `## Sources` section, tags, and an honest
 confidence score. Upsert, not duplicate.
 
-**"No source, no commit" is enforced, not asked**: with `learning:` on,
+**"No source, no commit" — how hard the gate is depends on the backend.**
+On a **local** `memory.wiki` backend, `learning:` stamps the tool layer so
 `wiki_write` deterministically *rejects* any body without a `## Sources`
-section. What used to be a prompt-only plea is now write-path governance.
+section — a prompt-only plea turned into write-path governance (the
+`daemon.yaml` spec is local, so it's where you see this). On the **hosted
+`thredz:`** backend this cli spec uses, `wiki_write` is a thredz-mcp
+pass-through with no such gate, so the same discipline rides in the
+`learning-loop` skill's instructions instead. Either way the rule holds;
+only the enforcement layer differs.
 
 ## 5 — REFLECT: improve the knowledge, not just grow it
 
@@ -234,14 +240,14 @@ answers in Slack, studies and reflects on a timer, and turns reactions into
 training signal — a domain expert that is awake, improving, and accountable
 to an exam even when nobody's asking.
 
-*v0.3.0 note:* the one-knob `thredz:` backend is emit-wired on the cli shape
-only in this release — the channel shape carries the block but keeps local
-files, so the daemon learns into the **local** wiki under `.crewhaus/wiki/`
-for now (same tools, same skill, local files). When channel thredz wiring
-lands, the two shapes share one hosted brain. *(That wiring landed in
-0.4.0 — a channel daemon can now use `thredz:` directly; see
-[Recipe 73](73-trading-advisor.md) for a daemon built that way. This
-starter's daemon spec still shows the local-wiki configuration.)*
+*Wiki backend note:* this starter's `daemon.yaml` uses the **local**
+`memory.wiki` backend (files under `.crewhaus/wiki/`) — same tools, same
+skill, and the backend where the `## Sources` gate is enforced in code (see
+§4). That's now a deliberate choice, not a limitation: as of CrewHaus 0.4.0
+`thredz:` is emit-wired on the channel shape too, so a daemon can share the
+cli's one hosted brain by swapping `memory.wiki` for `thredz: true`.
+[Recipe 73](73-trading-advisor.md) builds a channel daemon on `thredz:`
+directly.
 
 ## Run it
 

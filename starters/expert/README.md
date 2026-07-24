@@ -27,11 +27,15 @@ learning:
 (`wiki_recall`, `wiki_write`, `log_knowledge_gap`, …), and enforces
 `private` visibility. `learning:` registers the shipped **`learning-loop`
 skill** with your domain/curriculum/sources substituted in, gates in the
-`/study` `/reflect` `/exam` commands, makes `wiki_write` *reject* uncited
-bodies (no source, no commit — enforced, not asked), and wires the
-first-class exam. There is no vendored server, no 150-line mechanism
-prompt, and no Bash shell-out — those were this demo's scaffolding before
-the capability shipped.
+`/study` `/reflect` `/exam` commands, holds `wiki_write` to *no source, no
+commit*, and wires the first-class exam. That Sources discipline is
+backend-dependent: on a **local** `memory.wiki` backend the tool layer
+enforces it deterministically (`wiki_write` rejects an uncited body); on
+the **hosted thredz** backend this cli spec uses, it's the `learning-loop`
+skill's standing instruction rather than a hard gate (`daemon.yaml`, which
+stays local, is where you see the mechanical rejection). There is no
+vendored server, no 150-line mechanism prompt, and no Bash shell-out —
+those were this demo's scaffolding before the capability shipped.
 
 The seed domain is **specialty coffee brewing & extraction science** —
 evergreen fundamentals plus fast-moving research, crisp verifiable numbers,
@@ -74,9 +78,12 @@ Two shapes:
   (`learning.study.on_heartbeat`) runs a bounded STUDY or REFLECT pass with
   no human in the loop (see [`HEARTBEAT.md`](HEARTBEAT.md)); it answers
   questions in Slack and turns 👍/👎 reactions into rating signal.
-  *v0.3.0 note:* the one-knob `thredz:` backend is emit-wired on the cli
-  shape only in this release, so the daemon learns into the **local** wiki
-  under `.crewhaus/wiki/` for now — same tools, same skill, local files.
+  *Wiki backend:* this daemon uses the **local** wiki (`memory.wiki`,
+  files under `.crewhaus/wiki/`) as a deliberate choice — same tools, same
+  skill, and it's where the mechanical `## Sources` gate is enforced. As
+  of CrewHaus 0.4.0 `thredz:` is emit-wired on the channel shape too, so
+  you can swap `memory.wiki` for `thredz: true` to share the cli's one
+  hosted brain.
 
 ## Prerequisites
 
@@ -116,8 +123,14 @@ That cold-start-to-competent arc *is* the demo.
 
 ## Run it (always-on daemon)
 
+`crewhaus run` is cli/browser-only and won't serve a channel daemon — use
+the supervised dev loop (fine here: this spec has no local-path MCP
+servers), or compile and run the bundle:
+
 ```bash
-bunx crewhaus run daemon.yaml         # listens on Slack; heartbeat studies/reflects
+crewhaus dev daemon.yaml              # supervised: recompiles + relaunches on change
+# — or, standalone:
+bunx crewhaus compile daemon.yaml -o dist && bun install --cwd dist && bun dist/daemon.ts
 ```
 
 A small status page comes up on `http://localhost:4173` (`gateway.ui`). For a
