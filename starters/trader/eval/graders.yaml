@@ -1,0 +1,42 @@
+# The competency exam's rubric. Trading answers are open-ended prose graded
+# against each question's gold answer, so a per-sample llm_judge is the
+# right grader. Numbers and effective dates are load-bearing in this domain
+# — a plausible answer with the wrong fee rate is a WRONG answer.
+#
+# The advisor curates this over time: `/reflect` tightens the rubric and
+# grows the exam as new rungs are mastered; every failed question is
+# auto-logged as a knowledge gap. This exam measures KNOWLEDGE confidence;
+# the paper broker's performance gate measures TRACK-RECORD confidence.
+# Alerts require both.
+graders:
+  - name: trading_correctness
+    type: llm_judge
+    rubric:
+      passing_score: 4
+      criteria:
+        - name: factual_correctness
+          description: >
+            Is the answer factually correct for US retail trading and
+            consistent with the gold expected_output? Judge substance, not
+            wording. Fee rates, thresholds, dates, and units must be right
+            — a fluent answer with a wrong number or stale rule is NOT
+            correct.
+          anchors:
+            "1": "Wrong or misleading; contradicts the gold answer or gets key numbers/rules wrong."
+            "2": "Partly relevant but a core fee, rule, or number is wrong or missing."
+            "3": "Roughly right but imprecise, or missing an important qualifier from the gold answer."
+            "4": "Correct and consistent with the gold answer, with the key numbers/rules right."
+            "5": "Correct, precise, and complete — matches the gold answer and adds no errors."
+        - name: risk_and_cost_awareness
+          description: >
+            Does the answer reason net of costs and respect risk
+            discipline the way a careful practitioner would — spreads and
+            fees acknowledged where relevant, expectancy over win rate,
+            no guaranteed-profit framing, honest about uncertainty and
+            simulation limits?
+          anchors:
+            "1": "Ignores costs/risk entirely or implies guaranteed profits."
+            "2": "Mentions costs or risk but reasons as if they were negligible."
+            "3": "Acknowledges costs/risk but applies them loosely or inconsistently."
+            "4": "Reasons net of costs with sound risk discipline."
+            "5": "Exemplary: quantifies cost drag and risk, and flags what remains uncertain."

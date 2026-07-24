@@ -21,6 +21,9 @@ starters/
 ├── federation/         cross-deployment role-call protocol (smoke is the demo)
 ├── harness-designer/   meta-agent that designs other harnesses from intent
 ├── optimize/           Pillar 2 active eval-driven prompt optimization
+├── expert/             self-teaching domain expert (Thredz wiki + curriculum + living exam)
+├── ghostwriter/        drafting double that bootstraps evals from your own edits
+├── trader/             self-improving trading research advisor (paper broker + confidence gate)
 │
 ├── channels/           four platform-specific channel adapter variants
 │   ├── discord/
@@ -52,11 +55,11 @@ bunx crewhaus run crewhaus.yaml         # or: bun install --cwd dist && bun dist
 <details><summary><strong>Contributors</strong> — in-tree dev loop (from the demos repo root)</summary>
 
 ```bash
-bun run list                 # see every available starter with its target
-bun run compile cli          # → starters/cli/dist/agent.ts
-bun run run cli              # runs the compiled agent (REPL)
-bun run compile channels/discord
-bun run compile showcases/procode
+bun run list                            # see every available starter with its target
+bun run compile starters/cli            # → starters/cli/dist/agent.ts
+bun run run starters/cli                # runs the compiled agent (REPL)
+bun run compile starters/channels/discord
+bun run compile starters/showcases/procode
 ```
 </details>
 

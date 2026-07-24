@@ -1,6 +1,6 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): copy-pasteable [starters](./starters/) covering every target shape, 62 task-oriented [walkthroughs](./walkthroughs/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): copy-pasteable [starters](./starters/) covering every target shape, 73 task-oriented [walkthroughs](./walkthroughs/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## Showcase demos
 
@@ -100,11 +100,13 @@ demos/
     crew/  graph/  rag/  research/  batch/  voice/  browser/
     managed/  eval/  federation/  harness-designer/  optimize/
     expert/                    self-teaching domain expert (Thredz wiki memory + curriculum + living exam; cli + channel daemon)
+    ghostwriter/               drafting double that bootstraps its evals from your own edits (recipe 72)
+    trader/                    self-improving trading research advisor — paper broker + confidence gate (recipe 73)
     channels/                  platform-specific channel adapter variants
       discord/  imessage/  telegram/  whatsapp/
     showcases/                 "full power" tier-1 harness imitations
       procode/  prochat/  multichat/
-  walkthroughs/                     62 task-oriented walkthrough docs
+  walkthroughs/                     73 task-oriented walkthrough docs
     01-cli-coding-agent.md
     …
     55-egress-fabric.md

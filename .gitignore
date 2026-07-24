@@ -23,4 +23,6 @@ dist/
 **/.crewhaus/audit/
 **/.crewhaus/graphs/
 **/.crewhaus/research/
+# starters/trader — the paper broker's runtime state (ledger + journal)
+**/.paper-broker/
 .claude/

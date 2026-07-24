@@ -1,0 +1,50 @@
+# ghostwriter — a drafting double that learns YOUR voice from YOUR edits.
+#
+# Day 0 this harness has NO dataset, NO graders, NO evals — that is the
+# point. Every draft you rate, and every edit you paste back as a
+# --correction, becomes training signal:
+#
+#   crewhaus rate      → 👍/👎/stars on a draft
+#   crewhaus feedback --correction "<what you actually sent>"
+#                      → the strongest signal there is (the gold answer)
+#   autoDistill: true  → ratings fold into a versioned dataset at teardown
+#   crewhaus flywheel run → gated, reviewable spec improvements, nightly
+#
+# Walkthrough: ../../walkthroughs/72-zero-to-improving.md walks the whole
+# arc — day 0 (scaffolded evals) to day 30 (the flywheel PRs itself better).
+#
+# Usage (from inside this directory):
+#   cp .env.example .env      # ANTHROPIC_API_KEY
+#   bunx crewhaus run crewhaus.yaml
+
+name: ghostwriter
+target: cli
+
+agent:
+  model: claude-sonnet-4-6
+  instructions: |
+    You draft replies, emails, and short posts in the operator's voice.
+    The voice samples in voice/ are the ground truth for tone — study them
+    before every draft: sentence length, warmth, formality, sign-off.
+    Output ONLY the draft (no preamble, no "Here's a draft"), ready to
+    paste. Match the length the situation calls for — short asks get short
+    replies. If the request is missing something you genuinely need (the
+    recipient, the goal), ask ONE question instead of guessing. Never
+    invent facts, commitments, or dates the operator didn't give you.
+
+tools: [read, glob, grep]
+
+# The zero-setup improvement contract: the harness collects ratings, and
+# accumulated ratings become a versioned `ghostwriter-ratings` registry
+# dataset at run teardown (autoDistill) — no JSONL is ever hand-written.
+feedback:
+  modality: stars
+  scale: { min: 1, max: 5 }
+  autoDistill: true
+
+permissions:
+  mode: default
+  rules:
+    - { type: alwaysAllow, pattern: Read }
+    - { type: alwaysAllow, pattern: Glob }
+    - { type: alwaysAllow, pattern: Grep }

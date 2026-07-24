@@ -238,7 +238,10 @@ to an exam even when nobody's asking.
 only in this release — the channel shape carries the block but keeps local
 files, so the daemon learns into the **local** wiki under `.crewhaus/wiki/`
 for now (same tools, same skill, local files). When channel thredz wiring
-lands, the two shapes share one hosted brain.
+lands, the two shapes share one hosted brain. *(That wiring landed in
+0.4.0 — a channel daemon can now use `thredz:` directly; see
+[Recipe 73](73-trading-advisor.md) for a daemon built that way. This
+starter's daemon spec still shows the local-wiki configuration.)*
 
 ## Run it
 
