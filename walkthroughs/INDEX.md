@@ -1,11 +1,12 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 71 recipes are **complete** (56 through the v0.1 line, recipes
+> All 73 recipes are **complete** (56 through the v0.1 line, recipes
 > 56–61 for the v0.2.0 automation release, recipe 62 for response
 > ratings, recipe 63 for the session-knowledge commands, recipe 64 for
-> the self-teaching expert, and recipes 65–71 for the v0.4.0 loop
-> contract). Every recipe is
+> the self-teaching expert, recipes 65–71 for the v0.4.0 loop
+> contract, and recipes 72–73 for the zero-to-improving bootstrap
+> narratives). Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`.
@@ -50,7 +51,7 @@ for `run`).
 
 ## Pick a recipe — diagnostic decision tree
 
-The 71 recipes cover a lot of ground. Most readers don't need to scan
+The 73 recipes cover a lot of ground. Most readers don't need to scan
 the table of contents; they need to find the shape that matches the
 problem they brought. Walk this tree from the top:
 
@@ -108,6 +109,15 @@ problem they brought. Walk this tree from the top:
    [Recipe 62 — Response Ratings](62-response-ratings.md). `crewhaus
    rate` / web-UI thumbs / Slack 👍👎 become the dataset and grader
    that Recipe 42's loop consumes (`optimize --ratings`).
+7.6. **Brand-new project — no dataset, no graders, and eval is a word
+   you just met?** → [Recipe 72 — Zero to
+   self-improving](72-zero-to-improving.md), the day-0-to-day-30
+   narrative that teaches the vocabulary while your own usage builds
+   the assets. **Domain with an objective, delayed outcome (P&L,
+   forecasts)?** → [Recipe 73 — The trading
+   advisor](73-trading-advisor.md): the grader lives in code and the
+   market does the labeling (skim 72's five-sentence vocabulary first
+   if the words are new).
 8. **Are you running long-horizon autonomous work (research, batch
    jobs)?** → [Recipe 07 — Autonomous Research](07-autonomous-research.md)
    or [Recipe 08 — Batch Worker](08-batch-worker.md). Both lean on
@@ -350,6 +360,23 @@ and [AGENT-LOOPS-PLAN.md](https://github.com/crewhaus/factory/blob/main/AGENT-LO
 | 70 | [MCP server + A2A](70-mcp-a2a.md)                               | Batch G — `serve --mcp` / `expose:` / A2A federation / `export claude-plugin` | complete |
 | 71 | [Building loops visually in the Studio](71-studio-builder.md)   | Studio Loop Builder — the `/builder` page | complete |
 
+## Part N — Zero-to-improving projects (bootstrap narratives)
+
+Recipes 56–62 document the self-improvement *instruments*; these two are
+the **first-project narratives** that play them in order, written for a
+reader who has never authored a dataset or a grader and never will:
+recipe 72 bootstraps every eval asset from **human feedback** (your own
+edits are the labels), and recipe 73 from an **objective, delayed
+outcome** (a paper-trading journal scored, after real fees and
+constraints, by the market itself — with the grader enforced in code).
+Both start from an empty project and end always-on and improving
+nightly behind the standard gate.
+
+| #  | Recipe                                                          | Ground truth                           | Status   |
+| -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
+| 72 | [Zero to self-improving: your usage writes your evals](72-zero-to-improving.md) | human — ratings + corrections ([`starters/ghostwriter`](../starters/ghostwriter)) | complete |
+| 73 | [The trading advisor: when the market is your grader](73-trading-advisor.md) | objective — P&L after costs, gate in code ([`starters/trader`](../starters/trader)) | complete |
+
 ---
 
 ## Quick paths (for readers who already know the shape they want)
@@ -368,6 +395,7 @@ a known scenario:
 - **Blockchain integration.** 43 → 44 → 46 → 45 → 47.
 - **Active optimization (DSPy-inspired).** 12 → 34 → 42 → 52.
 - **Closing the loop from user ratings.** 62 → 12 → 42.
+- **Brand-new project, zero eval knowledge.** 72 → 73 → 56.
 - **A harness that improves itself (0.2.0 automation).** 56 → 57 → 61 → 58.
 - **Bounding & governing the loop (0.4.0 loop contract).** 65 → 66 → 67 → 68.
 - **Making a loop consumable / deployable (0.4.0).** 69 → 70 → 71.
@@ -420,8 +448,8 @@ thing to check when asking "is module X covered anywhere?".
 | **R11** | Workflow / Graph / Pipeline Engines | 02 · 05 · 06 |
 | **R12** | RAG / Retrieval / Knowledge | 06 · 07 |
 | **R13** | Channels & Messaging | 00 · 03 · 37–40 · 51 |
-| **R14** | Scheduling & Background | 08 · 19 · 51 |
-| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 · 56 |
+| **R14** | Scheduling & Background | 08 · 19 · 51 · 73 |
+| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 · 56 · 72 |
 | **R16** | UI / TUI / Voice / Media | 09 · 11 · 35 |
 | **R17** | Infrastructure & Cross-Cutting | GS · 11 · 20 · 22 |
 | **R18** | Specialized / Advanced | 10 · 30 · 54 |
@@ -470,8 +498,8 @@ catalog name:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 72            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62 + session-knowledge 63 + self-teaching expert 64 + 0.4.0 loop contract 65-71) |
-| 72            | Walkthrough complete    |
+| 74            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62 + session-knowledge 63 + self-teaching expert 64 + 0.4.0 loop contract 65-71 + zero-to-improving narratives 72-73) |
+| 74            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a

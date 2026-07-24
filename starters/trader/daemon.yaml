@@ -1,0 +1,198 @@
+# trader-advisor (daemon) — the SAME advisor as crewhaus.yaml, compiled to
+# an always-on Slack daemon. Three temporal surfaces divide the work:
+#
+#   heartbeat (every 6h)      — the built-in study rotation (gaps first,
+#                               ~3 STUDY : 1 REFLECT) + the ops tick:
+#                               mark-to-market, honor stops, refresh the
+#                               dashboard article + metric goals.
+#   schedule (cron, ET)       — the market scan: every 30 min during US
+#                               equity hours, check the watchlist, paper
+#                               trade written playbooks, and — ONLY when
+#                               the broker's confidence gate passes — send
+#                               the operator a trade alert.
+#   channel (Slack)           — answers questions, receives the operator's
+#                               "filled 100 @ 187.42" replies, and turns
+#                               👍/👎 reactions on its messages into
+#                               rating signal.
+#
+# Since 0.4.0 the `thredz:` backend is emit-wired on the channel shape, so
+# the daemon and the interactive cli share ONE hosted brain.
+#
+# Run it (from inside this directory):
+#   bunx crewhaus compile daemon.yaml -o dist
+#   bun install --cwd dist
+#   bun dist/daemon.ts                  # needs SLACK_* + a public URL for events
+# (`crewhaus run` never serves channel daemons — it only drives the cli and
+# browser shapes. And note `crewhaus dev` runs the bundle from a temp dir,
+# which breaks this spec's RELATIVE mcp path "mcp/paper-broker.ts" — run the
+# compiled daemon from this directory as above.)
+
+name: trader-advisor-daemon
+target: channel
+
+thredz: { api_key: $THREDZ_API_KEY, goals: true }
+
+learning:
+  domain: systematic retail trading of mainstream US markets (equities/ETFs and crypto) under realistic costs and constraints
+  curriculum: curriculum.md
+  sources:
+    ["sec.gov", "finra.org", "cmegroup.com", "*.edu", "ssrn.com", "alphaarchitect.com", "quantocracy.com", "morningstar.com"]
+  exam: { dataset: eval/dataset.jsonl, graders: eval/graders.yaml }
+  # study.on_heartbeat defaults ON: heartbeat ticks double as study/reflect
+  # ticks per the built-in rotation. The cron `schedule:` below is NOT
+  # study — it's the market scan; the rotation preamble applies only to
+  # heartbeat ticks.
+
+agent:
+  model: claude-sonnet-4-6
+  max_tokens: 16384
+  model_fallbacks: [claude-haiku-4-5-20251001]
+  instructions: |
+    You are a trading research advisor living in Slack. You NEVER execute
+    real trades — you research, paper-trade through the broker tools, and
+    (only once broker__performance reports alertsUnlocked: true) send the
+    operator trade alerts they may choose to act on. Not financial advice;
+    say so when asked.
+
+    Costs first, process over outcome, the broker is the referee, trade
+    only written wiki playbooks — the full discipline lives in the
+    learning skill and your wiki; recall before you assert.
+
+    ALERT PROTOCOL (only when the confidence gate passes):
+    - One alert = one Slack message: playbook, thesis (2-3 sentences),
+      entry, stop, target, size under the 1% risk rail, estimated cost
+      (spread+fees), and this playbook's journal stats (n, expectancy,
+      win rate). End with a broker link for the operator's convenience,
+      e.g. https://robinhood.com/stocks/AAPL or
+      https://client.schwab.com/app/trade/tom — and the line:
+      "Paper-traded as <trade-id>. If you take it, reply: filled <qty> @ <price>".
+    - Mirror every alert with a paper trade so the journal scores it
+      even when the operator passes.
+    OPERATOR REPLIES: "filled ..." / "sold ..." / "out @ ..." →
+    broker__record_live_fill (with the mirrored paper_trade_id), then a
+    one-line acknowledgement. An outcome report ("that one stopped out")
+    is feedback — thank them and log what you learn to the wiki.
+    The alert destination (SendMessage routing key) lives in the wiki
+    article `ops-config`; if it's missing, ask the operator to say
+    "alerts here: slack:<teamId>:<channelId>" and write it.
+  sub_agents:
+    researcher:
+      description: |
+        Read-only market researcher. ONE narrow question, allowlisted
+        sources, 2-4 verbatim cited snippets, no synthesis. Max 180 words.
+      instructions: |
+        You research ONE narrow question against high-quality sources.
+        Prefer primary sources (SEC/FINRA/exchange fee schedules, filings,
+        peer-reviewed and SSRN papers). Return 2-4 SHORT verbatim
+        snippets, each with its source, and one line on time-tested vs
+        frontier. Do NOT synthesise. Under 180 words.
+      tools: [webSearch, webFetch, read]
+      model: claude-haiku-4-5-20251001
+      permissions:
+        allow: [WebSearch, WebFetch, Read]
+        deny: []
+  tools: [read, edit, webSearch, webFetch, todoWrite, sendMessage]
+
+mcp_servers:
+  broker:
+    transport: stdio
+    command: bun
+    args: ["mcp/paper-broker.ts"]
+
+channels:
+  slack:
+    botToken: $SLACK_BOT_TOKEN
+    signingSecret: $SLACK_SIGNING_SECRET
+# `channel` (not `thread`): reactions only become ratings under channel/user
+# session keys, and the alerts channel works best as one continuous session.
+routing:
+  sessionKey: channel
+
+# Unattended study/reflect (rotation auto-prepended) + the ops tick.
+heartbeat:
+  every: 6h
+  instructions: |
+    After the study/reflect pass the rotation selects, run the OPS TICK:
+    1. broker__mark_to_market — if any stop plan is breached, honor it
+       (broker__paper_sell, reason "stop hit") and journal the lesson.
+    2. broker__performance — then tick the metric goals: trader-equity,
+       trader-closed-trades, trader-win-rate-pct, trader-expectancy-cents,
+       trader-drawdown-pct, trader-fees-usd. If a goal is missing, create
+       it with goal_write, tags ["trader-metric", "<its-name>"] (the
+       Thredz dashboard cards address goals BY TAG) and no targetValue;
+       then goal_update its currentValue. Also rewrite the wiki article
+       `dashboard` (slug `dashboard`): equity &
+       drawdown, per-playbook table, confidence-gate status, open
+       positions, last 5 closed trades, sim-vs-real drift note, what you
+       studied this tick. Cite the broker journal under ## Sources.
+    3. If ≥5 new closed trades since the last export: broker__export_dataset.
+    Log a one-line result; if there is genuinely nothing to do, log
+    `heartbeat: idle`.
+
+# The market scan — US equity regular hours, every 30 min (ET). Crypto
+# playbooks may also act here; the broker rejects out-of-hours equity
+# fills anyway (defense in depth).
+schedule:
+  kind: cron
+  cron: "*/30 9-15 * * 1-5"
+  timezone: America/New_York
+  instructions: |
+    Market scan: wiki_get `watchlist` and `ops-config`; quote the symbols;
+    honor breached stops first. For each written playbook whose setup
+    triggers: paper trade it (thesis, stop, size under the rail). Then
+    check broker__performance — ONLY if confidenceGate.alertsUnlocked is
+    true AND this playbook's own stats are healthy, send ONE alert per the
+    protocol via SendMessage to the ops-config destination. Never alert
+    from an unwritten playbook or a failed gate. Keep the scan under ten
+    minutes of work; log one line.
+
+# 👍/👎 on the daemon's messages become rating signal. NOTE: autoDistill is
+# a cli-teardown feature — a daemon never distills; run
+#   crewhaus distill --all-sessions --register trader-advisor-ratings
+# from this directory on a schedule instead (see the walkthrough).
+feedback:
+  channelReactions: true
+
+# Health endpoint + minimal status page for the daemon process.
+gateway:
+  port: 4173
+  ui: true
+
+permissions:
+  mode: default
+  rules:
+    - { type: alwaysAllow, pattern: Read }
+    - { type: alwaysAllow, pattern: WebSearch }
+    - { type: alwaysAllow, pattern: WebFetch }
+    - { type: alwaysAllow, pattern: TodoWrite }
+    - { type: alwaysAllow, pattern: SendMessage } # proactive alerts (destructive by default — this rule is load-bearing)
+    - { type: alwaysAllow, pattern: wiki_recall }
+    - { type: alwaysAllow, pattern: wiki_semantic_search }
+    - { type: alwaysAllow, pattern: wiki_search }
+    - { type: alwaysAllow, pattern: wiki_get }
+    - { type: alwaysAllow, pattern: wiki_list }
+    - { type: alwaysAllow, pattern: wiki_related }
+    - { type: alwaysAllow, pattern: wiki_stats }
+    - { type: alwaysAllow, pattern: wiki_write }
+    - { type: alwaysAllow, pattern: wiki_set_signals }
+    - { type: alwaysAllow, pattern: log_knowledge_gap }
+    - { type: alwaysAllow, pattern: task_list }
+    # (no run_exam rule: the in-process exam runner is cli-shape wiring in
+    # this release — sit /exam in crewhaus.yaml, the interactive twin)
+    - { type: alwaysAllow, pattern: goal_list }
+    - { type: alwaysAllow, pattern: goal_get }
+    - { type: alwaysAllow, pattern: goal_write }
+    - { type: alwaysAllow, pattern: goal_update }
+    - { type: alwaysAllow, pattern: broker__quote }
+    - { type: alwaysAllow, pattern: broker__account }
+    - { type: alwaysAllow, pattern: broker__paper_buy }
+    - { type: alwaysAllow, pattern: broker__paper_sell }
+    - { type: alwaysAllow, pattern: broker__mark_to_market }
+    - { type: alwaysAllow, pattern: broker__journal_read }
+    - { type: alwaysAllow, pattern: broker__performance }
+    - { type: alwaysAllow, pattern: broker__export_dataset }
+    - { type: alwaysAllow, pattern: broker__record_live_fill }
+    - { type: alwaysAllow, pattern: broker__live_book }
+    - { type: alwaysAllow, pattern: Edit(curriculum.md) }
+    - { type: alwaysAllow, pattern: Edit(eval/**) }
+    - { type: alwaysAllow, pattern: Edit(sources/**) }
