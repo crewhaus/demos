@@ -1,0 +1,57 @@
+{
+  "title": "hello-channel-imessage — a daemon that owns your Messages app (target: channel)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“Watches the local chat.db, runs one model turn per message, replies via AppleScript.”", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the daemon beats — three levels up from a channel starter.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec: an agent, a channel, a routing key",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“Two lines: what it's called, and the long-running daemon spine to compile.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 2], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent", "cue": "“Reply concisely (1-2 sentences)” — the instructions are written for a phone screen.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [3, 8] },
+        { "id": "spec-tools", "label": "Give it one tool", "cue": "“You may use the Read filesystem tool to ground answers in repo state.” One tool, read-only.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [9, 10] },
+        { "id": "spec-channel", "label": "Wire the channel", "cue": "Two words — imessage: {} — and no tokens, no app to register, no webhook URL to hand a platform. The platform is this Mac.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [11, 12] },
+        { "id": "spec-routing", "label": "Key sessions by user", "cue": "sessionKey: user — one continuous conversation per contact, not one per message.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [13, 14] },
+        { "id": "spec-permissions", "label": "Scope the permissions", "cue": "Read is pre-approved, so an unattended daemon never parks a turn waiting for a human.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [15, 18] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips, plus a scope audit — nothing emitted.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The spec is sugar — this JSON is what the compiler sees: the agent, the channel, the routing.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target channel (channels.imessage, routing.sessionKey user)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, with no key in the room.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (4 anchors); install ok; boot gated (boot reached its spec env refs gate). --check also runs `bun install --cwd live/dist`, which the poll beat below reads from.", "produces": ["live/dist/daemon.ts", "live/dist/gateway.ts", "live/dist/session-router.ts"] } },
+        { "id": "prove-open-daemon", "label": "Open the emitted daemon", "cue": "Eighteen lines of YAML became five files: daemon, gateway, session router, agent, README.", "action": "open", "file": "live/dist/daemon.ts" },
+        { "id": "prove-sessionkey", "label": "Find the routing key in the bundle", "cue": "“sessionKey: user” lowered to a sha256 of adapter:workspace:user — stable across restarts.", "action": "command", "command": "grep -n \"routingKey\\|deriveSessionId\" live/dist/session-router.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "5 matching lines — deriveSessionId hashes the routing key into a stable sess_<16hex>" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-reject", "label": "Ask run to run it", "cue": "“run is the cli/browser REPL.” A channel is a daemon — every other shape ships as a bundle.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `crewhaus run supports target: cli or browser (got \"channel\")`" } },
+        { "id": "run-gate", "label": "Boot it with the key taken away", "cue": "It names the credential it wants before it opens a socket, then exits 2. (env -u scrubs what Setup sourced, so the gate shows on camera either way.)", "action": "command", "command": "env -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY bun live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 2, "note": "designed refusal — `[daemon] missing required env vars: ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY`; the emitted gate is the first statement in daemon.ts, above any adapter construction" } },
+        { "id": "run-optout", "label": "Give it a key but not consent", "cue": "The kill switch. The adapter refuses to even construct until you opt in to owning this Mac's logged-in iMessage account — exit 1, no socket, no chat.db.", "action": "command", "command": "env -u CREWHAUS_IMESSAGE_HOST_ENABLED ANTHROPIC_API_KEY=sk-ant-demo bun live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 1, "note": "designed refusal — `IMessageAdapterError: iMessage adapter requires CREWHAUS_IMESSAGE_HOST_ENABLED=1 (opt-in to host's logged-in iMessage)`. The dummy key only clears the env-name gate above; nothing reaches a provider. Off macOS the same beat exits 1 on the platform check instead. Note the throw is at daemon.ts module scope, outside main().catch(), so it prints a raw Bun trace rather than a formatted failure report." } },
+        { "id": "run-daemon", "label": "Boot the daemon for real", "cue": "[needs-key] Opting in is a whole extra env var, on purpose. It serves the gateway on PORT — 3000 by default. Backgrounded, so this same terminal can keep going.", "action": "command", "command": "CREWHAUS_IMESSAGE_HOST_ENABLED=1 bun live/dist/daemon.ts &", "verify": { "mode": "needs-key", "note": "needs Anthropic credentials plus the host opt-in; prints the janitor report then `[daemon] listening on http://localhost:3000` and stays up. Full Disk Access (chat.db) and Automation (AppleScript send) are only asked for by an actual poll/send — the daemon's boot path touches neither, so macOS does not prompt here. Deps were installed by the --check beat. Re-take housekeeping: `kill %1` (or a fresh terminal) before a second take, or :3000 is still held." } },
+        { "id": "run-poll", "label": "Ask why no conversation appeared", "cue": "Because nothing polled. The daemon registers the adapter and serves the gateway; draining chat.db is a call you own, on whatever cadence you want.", "action": "command", "command": "grep -n \"poll\" live/dist/node_modules/@crewhaus/channel-adapter-imessage/dist/index.d.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "4 matching lines, in the adapter's own words: \"the adapter exposes `pollNewMessages()` for the host to call; the generated channel daemon does NOT run a poll loop, so the caller is responsible for driving polling on whatever schedule it likes.\" Verified against the emitted bundle: `grep -n poll live/dist/daemon.ts` matches nothing, so .crewhaus/sessions stays empty no matter who texts this Mac — the earlier `ls .crewhaus/sessions` beat promised a payoff the bundle cannot deliver and was replaced by this one." } }
+      ]
+    },
+    {
+      "title": "One more thing · no app to register",
+      "beats": [
+        { "id": "extra-provision", "label": "Try to provision a platform app", "cue": "Slack, Telegram and Discord need an app registered. iMessage's platform is already on the desk.", "action": "command", "command": "crewhaus channel provision live/crewhaus.yaml --base-url https://example.com --dry-run", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `the spec's channels block configures none of: slack, telegram, discord (imessage is configured but not supported by this command)`" } },
+        { "id": "extra-adapter", "label": "Find the adapter you never wired", "cue": "An import, a constructor, one registration line, one gateway entry — the rest of the spine is shared.", "action": "command", "command": "grep -n \"imessage\" live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "6 matching lines: the @crewhaus/channel-adapter-imessage import, createIMessageAdapter, registerChannelAdapter, and the gateway's adapter map" } }
+      ]
+    }
+  ]
+}

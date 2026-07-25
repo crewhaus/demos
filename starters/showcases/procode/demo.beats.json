@@ -1,0 +1,81 @@
+{
+  "title": "hello-procode — a pro-grade terminal coding companion (target: cli)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 6
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“A full coding agent — exploration, edits, tests, a fleet of sub-agents — from one YAML.”", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beats.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec, block by block",
+      "beats": [
+        { "id": "spec-header", "label": "The header: what it is, what to ask it", "cue": "The header is the pitch — explore, edit, test, fan out a fleet, loop until it's done.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 18], "replace": true },
+        { "id": "spec-shape", "label": "Name it, pick the shape", "cue": "Two lines: what it's called, and which runtime spine to compile.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [19, 21] },
+        { "id": "spec-agent", "label": "Model, depth, failover", "cue": "Opus, a 16384-token per-turn budget (the runtime default is 8192), and a fallback chain.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [22, 33] },
+        { "id": "spec-modes", "label": "Three operating postures", "cue": "STANDARD, ULTRACODE, GOAL — sticky for the session, and the user sets them, not the model.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [34, 54] },
+        { "id": "spec-method", "label": "The Method, every turn", "cue": "UNDERSTAND → PLAN → EXECUTE → VERIFY. “Never edit a file you have not read.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [55, 93] },
+        { "id": "spec-workflows", "label": "Workflows: the fan-out rule", "cue": "One batched turn. Read-only workers run concurrently; anything that executes or writes serializes.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [94, 123] },
+        { "id": "spec-goal", "label": "Goal mode", "cue": "“/loop” writes the completion condition to GOAL.md — on disk, so the goal outlives the context.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [124, 141] },
+        { "id": "spec-longrun", "label": "Work that runs long", "cue": "Bash defaults to 30 seconds; background processes, --continue to resume, --prompt for one shot.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [142, 161] },
+        { "id": "spec-memory-rules", "label": "Durable memory, and the rules", "cue": "Remember what the code doesn't say. Never force-push, reset --hard, rm -rf, or sudo.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [162, 184] },
+        { "id": "spec-fleet-map", "label": "The first two workers", "cue": "A read-only codebase mapper, and a test runner allow-listed to test commands only.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [185, 247] },
+        { "id": "spec-fleet-orchestrator", "label": "The orchestrator", "cue": "The only worker holding Task: decompose, fan out, cross-check, synthesize — it never edits.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [248, 285] },
+        { "id": "spec-fleet-review", "label": "reviewer + security-auditor", "cue": "Read-only, on Haiku, and the only shell they get is read-only git — `git diff` and `git show` for both, plus `git log` for the reviewer.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [286, 331] },
+        { "id": "spec-fleet-debug-docs", "label": "debugger + docs-writer", "cue": "The debugger names a root cause and does NOT fix; the docs-writer may write Markdown, nothing else.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [332, 381] },
+        { "id": "spec-fleet-verifier", "label": "The independent verifier", "cue": "“You did NOT do the work — judge it cold.” The worker never grades its own paper.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [382, 421] },
+        { "id": "spec-tools", "label": "Sixteen tools", "cue": "Files and shell, background-process polling, and AST blast-radius analysis before a refactor.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [422, 439] },
+        { "id": "spec-memory-feedback", "label": "Memory and the feedback loop", "cue": "memory: remembers across sessions; feedback: turns your thumbs-up into a training dataset.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [440, 461] },
+        { "id": "spec-perms-allow", "label": "The always-on grants", "cue": "Reads, edits, web, todos, codegraph, memory — friction-free, because coding needs them.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [462, 499] },
+        { "id": "spec-perms-bash", "label": "Fence the shell", "cue": "A named allow-list for the everyday commands, then one alwaysAsk that catches every other Bash.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [500, 533] },
+        { "id": "spec-perms-deny", "label": "The hard denials", "cue": "Six patterns denied outright. Deny beats allow — order in the list doesn't matter.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [534, 541] },
+        { "id": "spec-compaction", "label": "Compact on a cheap model", "cue": "At 85% of the context window the runtime snips and summarizes — on Haiku, not on Opus.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [542, 549] },
+        { "id": "spec-banner", "label": "The cold-start banner", "cue": "Four rotating taglines, printed once when the *compiled bundle* boots — codegen-only, so `crewhaus run` never shows them. “Fan out. Cross-check. Verify. Done.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [550, 559] },
+        { "id": "spec-optional", "label": "The commented-out extras", "cue": "Left off on purpose: a hard spend cap, the two-tier turn router, and an MCP server.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [560, 588] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“lint: clean — no findings.” Parse, the IR passes, and the scope audit — nothing emitted yet.", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-tools", "label": "Audit its own tool grants", "cue": "Keyword-matches the builtins against the instructions: implied-but-missing on top, possible over-grants below. Read the top line as a prompt, not a verdict — `imageGenerate` matched the rule that tells this agent to REFUSE image generation.", "action": "command", "command": "crewhaus tools suggest live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "keyword matcher over agent.instructions — reports 17 of the 22 builtins (1 implied-but-missing, 10 present, 6 possible over-grants); the imageGenerate hit is a known false positive off crewhaus.yaml's refusal rule" } },
+        { "id": "prove-ir", "label": "Lower the spec to IR", "cue": "The spec is sugar; this JSON is what the compiler actually sees. Straight to a file — no pager, so the exit code is the compiler's.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "writes the lowered IR to live/ir.json; the next beat opens it", "produces": ["live/ir.json"] } },
+        { "id": "prove-open-ir", "label": "Open the lowered IR", "cue": "The instructions land as one inlined string; scroll to the bottom for the lowered blocks — compaction, feedback, memory, continuity, banner.", "action": "open", "file": "live/ir.json" },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "--check asserts the shape, installs the deps, and boots it: GREEN with no key.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the credentials gate", "produces": ["live/dist/agent.ts", "live/dist/package.json", "live/dist/bun.lock"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "The whole fleet and every permission rule, compiled into one TypeScript program you own.", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-repl", "label": "Launch the coding REPL", "cue": "[needs-key] Compiles in memory and opens in whatever directory you're standing in — here, the starter's own harness.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs Anthropic credentials. Its workspace is the demo terminal's cwd (this starter), so the prompts below are scoped to files that live here." } },
+        { "id": "run-explore", "label": "Ask it to map the harness", "cue": "[needs-key] It dispatches code-explorer in its own context instead of grepping turn after turn.", "action": "input", "text": "map .crewhaus/ and crewhaus.yaml — what slash commands, skills and sub-agents does this harness ship? 5 bullets", "verify": { "mode": "needs-key", "note": "scoped to .crewhaus/ + crewhaus.yaml deliberately: the tool workspace is the terminal's cwd, and by this point live/dist/node_modules has put ~13k vendored files under it — an unscoped \"explore this repo\" reads them" } },
+        { "id": "run-ultracode", "label": "Flip to ULTRACODE and audit", "cue": "[needs-key] Exhaustive mode — security-auditor and reviewer fan out in one batched turn.", "action": "input", "text": "/ultracode then audit this harness's own permission rules — the permissions block in crewhaus.yaml and .crewhaus/settings.json — for anything a coding agent could talk its way past", "verify": { "mode": "needs-key", "note": "both named files exist in this starter" } },
+        { "id": "run-workflow", "label": "Run a one-off workflow", "cue": "[needs-key] Decompose, dispatch the fleet, cross-check the returns, synthesize one ranked report.", "action": "input", "text": "/workflow cross-check .crewhaus/ against crewhaus.yaml — which commands, skills and sub-agents does the spec never mention, and which does it mention with no file on disk?", "verify": { "mode": "needs-key", "note": "a real answer lives here: .crewhaus/sub-agents/perf-reviewer.md is a worker the spec never names — the 'One more thing' beat opens it" } },
+        { "id": "run-exit", "label": "Exit — and rate the session", "cue": "[needs-key] The feedback: block turns the exit into a one-keystroke [g]ood/[b]ad rating.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } },
+        { "id": "run-continue", "label": "Reopen the same conversation", "cue": "[needs-key] --continue resumes the most recent session for this spec; autoRecall reloads memories.", "action": "command", "command": "crewhaus run live/crewhaus.yaml --continue", "verify": { "mode": "needs-key", "note": "resumes the session the previous beats created; needs Anthropic credentials" } },
+        { "id": "run-continue-exit", "label": "Exit", "cue": "[needs-key] Back to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } },
+        { "id": "run-bundle", "label": "Boot the compiled bundle instead", "cue": "[needs-key] Same fleet, no CLI in the loop — and this is the one place the banner you typed actually prints.", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "cli.banner is codegen-only — the emitted bundle prints it at boot; `crewhaus run` never does. Deps were installed by prove-check's --check." } },
+        { "id": "run-bundle-exit", "label": "Exit", "cue": "[needs-key] Back to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · nothing here needed a recompile",
+      "beats": [
+        { "id": "extra-command", "label": "A slash command is a Markdown file", "cue": "Ten of them ship in .crewhaus/commands/ — drop in your own and it appears at startup.", "action": "open", "file": ".crewhaus/commands/ultracode.md" },
+        { "id": "extra-worker", "label": "A fleet worker the spec never mentions", "cue": "Resolved from .crewhaus/sub-agents/ at Task time — read-only, so it's parallel-eligible.", "action": "open", "file": ".crewhaus/sub-agents/perf-reviewer.md" },
+        { "id": "extra-hook", "label": "The hook behind the rules", "cue": "A pre-tool hook in its own process, backstopping the deny rules the model can't talk its way past.", "action": "open", "file": ".crewhaus/settings.json" },
+        { "id": "extra-plugin", "label": "Export the fleet as a Claude Code plugin", "cue": "The same spec, emitted as a plugin dir — one agent file per sub-agent, plus a skill.", "action": "command", "command": "crewhaus export claude-plugin live/crewhaus.yaml --out live/plugin", "verify": { "mode": "offline", "expectedExit": 0, "note": "exported hello-procode (cli) — 11 files, smoke check ✓", "produces": ["live/plugin/.claude-plugin/plugin.json", "live/plugin/agents/orchestrator.md"] } },
+        { "id": "extra-open-plugin", "label": "Open the exported orchestrator", "cue": "Your orchestrator, now a Claude Code sub-agent. One spec, more than one runtime.", "action": "open", "file": "live/plugin/agents/orchestrator.md" }
+      ]
+    }
+  ]
+}

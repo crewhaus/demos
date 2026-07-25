@@ -1,0 +1,45 @@
+{
+  "title": "hello-federation — the smoke is the demo (the one starter with no crewhaus.yaml)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“This directory is intentionally light.” The only starter with no spec — and that's the point.", "action": "open", "file": "README.md" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — for symmetry with every other drive. Nothing in this one actually needs a key.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env. Nothing below needs a key — the smoke is hermetic and `federation discover` is a deliberate connection failure." } }
+      ]
+    },
+    {
+      "title": "Beat 1 · There is no spec to type",
+      "beats": [
+        { "id": "spec-none", "label": "Open the smoke instead", "cue": "“No crewhaus.yaml to compile — the runtime lives in the deployments.” Six probes stand in.", "action": "open", "file": "../../smoke/section-34-federation-smoke/smoke.ts" },
+        { "id": "spec-packages", "label": "Find the three packages", "cue": "Protocol, discovery, router — federation is composed in code. There is no spec.federation block.", "action": "command", "command": "grep -n \"@crewhaus/federation\" ../../smoke/section-34-federation-smoke/smoke.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "3 matching imports — @crewhaus/federation-discovery, -protocol, -router" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · Run the six probes",
+      "beats": [
+        { "id": "prove-smoke", "label": "Run the federation smoke", "cue": "“No docker required, no live cross-host call.” Fourteen checks, end to end, all green.", "action": "command", "command": "bun run smoke:section-34", "verify": { "mode": "offline", "expectedExit": 0, "note": "14 ✓ checks across probes A–E; probe F is skipped without CREWHAUS_FEDERATION_LIVE=1. Contributor path — needs the sibling ../factory checkout: demos declares no @crewhaus dependency, so the three federation imports resolve through tsconfig.json's `\"@crewhaus/*\": [\"../factory/packages/*\"]`, and smoke.ts:105 readFileSync's probe C's mTLS fixtures straight out of ../factory/packages/federation-protocol/src. Without that sibling the beat exits 1. `bun run smoke:section-34` resolves from the root package.json, so it runs fine from this starter dir." } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Fail closed",
+      "beats": [
+        { "id": "run-discover", "label": "Ask the CLI to find a peer", "cue": "Discovery is the CLI's one federation verb — point it at a peer that isn't there and it fails closed.", "action": "command", "command": "crewhaus federation discover deployment-b.example --format json", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — deployment-b.example is the smoke's fixture peer, not a real host: `federation discover: peer discovery failed`" } },
+        { "id": "run-taxonomy", "label": "Read the error taxonomy", "cue": "ECONNREFUSED retries, a 503 retries — but a cert-pin mismatch tombstones the peer.", "action": "command", "command": "grep -n \"classifyRouterError\" ../../smoke/section-34-federation-smoke/smoke.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "probe D — 4 assertions over the retry / tombstone / fail taxonomy, plus the import" } }
+      ]
+    },
+    {
+      "title": "One more thing · how production wires peers",
+      "beats": [
+        { "id": "extra-wiring", "label": "Show both sides of a federated call", "cue": "The caller builds a router and calls; the callee decodes the envelope and runs the named role.", "action": "command", "command": "grep -n \"createFederationRouter\\|router.call\\|decodeFederationEnvelope\" ../../smoke/section-34-federation-smoke/smoke.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "8 matching lines — the exact three calls the README's \"How production wires peers\" names" } },
+        { "id": "extra-walkthrough", "label": "Open walkthrough 27", "cue": "The envelope shape, mTLS pinning, traceparent propagation, error classification — in full.", "action": "open", "file": "../../walkthroughs/27-federation.md" }
+      ]
+    }
+  ]
+}

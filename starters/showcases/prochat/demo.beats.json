@@ -1,0 +1,71 @@
+{
+  "title": "hello-prochat — a pro-grade multi-modal chat assistant (target: cli)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“Web search, page fetch, image reading, image generation, a sandboxed code interpreter.”", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beats.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } },
+        { "id": "setup-sandbox", "label": "Pre-flight the code interpreter", "cue": "Python, JavaScript and Shell each run in a container — this probes all three images. A ✗ here means start Docker (or Podman) before you roll, not mid-take.", "action": "command", "command": "crewhaus sandbox doctor --probe", "verify": { "mode": "offline", "expectedExit": 0, "note": "probes python:3.13-slim / node:22-alpine / alpine:3.19 through the configured backend (CREWHAUS_SANDBOX, default docker). Exit 0 either way — a missing backend shows as ✗ with the reason, which is the point of the beat: the run-math beat needs these green" } },
+        { "id": "setup-image-provider", "label": "Pick the image-generation fallback", "cue": "OPENAI_API_KEY wins whenever it's set. This line is what makes /imagine degrade to a placeholder instead of a hard error when it isn't.", "action": "command", "command": "export CREWHAUS_IMAGE_PROVIDER=mock", "verify": { "mode": "offline", "expectedExit": 0, "note": "tool-image-generation resolves OPENAI_API_KEY → openai, else CREWHAUS_IMAGE_PROVIDER=mock → mock, else openai (which then throws “OPENAI_API_KEY is not set”). Without this export there is no fallback" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec, block by block",
+      "beats": [
+        { "id": "spec-header", "label": "The header: what it is, what to ask it", "cue": "A tier-one chat app in a terminal — and the four prompts that prove it.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 15], "replace": true },
+        { "id": "spec-shape", "label": "Name it, pick the shape", "cue": "Two lines: what it's called, and which runtime spine to compile.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [16, 18] },
+        { "id": "spec-capabilities", "label": "The model, and what it can reach", "cue": "Sonnet, then the manifest: search, fetch, see, generate, ingest, execute, delegate.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [19, 38] },
+        { "id": "spec-method", "label": "The Method", "cue": "Search first for anything recent, Python for anything numeric — and no tool theater.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [39, 51] },
+        { "id": "spec-style", "label": "Style", "cue": "“Match the user's register.” And be willing to say “I don't know” before guessing.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [52, 60] },
+        { "id": "spec-rules", "label": "The rules that fence it in", "cue": "The sandbox can't reach your host — so it never promises to save anything to ~/Downloads.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [61, 75] },
+        { "id": "spec-researcher", "label": "One sub-agent: web-researcher", "cue": "3-5 searches, 2-3 fetches, back with a cited brief under 250 words — in its own context.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [76, 102] },
+        { "id": "spec-tools", "label": "Nine tools", "cue": "Notice what's absent: no read, no write, no edit, no bash on your machine.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [103, 113] },
+        { "id": "spec-perms-web", "label": "Web, vision, images, ingest", "cue": "All always-on — this is a research-and-chat agent, and none of it touches your filesystem.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [114, 130] },
+        { "id": "spec-perms-sandbox", "label": "Code execution, always-on", "cue": "Python, JavaScript and Shell need no prompt because each call runs in a throwaway container — network=none, read-only root, image allowlist. Your host filesystem is not reachable from them.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [131, 138] },
+        { "id": "spec-perms-task", "label": "And the sub-agent dispatch grant", "cue": "One more rule, easy to miss: Task. That's the grant the /browse beat spends two groups from now — no Task rule, no sub-agent fan-out.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [139, 141] },
+        { "id": "spec-compaction", "label": "Compact on a cheap model", "cue": "Older turns get summarized on Haiku, so a long conversation stays cheap.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [142, 144] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“lint: clean — no findings.” Parse, the IR passes, and the scope audit — nothing emitted yet.", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-tools", "label": "Audit its own tool grants", "cue": "The keyword ranker wants to hand it read, write, edit and bash. This spec withholds them.", "action": "command", "command": "crewhaus tools suggest live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "keyword-ranks builtins against agent.instructions; the host-side tools it proposes are deliberately not granted" } },
+        { "id": "prove-ir", "label": "Emit the lowered IR", "cue": "The spec is sugar. Lower it to JSON — too long for a terminal, so send it to a file.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "writes the lowered IR (~96 lines) instead of paging it; the inlined instructions string is the long part", "produces": ["live/ir.json"] } },
+        { "id": "prove-open-ir", "label": "Open the IR", "cue": "Nine tools, ten permission rules, one sub-agent, the compaction model — what the compiler actually sees, and nothing invented.", "action": "open", "file": "live/ir.json" },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "--check asserts the shape, installs the deps, and boots it: GREEN with no key.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "Nine tools, one sub-agent, every permission rule — one TypeScript program you own.", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-repl", "label": "Launch the chat REPL", "cue": "[needs-key] crewhaus run compiles in memory and drops into a streaming chat loop.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs Anthropic credentials. The boot banner is five lines before “agent ready”: continuity on · 4 skills · 12 slash commands (the starter's six plus continuity's six) · 1 sub-agent · “[sandbox] assuming docker”" } },
+        { "id": "run-chat", "label": "Just talk to it", "cue": "[needs-key] Plain chat — no tools fire. The model just answers.", "action": "input", "text": "what's the capital of Burkina Faso?", "verify": { "mode": "needs-key" } },
+        { "id": "run-math", "label": "Make it do arithmetic", "cue": "[needs-key] It reaches for Python on its own — /code is optional. Watching it decide is the demo.", "action": "input", "text": "what's 17! / 12!? show your work", "verify": { "mode": "needs-key", "note": "the Python tool shells out to `docker run python:3.13-slim` — needs the backend the setup-sandbox beat probed, and the image already pulled, or the first call blocks on a multi-hundred-MB pull mid-take" } },
+        { "id": "run-summarize", "label": "Summarize a URL", "cue": "[needs-key] Fetches the page and returns a three-sentence summary.", "action": "input", "text": "/summarize https://en.wikipedia.org/wiki/Burkina_Faso", "verify": { "mode": "needs-key" } },
+        { "id": "run-browse", "label": "Fan out the researcher", "cue": "[needs-key] web-researcher returns a TL;DR, five cited facts, open questions, and sources.", "action": "input", "text": "/browse latest news on the Anthropic Claude 4.7 release", "verify": { "mode": "needs-key", "note": "WebSearch needs CREWHAUS_SEARCH_PROVIDER + CREWHAUS_SEARCH_API_KEY as well as the model key" } },
+        { "id": "run-imagine", "label": "Generate an image", "cue": "[needs-key] DALL-E when OPENAI_API_KEY is set; otherwise the mock placeholder, surfaced verbatim — because Setup exported the fallback.", "action": "input", "text": "/imagine a lobster wearing a top hat, oil-painting style", "verify": { "mode": "needs-key", "note": "ImageGenerate resolves openai when OPENAI_API_KEY is set. The placeholder is NOT a built-in default: it comes from the setup-image-provider beat's CREWHAUS_IMAGE_PROVIDER=mock — without that export the tool throws “OPENAI_API_KEY is not set — required for provider=openai”" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · the same agent, somewhere else",
+      "beats": [
+        { "id": "extra-skill", "label": "A skill the model loads itself", "cue": "Markdown with triggers — it self-loads when a question smells like research. No recompile.", "action": "open", "file": ".crewhaus/skills/research-topic/SKILL.md" },
+        { "id": "extra-command", "label": "A slash command is a Markdown file", "cue": "Six ship in .crewhaus/commands/ — /imagine is just a prompt the model follows literally.", "action": "open", "file": ".crewhaus/commands/imagine.md" },
+        { "id": "extra-plugin", "label": "Export it as a Claude Code plugin", "cue": "The same spec, emitted as a plugin dir — four files: the manifest, a README, the researcher as a Claude Code sub-agent, and the persona itself as a skill. The authored skills and the six slash commands stay behind: this projects the spec, not the .crewhaus/ tree.", "action": "command", "command": "crewhaus export claude-plugin live/crewhaus.yaml --out live/plugin", "verify": { "mode": "offline", "expectedExit": 0, "note": "“exported hello-prochat (cli) … 4 files, smoke check ✓” — .claude-plugin/plugin.json, README.md, agents/web-researcher.md, skills/hello-prochat/SKILL.md (that skill is agent.instructions, not the authored research-topic one)", "produces": ["live/plugin/.claude-plugin/plugin.json", "live/plugin/agents/web-researcher.md"] } },
+        { "id": "extra-mcp", "label": "Or serve it as an MCP tool", "cue": "[needs-key] serve --mcp projects the whole agent as one MCP tool — `chat` — that your IDE can call. It prints two lines and then blocks: the terminal belongs to the server until you Ctrl-C it.", "action": "command", "command": "crewhaus serve --mcp live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "long-running stdio MCP server: prints the continuity line + “[serve] MCP stdio server for \"hello-prochat\" ready (tools: chat)”, then blocks until SIGINT (“[serve] stopped.”). Every tool call runs the agent, so it needs provider credentials — and the drive closes on the editor beat below, not on this terminal" } },
+        { "id": "extra-open-plugin", "label": "Close on the exported researcher", "cue": "Your sub-agent, now a Claude Code sub-agent. One spec, more than one runtime.", "action": "open", "file": "live/plugin/agents/web-researcher.md" }
+      ]
+    }
+  ]
+}

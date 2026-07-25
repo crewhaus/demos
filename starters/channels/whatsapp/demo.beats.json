@@ -1,0 +1,59 @@
+{
+  "title": "hello-channel-whatsapp — a signed webhook, a customer, a reply (target: channel)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“A daemon that takes Meta Graph webhooks and replies on the WhatsApp Business endpoint.” Three env refs make it go — beat 2 pins the exact list the daemon enforces.", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the tokens", "cue": "[needs-key] Sources demos/.env — the Meta values and the API key for the boot beats.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env (WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN, WHATSAPP_APP_SECRET, ANTHROPIC_AUTH_TOKEN)" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec: an agent on a business number",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“Two lines. channel compiles a daemon — something that waits for customers, not a prompt.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 2], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent", "cue": "“When a customer messages, reply concisely — 1 to 3 sentences.” That's the support voice.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [3, 8] },
+        { "id": "spec-tools", "label": "Give it one tool", "cue": "“Ground answers in repo state” — read, and nothing else is even registered.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [9, 10] },
+        { "id": "spec-channel", "label": "Wire WhatsApp Business", "cue": "Three env references: the number's id, the send token, and the app secret Meta signs with.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [11, 15] },
+        { "id": "spec-routing", "label": "Decide what a conversation is", "cue": "sessionKey: user — one running conversation per customer, keyed by their phone number.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [16, 17] },
+        { "id": "spec-permissions", "label": "Scope it before it's unattended", "cue": "An unattended daemon can't stop to ask you — so what it may do is declared up front.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [18, 21] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“All three Meta values lower to kind: env. Not one secret lands in the artifact.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target channel — phoneNumberId/accessToken/appSecret are {kind:\"env\"} refs" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, with no Meta token.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (4 anchors); install ok; boot gated at the spec env refs gate", "produces": ["live/dist/daemon.ts", "live/dist/gateway.ts", "live/dist/session-router.ts"] } },
+        { "id": "prove-open-daemon", "label": "Open the emitted daemon", "cue": "“Adapter, gateway, session router, janitor, SIGTERM — a service, from 21 lines of YAML.”", "action": "open", "file": "live/dist/daemon.ts" },
+        { "id": "prove-envgate", "label": "Find the boot gate", "cue": "“PHONE_NUMBER_ID, ACCESS_TOKEN, APP_SECRET — it names all three and exits 2, before a single API call.”", "action": "command", "command": "grep -n \"__requiredEnv\\|__providerEnvAnyOf\\|missing required env\\|process.exit(2)\" live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "6 matching lines (21, 23, 25, 26, 31, 32) — the required-env gate lowered from the spec's three env refs, ending in process.exit(2)" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-reject", "label": "Ask run to run it", "cue": "“run is the cli/browser REPL. A channel is a daemon — the CLI names the shapes it takes.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `crewhaus run supports target: cli or browser (got \"channel\")`" } },
+        { "id": "run-gate", "label": "Boot the daemon with no secrets", "cue": "“There's the gate, live: three Meta variables plus a provider key — and exit 2 until they're set.”", "action": "command", "command": "env -u WHATSAPP_PHONE_NUMBER_ID -u WHATSAPP_ACCESS_TOKEN -u WHATSAPP_APP_SECRET -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY bun live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 2, "note": "designed refusal — `[daemon] missing required env vars: WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN, WHATSAPP_APP_SECRET, ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY`; env -u scrubs what Setup sourced, so the gate fires either way" } },
+        { "id": "run-tunnel", "label": "Give the callback a public URL", "cue": "[manual] Meta only calls a public HTTPS host: tunnel :3000, then set that host + /whatsapp/events as the app's callback URL.", "action": "command", "command": "ngrok http 3000", "verify": { "mode": "manual", "note": "needs ngrok (or any tunnel) and a second terminal; the callback URL itself is set by hand in Meta's WhatsApp Business app dashboard — no CLI does it" } },
+        { "id": "run-daemon", "label": "Boot the daemon", "cue": "[needs-key] “Three Meta values and an API key: it's on :3000, waiting for the callback.”", "action": "command", "command": "bun live/dist/daemon.ts", "verify": { "mode": "needs-key", "note": "needs WHATSAPP_PHONE_NUMBER_ID + WHATSAPP_ACCESS_TOKEN + WHATSAPP_APP_SECRET + Anthropic credentials; serves the gateway on PORT (default 3000)" } },
+        { "id": "run-session", "label": "Find the conversation on disk", "cue": "[manual] With the callback pointed here: message the business number, ⌃C the daemon, one transcript per customer.", "action": "command", "command": "ls .crewhaus/sessions", "verify": { "mode": "manual", "note": "needs a human, a Meta-configured callback URL reaching this daemon, and a real keyed turn before the transcript exists" } }
+      ]
+    },
+    {
+      "title": "One more thing · the gateway you didn't write",
+      "beats": [
+        { "id": "extra-open-gateway", "label": "Open the emitted gateway", "cue": "“Nothing in the spec asked for this file — it's what target: channel means.”", "action": "open", "file": "live/dist/gateway.ts" },
+        { "id": "extra-guards", "label": "Read the two guards", "cue": "“An unsigned request is a 401. The same message twice is a duplicate — not a second model call.”", "action": "command", "command": "grep -n \"invalid signature\\|remember(\\|duplicate\" live/dist/gateway.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "4 lines — signature check (401) on both routes, then atomic idempotency-key dedup" } },
+        { "id": "extra-router", "label": "Read the session key", "cue": "“sessionKey: user became a sha256 of adapter:workspace:user — stable across daemon restarts.”", "action": "command", "command": "grep -n \"routingKey = \\|deriveSessionId\\|sha256\" live/dist/session-router.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "5 lines — the sessionKey choice lowered into a deterministic sess_<16hex> id" } },
+        { "id": "extra-provision", "label": "Ask the CLI to provision it", "cue": "“provision automates Slack, Telegram and Discord. Meta's dashboard owns this one — it says so.”", "action": "command", "command": "crewhaus channel provision live/crewhaus.yaml --dry-run", "verify": { "mode": "offline", "expectedExit": 1, "note": "honest boundary — `whatsapp is configured but not supported by this command`; the callback URL is set in Meta's app dashboard" } }
+      ]
+    }
+  ]
+}

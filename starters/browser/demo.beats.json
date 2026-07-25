@@ -1,0 +1,64 @@
+{
+  "title": "hello-browser — screenshot, find, click (target: browser)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“An agent that drives a Chromium browser via Screenshot, FindElement, Click, and Type.” Read the summary; scroll no further.", "action": "open", "file": "README.md", "verify": { "note": "OPERATOR: README.md:12 and :15 are stale against 0.4.0 — `crewhaus run crewhaus.yaml` with no --prompt dies on a TTY (browser run is single-turn), and there is no BROWSER_HEADLESS knob (chromium is always headless). Keep the preview on the summary paragraph; this driver demos the bundle, not those lines." } },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the planner and the grounding model are both Anthropic.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“Two lines: what it's called, and which runtime spine to compile.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 2], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent + planner model", "cue": "One model does the planning — which tool to call next, and where.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [3, 4] },
+        { "id": "spec-instructions", "label": "Write the tool contract", "cue": "“Be deliberate: ONE screenshot, find the target, click its center, ONE more to verify.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [5, 15] },
+        { "id": "spec-driver", "label": "Add the driver block", "cue": "Chromium, a 1024×720 viewport, and a startUrl — loopback, which the driver blocks on purpose. Beat 3 shows why.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [16, 21] },
+        { "id": "spec-grounding", "label": "Name the grounding model", "cue": "FindElement's eye — it turns “the green Submit button” into center coordinates.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [22, 22] },
+        { "id": "spec-perm-mode", "label": "Open the permissions block", "cue": "mode: default — every tool has to be allowed by name, or it stops and asks.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [23, 25] },
+        { "id": "spec-perm-rules", "label": "Allow the six tools by name", "cue": "Six alwaysAllow rules — one per tool the instructions name. Anything else stops and asks.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [26, 37] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "Parse, then the IR passes the compile path skips — nothing emitted yet.", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The spec is sugar; this JSON is what the compiler actually sees.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target browser (driver + groundingModel + permission rules)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "--check asserts the shape, installs the deps, and boots it to its gate: GREEN.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (10 anchors); install ok; boot gated at the initial --prompt gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "One file. The instructions, the model, the viewport, the startUrl — constants at the top. No YAML at runtime.", "action": "open", "file": "live/dist/agent.ts" },
+        { "id": "prove-tools", "label": "Show what the bundle imports", "cue": "Screenshot, mouse+keyboard, vision grounding: real packages, not prompt text. Note the first one.", "action": "command", "command": "grep -n \"@crewhaus/tool\" live/dist/agent.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "5 tool imports — navigate, screen-capture, mouse-keyboard, vision-grounding, catalog" } },
+        { "id": "prove-rules", "label": "Show the permission rules", "cue": "The six alwaysAllow rules, compiled in — and Navigate, which the bundle just imported, is not one of them.", "action": "command", "command": "grep -n -A 9 \"permissionRules\" live/dist/agent.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "one match (the emitted RuleSet) + 9 lines: flag/settings and the six yaml alwaysAllow rules — Navigate absent, so mode default resolves it to \"ask\"" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Give it a browser",
+      "beats": [
+        { "id": "run-playwright", "label": "Add Playwright to the bundle", "cue": "Playwright is an optional peer dep — you install it only when you want chromium.", "action": "command", "command": "bun add --cwd live/dist playwright", "verify": { "mode": "offline", "expectedExit": 0, "note": "@crewhaus/computer-use-driver declares playwright as an OPTIONAL peer dep, so the bundle install never pulls it", "produces": ["live/dist/node_modules/.bin/playwright"] } },
+        { "id": "run-chromium-plan", "label": "Show which chromium it pins", "cue": "Exactly which build, and where it lands — before you spend the bandwidth.", "action": "command", "command": "bun live/dist/node_modules/.bin/playwright install --dry-run chromium", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints Chrome for Testing + Chrome Headless Shell + ffmpeg: version, install location, download URL. Downloads nothing." } },
+        { "id": "run-chromium", "label": "Fetch the chromium build", "cue": "[manual] One-time: that exact chromium, into the shared cache.", "action": "command", "command": "bun live/dist/node_modules/.bin/playwright install chromium", "verify": { "mode": "manual", "note": "~150MB browser-binary download; run it once before the take — the verifier never runs it (the --dry-run beat above proves the invocation form)" } },
+        { "id": "run-repl", "label": "Launch the bundle", "cue": "[needs-key] No --prompt and a TTY: one live browser context, turn after turn.", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "0.4.0 runs chromium HEADLESS with no knob to change it (createDriver hardcodes headless: true), so the browser window is never on camera — the JSON event stream and the model's answers are the take" } },
+        { "id": "run-look", "label": "Look at the start page", "cue": "[needs-key] The startUrl is loopback, and 0.4.0 routes chromium through a DNS-pinning proxy that blocks private targets. The screenshot shows the guard, not a page.", "action": "input", "text": "Take ONE screenshot and tell me, in one sentence, exactly what this page says.", "verify": { "mode": "needs-key", "note": "the proxy answers 127.0.0.1:7325 with a 403 text body (`ssrf-pinning-proxy: blocked target IP 127.0.0.1`); the bundle still emits {\"kind\":\"navigated\"} because page.goto() resolves on a non-2xx" } },
+        { "id": "run-navigate", "label": "Ask it to go somewhere real", "cue": "[needs-key] Navigate was never in the six rules — so mode: default stops the turn and asks.", "action": "input", "text": "Navigate to https://crewhaus.ai and take ONE screenshot.", "verify": { "mode": "needs-key", "note": "the REPL prints `approve Navigate {\"url\":\"https://crewhaus.ai\"} [y/N] > ` — do NOT tap the next beat until that prompt is on screen, or the next line answers it as \"no\"" } },
+        { "id": "run-approve", "label": "Grant it, once", "cue": "[needs-key] One keystroke, one call. Screenshot, FindElement and Scroll never ask — they're in the six.", "action": "input", "text": "y", "verify": { "mode": "needs-key", "note": "answers the approval prompt; the grant is not remembered — a second Navigate asks again" } },
+        { "id": "run-find", "label": "Ground an element", "cue": "[needs-key] FindElement returns a bounding box and a center — coordinates, from pixels.", "action": "input", "text": "Use FindElement to locate the primary call-to-action button and give me its center coordinates.", "verify": { "mode": "needs-key" } },
+        { "id": "run-scroll", "label": "Act on the page", "cue": "[needs-key] Scroll is destructive; the alwaysAllow rule is why it never stops to ask.", "action": "input", "text": "Scroll down one screen, take ONE more screenshot, and tell me what changed.", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell; the browser context closes with it.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · scripted, not interactive",
+      "beats": [
+        { "id": "extra-oneshot", "label": "Run one turn, non-interactively", "cue": "[needs-key] browser_start, navigated, browser_done — JSON events on stdout. The CI shape.", "action": "command", "command": "bun live/dist/agent.ts --prompt \"Take ONE screenshot and tell me, in one sentence, exactly what this page says.\"", "verify": { "mode": "needs-key", "note": "one prompt, one turn, then exit — no REPL. Screenshot is in the six rules, so nothing has to ask." } },
+        { "id": "extra-stdin", "label": "Or pipe the prompt in", "cue": "[needs-key] No --prompt, no TTY: the bundle reads the task off stdin — and with nothing to ask, Navigate is denied outright.", "action": "command", "command": "echo \"Navigate to https://crewhaus.ai and take ONE screenshot.\" | bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "two things at once: the bundle falls back to readStdin() when --prompt is absent and stdin is not a TTY; and a single-turn surface cannot prompt, so the runtime collapses Navigate's \"ask\" to a denial whose tool_result names the fix (`{ type: alwaysAllow, pattern: Navigate }`). It lands in the browser_done finalText, not as a crash — exit 0." } }
+      ]
+    }
+  ]
+}

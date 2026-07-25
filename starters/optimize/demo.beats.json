@@ -1,0 +1,56 @@
+{
+  "title": "hello-optimize — the smallest proof of active eval optimization (target: cli)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“The smallest possible demonstration of Pillar 2 — active eval optimization.”", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the eval and the optimizer both call the model.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · A prompt that is deliberately too terse",
+      "beats": [
+        { "id": "spec-premise", "label": "Say what it's for", "cue": "“A CLI agent whose system prompt is deliberately short so the optimizer has room.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 3], "replace": true },
+        { "id": "spec-usage", "label": "Document the run in the header", "cue": "The header carries the optimize invocation — dataset, graders, iterations, seed. Its hello-optimize/ prefixes predate the self-contained-starter convention; we run it from right here.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [4, 13] },
+        { "id": "spec-shape", "label": "Name it, pick the shape", "cue": "target: cli — eval, optimize and flywheel only run against cli specs.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [14, 16] },
+        { "id": "spec-agent", "label": "The instruction the optimizer will rewrite", "cue": "“Answer the user's question.” That terseness is the experiment, not a mistake.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [17, 20] },
+        { "id": "spec-tools", "label": "No tools at all", "cue": "Nothing to blame but the prompt — which is exactly what we're tuning.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [21, 21] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“lint: clean — no findings.” Parse, the IR passes, and the scope audit.", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The spec is sugar; this JSON is what the compiler actually sees.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "Shape asserted, deps installed, booted to the credentials gate: GREEN with no key.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "The instructions ride into the bundle as a string — that string is the tuning target.", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it, then measure it",
+      "beats": [
+        { "id": "run-prompt", "label": "Ask it one question", "cue": "[needs-key] One turn, and no guidance beyond “answer the user's question”.", "action": "command", "command": "crewhaus run live/crewhaus.yaml --prompt \"What is the capital of France?\"", "verify": { "mode": "needs-key", "note": "single-turn run; needs Anthropic credentials" } },
+        { "id": "run-open-dataset", "label": "Open the dataset", "cue": "Ten capital-of-X questions, each with its expected output.", "action": "open", "file": "dataset.jsonl" },
+        { "id": "run-open-graders", "label": "Open the grader", "cue": "One grader — type: contains, and substring: is a LITERAL. Read that line twice: it does not mean “the sample's expected_output”.", "action": "open", "file": "graders.yaml" },
+        { "id": "run-eval", "label": "Score the baseline", "cue": "[needs-key] The baseline, measured before anything changes: pass_rate=0.0%, and every rationale reads `output missing \"expected_output\"`. The eval found the bug — and it's in the grader.", "action": "command", "command": "crewhaus eval live/crewhaus.yaml --dataset dataset.jsonl --graders graders.yaml -o live/eval-before", "verify": { "mode": "needs-key", "note": "runs the agent over 10 samples; needs Anthropic credentials. Measured on CLI 0.4.0: pass_rate=0.0% mean_score=0.000 — `type: contains` searches the answer for the literal text \"expected_output\" (the grader that compares against the sample is `type: expected_contains`), so every sample fails even though every answer is correct" } }
+      ]
+    },
+    {
+      "title": "One more thing · The patch is the artifact",
+      "beats": [
+        { "id": "extra-optimize", "label": "Run the optimizer", "cue": "[needs-key] Five seeded iterations of the rule-based mutator, scored on the 70/30 dev split. “score: 0.000 → 0.000 (Δ +0.000)” — a grader nothing can satisfy gives the search no gradient.", "action": "command", "command": "crewhaus optimize live/crewhaus.yaml --dataset dataset.jsonl --graders graders.yaml --iterations 5 --seed 42 -o live/optimize", "verify": { "mode": "needs-key", "note": "re-evals the dev split per candidate; needs Anthropic credentials. Measured on CLI 0.4.0: `[optimize] score: 0.000 → 0.000 (Δ +0.000)` then `no improvement above threshold 0.01; source untouched.` — every candidate ties at zero because of the graders.yaml defect the eval beat surfaced" } },
+        { "id": "extra-patch", "label": "Open the patch it emitted", "cue": "[needs-key] The patch is emitted either way — and this one is honest about itself: value is the original prompt, rationale “improved fitness by 0.000 over 5 iterations”.", "action": "command", "command": "cat live/optimize/patch.json", "verify": { "mode": "needs-key", "note": "reads the patch.json the previous (needs-key) optimize beat writes into live/optimize/. Measured: {\"path\":[\"agent\",\"instructions\"],\"op\":\"replace\",\"value\":\"Answer the user's question.\",\"rationale\":\"rule-based mutator improved fitness by 0.000 over 5 iterations\"}" } },
+        { "id": "extra-writeback", "label": "Ask it to apply the winner", "cue": "[needs-key] --write-back is a gate, not a rubber stamp: “no improvement above threshold 0.01; source untouched.” It will not edit your spec to say nothing.", "action": "command", "command": "crewhaus optimize live/crewhaus.yaml --dataset dataset.jsonl --graders graders.yaml --iterations 5 --seed 42 --write-back", "verify": { "mode": "needs-key", "note": "write-back is conditional — eval-optimizer-orchestrator/src/index.ts:338 writes only when `applied` (improvement ≥ the 0.01 threshold). At Δ 0.000 nothing is written, so this take ends on the refusal, not on an edit. Would mutate the scratch live/crewhaus.yaml, never the committed spec" } },
+        { "id": "extra-diff", "label": "Diff it against the committed spec", "cue": "[needs-key] Nothing. The optimizer declined to touch the spec — and the committed starter was never in the blast radius either way.", "action": "command", "command": "diff -u crewhaus.yaml live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "measured: no output, exit 0 — live/crewhaus.yaml is still the byte-identical copy the spec beats typed. It would exit 1 with a diff if write-back had fired" } }
+      ]
+    }
+  ]
+}

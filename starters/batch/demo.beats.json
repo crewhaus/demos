@@ -1,0 +1,54 @@
+{
+  "title": "hello-batch — a queue-driven worker (target: batch)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“A queue-driven worker: one short job per model call, one concise sentence back.”", "action": "open", "file": "README.md", "verify": { "note": "OPERATOR: README.md:12 (`bunx crewhaus run crewhaus.yaml # consumes the queue`) is stale against 0.4.0 — `run` only supports target cli|browser, which the run-reject beat in Beat 3 proves on camera. README:3-4's “one short-text job at a time” also predates `concurrency: 4`." } },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the boot beats.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec: an agent and a queue",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“Two lines: what it's called, and the queue-worker spine to compile.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 2], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent", "cue": "The same chat-loop agent the cli target uses — each job's text becomes one single-turn call.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [3, 8] },
+        { "id": "spec-queue", "label": "Wire the queue", "cue": "In-memory adapter — no broker to run. The visibility timeout and retry budget live here.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [9, 12] },
+        { "id": "spec-jobs", "label": "Seed eight jobs", "cue": "seedJobs is the in-memory way to exercise a worker without standing up a real queue.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [13, 21] },
+        { "id": "spec-knobs", "label": "Bound the throughput and the dedup window", "cue": "“Four jobs in flight per worker process. The 60 seconds is the result cache's TTL, keyed on job id + attempt — the double-pull guard, so two consumers on one lease call the model once.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [22, 23] },
+        { "id": "spec-permissions", "label": "Scope the permissions", "cue": "Permissions are a spec block, not a target feature — batch scopes exactly the way cli does.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [24, 25] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The spec is sugar — this JSON is what the compiler sees: the agent, the queue, the knobs.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target batch (in-memory queue, 8 seeded jobs)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots the worker: GREEN, with no key.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot ok (booted and exited cleanly)", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted worker", "cue": "“One file you own: the queue, the consumer, the idempotency store, the drain path.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Drain the queue",
+      "beats": [
+        { "id": "run-reject", "label": "Ask run to run it", "cue": "“run is the cli/browser REPL. A worker isn't a chat — every other shape ships as a bundle.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `crewhaus run supports target: cli or browser (got \"batch\")`" } },
+        { "id": "run-worker", "label": "Boot the worker", "cue": "[needs-key] “Eight jobs, four in flight — job_start/job_end pairs, then queue_idle, then it stops.”", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "consumes the 8 seeded jobs against Anthropic; deps were installed by the --check beat. Expect fromCache:false on all eight — the key is (job id, attempt), the in-memory adapter bumps attempt on every pull, and ack deletes the job, so nothing in a single-process take can hit the cache." } },
+        { "id": "run-reply", "label": "Read one job's transcript", "cue": "[needs-key] The event stream carries ids and status, never the reply. The session log has both: the job in, the one sentence out.", "action": "command", "command": "crewhaus sessions tail --no-follow", "verify": { "mode": "needs-key", "note": "each job is its own runChatLoop, so the worker leaves 8 sessions in .crewhaus/sessions/ (gitignored); with no id, tail picks the most-recently-updated one and dumps `user> …` / `asst> …`. Needs the beat above to have run — the store does not exist otherwise." } }
+      ]
+    },
+    {
+      "title": "One more thing · the ops contract you didn't write",
+      "beats": [
+        { "id": "extra-ops", "label": "Find the machinery you never typed", "cue": "“A keyed dedup cache, a drain path, a SIGTERM handler — emitted from twenty-five lines of YAML.”", "action": "command", "command": "grep -n \"idempotency\\|SIGTERM\\|drain\\|queue_idle\" live/dist/agent.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "12 matching lines in the emitted worker" } },
+        { "id": "extra-drain", "label": "Interrupt it mid-wave", "cue": "[manual] Boot it again and press ⌃C while jobs are in flight — drain_start, then worker_stop.", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "manual", "note": "needs a human at the keyboard to send SIGINT mid-flight (and a key for the jobs to run)" } }
+      ]
+    }
+  ]
+}

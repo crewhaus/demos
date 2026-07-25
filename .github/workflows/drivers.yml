@@ -1,0 +1,72 @@
+name: Demo drivers
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "starters/**/demo.beats.json"
+      - "starters/**/crewhaus.yaml"
+      - "scripts/verify-drivers.ts"
+      - "DEMO-DRIVERS.md"
+      - ".github/workflows/drivers.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "starters/**/demo.beats.json"
+      - "starters/**/crewhaus.yaml"
+      - "scripts/verify-drivers.ts"
+      - "DEMO-DRIVERS.md"
+      - ".github/workflows/drivers.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    # A driver types its starter's committed spec back in contiguous slices, so a
+    # spec edit can silently desync every slice boundary after it. This job
+    # replays all of them and fails on drift.
+    name: Replay every starter's demo.beats.json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout demos
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          path: demos
+      - name: Checkout factory (sibling — required for the compiler CLI)
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: crewhaus/factory
+          path: factory
+      # Mirrors walkthroughs.yml: a demos PR branch that also exists in factory
+      # gets tested against it, so a spec field added in factory and consumed by
+      # a driver land together. The ref reaches the shell only as a quoted env
+      # var, never interpolated into the script body.
+      - name: Match factory branch to demos PR branch when present
+        if: github.head_ref != ''
+        working-directory: factory
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            echo "[drivers-ci] factory has a matching branch — checking it out"
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+          else
+            echo "[drivers-ci] no matching factory branch; staying on default"
+          fi
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ">=1.2.0"
+      - name: Install factory deps (workspace setup)
+        working-directory: factory
+        run: bun install --frozen-lockfile
+      - name: Install demos deps
+        working-directory: demos
+        run: bun install --frozen-lockfile
+      # No `crewhaus` on PATH here, so verify-drivers resolves the sibling
+      # factory source CLI. Only `offline` beats run — no API key is needed.
+      - name: Verify every demo driver
+        working-directory: demos
+        run: bun run drivers:verify
