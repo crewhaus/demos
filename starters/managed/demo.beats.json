@@ -1,0 +1,57 @@
+{
+  "title": "hello-managed — a multi-tenant gateway daemon (target: managed)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“Two tenants, HS256-JWT auth, per-tenant budgets, hash-chained audit logs.”", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the gateway needs a Claude credential to answer a run.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · Fifteen lines of spec",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“Two lines: what it's called, and the shape — a long-running gateway daemon.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 2], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent block", "cue": "“One agent serves every tenant — and it answers tersely, by instruction.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [3, 6] },
+        { "id": "spec-tenant-a", "label": "Declare tenant-a and its budget", "cue": "“A tenant is an id plus a token budget the gateway enforces on every call.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [7, 11] },
+        { "id": "spec-tenant-b", "label": "Declare tenant-b", "cue": "“Second tenant: same agent, its own budget, its own storage tree.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [12, 15] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The tenants array survives lowering — ids and budgets, exactly as written.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target managed — 36 lines, tenants included" } },
+        { "id": "prove-check", "label": "Compile the daemon — and check it", "cue": "“--check asserts the shape, installs the deps, and boots the daemon: GREEN, no key.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (7 anchors); install ok; boot ok (daemon stayed alive for the liveness window)", "produces": ["live/dist/daemon.ts", "live/dist/agent.ts"] } },
+        { "id": "prove-open-daemon", "label": "Open the emitted daemon", "cue": "“JWT verify, tenant rebase, budget gate, audit chain — one file you own.”", "action": "open", "file": "live/dist/daemon.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Boot the gateway",
+      "beats": [
+        { "id": "run-secret", "label": "Pin the JWT secret", "cue": "“Set it ahead of time — at least 16 chars — to pin the secret across restarts.”", "action": "command", "command": "export CREWHAUS_GATEWAY_JWT_SECRET=demo-secret-please-rotate", "verify": { "mode": "offline", "expectedExit": 0, "note": "without this the daemon generates a one-shot dev secret and prints it" } },
+        { "id": "run-tenants-root", "label": "Put tenant storage under live/", "cue": "CREWHAUS_TENANTS_ROOT — line 21 of the daemon we just opened. Keeps the audit log on camera.", "action": "command", "command": "export CREWHAUS_TENANTS_ROOT=live/tenants", "verify": { "mode": "offline", "expectedExit": 0, "note": "default is /tmp/crewhaus-tenants; rebasing keeps the take self-contained" } },
+        { "id": "run-boot", "label": "Boot the daemon", "cue": "[needs-key] “Gateway listening on :3000.” Backgrounded, so this same terminal can drive it.", "action": "command", "command": "bun live/dist/daemon.ts &", "verify": { "mode": "needs-key", "note": "boots with no key; serving a run needs Anthropic credentials" } },
+        { "id": "run-mint", "label": "Mint a token for tenant-a", "cue": "The tenant_id claim IS the tenant — HS256 over the secret we just pinned, no key involved.", "action": "command", "command": "TENANT_A_JWT=$(bun --cwd live/dist -e 'import { signJwt } from \"@crewhaus/gateway-server\"; console.log(signJwt({ tenant_id: \"tenant-a\" }, process.env.CREWHAUS_GATEWAY_JWT_SECRET))')", "verify": { "mode": "offline", "expectedExit": 0, "note": "keyless — signing is local HS256 over the secret run-secret exported into this same terminal; proves @crewhaus/gateway-server resolves from the checked bundle" } },
+        { "id": "run-create", "label": "Start a run as tenant-a", "cue": "[needs-key] One authenticated call — the client names the session, and runs.create comes back with a runId and the reply.", "action": "command", "command": "curl -s -X POST http://localhost:3000/rpc -H \"Authorization: Bearer $TENANT_A_JWT\" -H \"Content-Type: application/json\" -d '{\"protocol\":\"crewhaus.v1\",\"id\":\"1\",\"method\":\"runs.create\",\"params\":{\"spec\":\"hello-managed\",\"input\":\"What is the capital of France?\",\"sessionId\":\"sess_0123456789abcdef\"}}'", "verify": { "mode": "needs-key", "note": "crewhaus.v1 envelope. Measured with credentials: result.runId=run_…, reply “Paris is the capital of France.”. sessionId is passed explicitly because CLI 0.4.0's managed codegen mints a base36 default id that session-store rejects (expects sess_<16 hex>) — omit it and the gateway answers internal_error. Keyless it answers internal_error too: no Anthropic credentials." } }
+      ]
+    },
+    {
+      "title": "One more thing · the invariant target: managed exists to enforce",
+      "beats": [
+        { "id": "extra-audit", "label": "Read tenant-a's audit log", "cue": "[needs-key] “Hash-chains the audit log so tampering is detectable.” GENESIS → hash → hash → hash.", "action": "command", "command": "cat live/tenants/tenant-a/audit/$(date -u +%Y-%m-%d).jsonl", "verify": { "mode": "needs-key", "note": "written by the run-create beat. Measured: three records — gateway_request (prevHash GENESIS), policy_decision, model_call — each chained to the previous record's hash" } },
+        { "id": "extra-mint-b", "label": "Mint a token for tenant-b", "cue": "Same secret, same daemon — a different tenant_id, and again no key.", "action": "command", "command": "TENANT_B_JWT=$(bun --cwd live/dist -e 'import { signJwt } from \"@crewhaus/gateway-server\"; console.log(signJwt({ tenant_id: \"tenant-b\" }, process.env.CREWHAUS_GATEWAY_JWT_SECRET))')", "verify": { "mode": "offline", "expectedExit": 0, "note": "keyless, like run-mint; second tenant declared in the spec's tenants: block" } },
+        { "id": "extra-create-b", "label": "Start a run as tenant-b", "cue": "[needs-key] Same endpoint, second tenant — the daemon rebases its storage on the claim.", "action": "command", "command": "curl -s -X POST http://localhost:3000/rpc -H \"Authorization: Bearer $TENANT_B_JWT\" -H \"Content-Type: application/json\" -d '{\"protocol\":\"crewhaus.v1\",\"id\":\"2\",\"method\":\"runs.create\",\"params\":{\"spec\":\"hello-managed\",\"input\":\"What is the capital of Japan?\",\"sessionId\":\"sess_fedcba9876543210\"}}'", "verify": { "mode": "needs-key", "note": "creates live/tenants/tenant-b/ on first authenticated call. Measured: reply “Tokyo is the capital of Japan.”. sessionId explicit for the same 0.4.0 reason as run-create" } },
+        { "id": "extra-isolation", "label": "Show the two tenant trees", "cue": "[needs-key] Two roots. “Cross-tenant reads are impossible by construction.”", "action": "command", "command": "ls live/tenants", "verify": { "mode": "needs-key", "note": "measured after both runs: tenant-a and tenant-b, each with its own audit/, sessions/ and state/ subtree" } },
+        { "id": "extra-stop", "label": "Stop the gateway", "cue": "[needs-key] Take's over — kill the backgrounded daemon.", "action": "command", "command": "kill %1", "verify": { "mode": "needs-key", "note": "job %1 is the daemon the run-boot beat backgrounded into this same terminal; skip this and the take leaves a process holding :3000" } }
+      ]
+    }
+  ]
+}

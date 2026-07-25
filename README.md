@@ -89,6 +89,27 @@ bun run walkthroughs:test                          # validate every recipe
 
 Adding a new starter: drop a directory under `starters/` with a `crewhaus.yaml`; the standalone `cd starters/<path> && bunx crewhaus compile crewhaus.yaml` works immediately, and so does `bun run compile starters/<path>` from the repo root — no package.json edit required.
 
+## Demo drivers
+
+Every starter also ships a **`demo.beats.json`** — a beat-by-beat screencast driver
+for that starter. Open this repo in VS Code with the **Demo Driver** extension
+(CrewHaus internal tooling, unpublished — it lives in the `demo-series/demo-driver`
+working tree) and each tap of **⌘⌥N** types the starter's real spec into a scratch
+file keystroke by keystroke, runs the real `crewhaus` commands, and feeds the REPL
+the questions the starter is built to answer. The manifests are plain JSON, so any
+comparable tool can drive them.
+
+```bash
+bun run drivers:verify              # replay every driver, assert it's green
+bun run drivers:verify rag          # just the matching ones
+```
+
+`drivers:verify` replays each manifest with the driver's exact typing semantics,
+asserts the typed spec is **byte-identical** to the starter's committed
+`crewhaus.yaml`, and executes every command beat classified `offline` — so a
+driver can never drift from the starter it demos. See
+[DEMO-DRIVERS.md](./DEMO-DRIVERS.md) for the convention.
+
 ## Layout
 
 ```
@@ -132,13 +153,15 @@ demos/
     list.ts                    enumerates starters with target + README status
     test-walkthroughs.ts       static walkthrough validator (links, scripts, specs)
     smoke-walkthroughs.ts      runtime walkthrough smoke (compile + optional run)
+    verify-drivers.ts          replays every starter's demo.beats.json (bun run drivers:verify)
+  DEMO-DRIVERS.md              the screencast-driver convention
   .github/workflows/
   package.json
   tsconfig.json
   README.md
 ```
 
-Each starter directory has a `crewhaus.yaml` (the spec), `README.md`, and optionally `.env.example`. Compiled output lands in `<starter>/dist/` (gitignored).
+Each starter directory has a `crewhaus.yaml` (the spec), `README.md`, a `demo.beats.json` (its screencast driver), and optionally `.env.example`. Compiled output lands in `<starter>/dist/` (gitignored); a driver's scratch spec and bundle land in `<starter>/live/` (also gitignored).
 
 ## Environment variables
 

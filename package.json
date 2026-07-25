@@ -15,6 +15,7 @@
     "run:procode": "bun scripts/run.ts starters/showcases/procode",
     "run:prochat": "bun scripts/run.ts starters/showcases/prochat",
     "run:multichat": "bun scripts/run.ts starters/showcases/multichat",
+    "drivers:verify": "bun scripts/verify-drivers.ts",
     "walkthroughs:test": "bun scripts/test-walkthroughs.ts",
     "walkthroughs:smoke": "bun scripts/smoke-walkthroughs.ts",
     "smoke:section-12": "bun smoke/section-12-smoke/smoke.ts",

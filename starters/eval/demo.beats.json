@@ -1,0 +1,57 @@
+{
+  "title": "hello-eval — a math agent, a labelled split, a grader (target: eval)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“A math agent, a labelled dev split, an exact_match grader.” That's the whole shape.", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — scoring samples means really calling the model.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · Thirteen lines of spec",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“target: eval — this spec compiles to a scorer, not a chat loop.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 2], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent under test", "cue": "“The thing being measured: answer math questions with just the number.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [3, 6] },
+        { "id": "spec-dataset", "label": "Point at the dataset", "cue": "“Not a file path — a registry reference: name, version, split.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [7, 10] },
+        { "id": "spec-graders", "label": "Add the grader", "cue": "“exact_match — deterministic. No judge, no rubric, nothing to argue with.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [11, 12] },
+        { "id": "spec-open-graders", "label": "Open the standalone graders config", "cue": "The same grader by type — this is the file the CLI eval subcommand reads.", "action": "open", "file": "graders.yaml" },
+        { "id": "spec-concurrency", "label": "Set the fan-out", "cue": "“Two samples in flight at a time.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [13, 13] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-datasets", "label": "Resolve the registry reference", "cue": "“The dataset is vendored into .crewhaus/datasets — train, dev and test, right here.”", "action": "command", "command": "crewhaus datasets list", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints hello-eval v1 with its per-split sample counts" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The spec is sugar; this JSON is what the compiler actually sees — dataset ref, grader, fan-out.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the whole IR for target eval (21 lines) — dataset ref, graders, concurrency; the emitted bundle rebuilds its own agent IR and passes these three as separate runEval arguments" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the emitted shape, installs its deps, and boots it: GREEN, no key.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (3 anchors); install ok; boot gated at the registered-dataset gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted scorer", "cue": "“It imports runEval, reads the registry, applies the graders, prints the score.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Score the dev split",
+      "beats": [
+        { "id": "run-bundle", "label": "Run the compiled scorer", "cue": "[needs-key] “The bundle drives the real runEval” — runId, passRate, samples, report dir.", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "without credentials every sample fails and the run reports passRate: 0" } },
+        { "id": "run-open-dataset", "label": "Open the flat dev split", "cue": "input and expected_output, one JSON object per line — what --dataset takes.", "action": "open", "file": ".crewhaus/datasets/hello-eval/dev.jsonl" },
+        { "id": "run-open-cli-spec", "label": "Open the cli companion spec", "cue": "“The same math agent as a target: cli shape” — the one the eval subcommand drives.", "action": "open", "file": "agent.cli.yaml" },
+        { "id": "run-cli-eval", "label": "Score it through the CLI", "cue": "[needs-key] Same agent, same data, same grader — no bundle in the loop.", "action": "command", "command": "crewhaus eval agent.cli.yaml --dataset .crewhaus/datasets/hello-eval/dev.jsonl --graders graders.yaml -o live/eval", "verify": { "mode": "needs-key", "note": "writes grades + an HTML report under live/eval" } }
+      ]
+    },
+    {
+      "title": "One more thing · an eval is a gate, not a number",
+      "beats": [
+        { "id": "extra-gate", "label": "Run it as a gate", "cue": "[needs-key] “--gate exits non-zero on regression vs the pinned baseline.” That's the CI job.", "action": "command", "command": "crewhaus eval agent.cli.yaml --dataset .crewhaus/datasets/hello-eval/dev.jsonl --graders graders.yaml --gate -o live/eval-gate", "verify": { "mode": "needs-key", "note": "diffs against the pin run-cli-eval just set (same spec name + dataset = same baseline key): regressions=0 → “gate: PASS” → the new run is promoted; a regression exits non-zero instead" } },
+        { "id": "extra-history", "label": "List the recorded runs", "cue": "Every `crewhaus eval` run lands in .crewhaus/evals/index.jsonl — a score history, not a one-off number. The compiled bundle isn't in the table: it writes its own run dir and nothing else.", "action": "command", "command": "crewhaus eval-report history", "verify": { "mode": "offline", "expectedExit": 0, "note": "on camera: the two CLI runs above, the gate run flagged as base. Only `crewhaus eval` appends the index — offline verification runs this before any scored run, so it prints “no recorded runs match”" } },
+        { "id": "extra-baseline", "label": "Show the pinned baseline", "cue": "And the pin every later run is measured against — keyed by spec and dataset.", "action": "command", "command": "crewhaus eval-report baseline show", "verify": { "mode": "offline", "expectedExit": 0, "note": "empty before the first scored run: “no baselines pinned”" } }
+      ]
+    }
+  ]
+}

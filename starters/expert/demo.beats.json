@@ -1,0 +1,71 @@
+{
+  "title": "hello-expert — a self-teaching domain expert on the learning fabric (target: cli)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“An agent that becomes a verifiable expert in a field and keeps getting better on its own.”", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the keys", "cue": "[needs-key] Sources demos/.env — this one wants a Thredz key, an Anthropic key, and search.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env — THREDZ_API_KEY, ANTHROPIC_API_KEY, CREWHAUS_SEARCH_*" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec: two knobs and a domain",
+      "beats": [
+        { "id": "spec-premise", "label": "State the premise", "cue": "“Two knobs do all the work.” The old 150-line mechanism prompt now ships with CrewHaus.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 13], "replace": true },
+        { "id": "spec-usage", "label": "Document the run in the header", "cue": "The header carries its own recipe — and the three commands to try first.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [14, 17] },
+        { "id": "spec-shape", "label": "Name it, pick the shape", "cue": "target: cli — the interactive half of the starter; the daemon shape comes later.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [18, 20] },
+        { "id": "spec-thredz", "label": "Give it long-term memory", "cue": "“thredz: true ≡ api_key: $THREDZ_API_KEY — THE one argument.” The wiki is the memory.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [21, 22] },
+        { "id": "spec-learning", "label": "Add the learning block", "cue": "Domain, curriculum, source allowlist, exam — four lines register the whole learning-loop skill.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [23, 28] },
+        { "id": "spec-agent", "label": "One paragraph of identity", "cue": "Numbers with units, SCA standards over blogs — or say you're unsure. That's the persona.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [29, 40] },
+        { "id": "spec-researcher", "label": "Add the researcher sub-agent", "cue": "One narrow question in, 2–4 verbatim cited snippets out, under 180 words. No synthesis.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [41, 58] },
+        { "id": "spec-tools", "label": "Grant the builtin tools", "cue": "The wiki_* tools aren't listed — thredz: registers them under their bare names.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [59, 60] },
+        { "id": "spec-feedback", "label": "Wire ratings into the flywheel", "cue": "Stars on answers, autoDistill on — ratings fold into a versioned dataset at teardown.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [61, 66] },
+        { "id": "spec-permissions", "label": "Pre-allow recall and research", "cue": "Recall and research friction-free; wiki writes allowed but audited; run_exam pre-allowed.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [67, 91] },
+        { "id": "spec-curation", "label": "Let it curate its own plan", "cue": "It may edit its own curriculum, exam and field notes — Markdown and JSONL, nothing else.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [92, 96] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“lint: clean — no findings.” Parse, the IR passes, and the scope audit — nothing emitted.", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "The spec is sugar; this JSON is what the compiler actually sees. Too long for a terminal — send it to the scratch dir.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "the whole lowered IR for target cli, redirected so the next beat can open it (a pipe into head would swallow the exit code)", "produces": ["live/ir.json"] } },
+        { "id": "prove-open-ir", "label": "Read the IR", "cue": "`thredz: true` lowered into a real MCP server — mcp_servers.thredz: npx -y thredz-mcp, THREDZ_API_KEY as an env ref, visibility private as a literal.", "action": "open", "file": "live/ir.json" },
+        { "id": "prove-compile", "label": "Emit the bundle", "cue": "Two files out — the agent and its README — and the spec registers as hello-expert@v1.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist", "verify": { "mode": "offline", "expectedExit": 0, "note": "emits the bundle without the boot check; registers hello-expert@v1 into gitignored .crewhaus/specs", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "connectThredz, wireMemory, createExamRunner — the learning fabric, wired at boot.", "action": "open", "file": "live/dist/agent.ts" },
+        { "id": "prove-gate", "label": "Boot it with the key stripped", "cue": "Assertion ok, install ok — then the boot halts on the missing THREDZ_API_KEY. Exit 21, by name.", "action": "command", "command": "env -u THREDZ_API_KEY crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate: --check reports RED (exit 1) because the boot exits 21 on the missing THREDZ_API_KEY — the config gate the README documents. Assertion (11 anchors) and install both pass; `env -u` makes it deterministic whatever the operator's .env holds." } },
+        { "id": "prove-check", "label": "Now hand it a key — and watch nothing change", "cue": "Same command, key supplied: byte-identical RED. --check boots with a scrubbed environment on purpose, so a key in your shell never reaches the bundle. The gate is structural, not credential-dependent.", "action": "command", "command": "THREDZ_API_KEY=not-a-real-key crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 1, "note": "the point of the beat: same RED, same exit 21, same 11 anchors as prove-gate. --check passes only PATH/HOME/proxy/CA through and boots with an empty --env-file, so neither an exported key nor a colocated .env can satisfy an MCP env ref here. A real key is verified by `crewhaus run` in Beat 3 instead." } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Cold start to competent",
+      "beats": [
+        { "id": "run-open-curriculum", "label": "Open the curriculum", "cue": "The ladder it works down: fundamentals → methods → measurement → frontier.", "action": "open", "file": "curriculum.md" },
+        { "id": "run-repl", "label": "Launch the expert", "cue": "[needs-key] The wiki is the memory, so boot checks for the Thredz key before anything else.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs THREDZ_API_KEY + Anthropic credentials" } },
+        { "id": "run-ask-cold", "label": "Ask it before it knows anything", "cue": "[needs-key] Empty wiki, honest answer — “I don't know that yet”, and it logs a knowledge gap.", "action": "input", "text": "What grind and ratio for a balanced V60?", "verify": { "mode": "needs-key" } },
+        { "id": "run-study", "label": "Send it to study", "cue": "[needs-key] Gaps first, then the curriculum. Researchers fan out; cited articles land in the wiki.", "action": "input", "text": "/study", "verify": { "mode": "needs-key", "note": "reads the live web — needs a CREWHAUS_SEARCH_* provider as well" } },
+        { "id": "run-ask-again", "label": "Ask the same question again", "cue": "[needs-key] Same question, answered from memory this time — with slug citations.", "action": "input", "text": "What grind and ratio for a balanced V60?", "verify": { "mode": "needs-key" } },
+        { "id": "run-open-dataset", "label": "Open the competency exam", "cue": "Gold Q&A: Golden Cup extraction yield, TDS, and diagnosing a sour cup.", "action": "open", "file": "eval/dataset.jsonl" },
+        { "id": "run-open-graders", "label": "Open the exam rubric", "cue": "One llm_judge — factual_correctness and grounded_not_bluffed, passing score 4.", "action": "open", "file": "eval/graders.yaml" },
+        { "id": "run-exam", "label": "Sit the exam", "cue": "[needs-key] run_exam grades in-process — no Bash, no shell-out — and every failure becomes a gap.", "action": "input", "text": "/exam", "verify": { "mode": "needs-key", "note": "runs eval/dataset.jsonl through eval/graders.yaml in fresh sessions; needs credentials" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · It studies while you sleep",
+      "beats": [
+        { "id": "extra-open-daemon", "label": "Open the daemon spec", "cue": "Same domain, same skill, target: channel — plus a heartbeat every 6h.", "action": "open", "file": "daemon.yaml" },
+        { "id": "extra-open-heartbeat", "label": "Open the heartbeat doc", "cue": "The built-in rotation: gaps first, otherwise roughly 3 STUDY to 1 REFLECT, bounded per tick.", "action": "open", "file": "HEARTBEAT.md" },
+        { "id": "extra-lint-daemon", "label": "Lint the second shape", "cue": "Same learning: block, a local wiki instead of Thredz — and it lints clean too.", "action": "command", "command": "crewhaus lint daemon.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings; reads the committed daemon.yaml, never writes it" } },
+        { "id": "extra-check-daemon", "label": "Compile the daemon — and check it", "cue": "Five files asserted, deps installed, boot gated on its Slack env refs: GREEN, no key in the room.", "action": "command", "command": "crewhaus compile daemon.yaml -o live/dist-daemon --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (4 anchors); install ok; boot reached its spec env refs gate", "produces": ["live/dist-daemon/daemon.ts", "live/dist-daemon/gateway.ts"] } },
+        { "id": "extra-dev", "label": "Run the supervised dev loop", "cue": "[manual] Recompiles and relaunches on every change; status page on localhost:4173.", "action": "command", "command": "crewhaus dev daemon.yaml", "verify": { "mode": "manual", "note": "long-lived supervised daemon — needs Slack app credentials and a human to watch the status page and stop it" } }
+      ]
+    }
+  ]
+}

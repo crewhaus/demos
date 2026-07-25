@@ -1,0 +1,57 @@
+{
+  "title": "hello-channel-discord — the same shape, a different platform (target: channel)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“Minimal target: channel wired for Discord — slash commands, buttons, modals, one turn each.” Read past the “Gateway WebSocket” line: this adapter is signed HTTP interactions only, and slash commands are registered by provision, not at startup.", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the credentials", "cue": "[needs-key] Sources demos/.env for the boot beats — Anthropic plus the three Discord refs.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env; the Discord beats also want DISCORD_APPLICATION_ID + DISCORD_BOT_TOKEN + DISCORD_PUBLIC_KEY" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec: swap the platform, keep the shape",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“Same target: channel as the Slack starter. The platform is a block, not a rewrite.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 2], "replace": true },
+        { "id": "spec-agent", "label": "The agent — model and instructions", "cue": "“When a slash command, button click, or modal submit fires, reply concisely.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [3, 8] },
+        { "id": "spec-tools", "label": "Give it one hand", "cue": "Read only — no shell here, so there is nothing to ask about at runtime.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [9, 10] },
+        { "id": "spec-channels", "label": "Wire it to Discord", "cue": "Three env refs: application id, bot token, and the public key that verifies each interaction.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [11, 15] },
+        { "id": "spec-routing", "label": "Route an interaction to a session", "cue": "The same sessionKey: thread as the Slack starter — but read it in Discord's terms: “thread” is a real thread channel, and a slash command in a plain channel is keyed by its own interaction id, so each one opens a fresh session.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [16, 17] },
+        { "id": "spec-permissions", "label": "State the policy anyway", "cue": "One rule: Read is always allowed. The permission block is in the spec even when it is short.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [18, 21] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Same IR target as the Slack starter — only the adapter and its secret refs differ.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target channel (discord adapter, three secret refs)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, with no token in the room.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (4 anchors); install ok; boot gated at the spec env refs gate", "produces": ["live/dist/daemon.ts", "live/dist/gateway.ts", "live/dist/session-router.ts", "live/dist/agent.ts"] } },
+        { "id": "prove-open-daemon", "label": "Open the emitted daemon", "cue": "The Discord adapter is one import swap; the gateway, router and agent are the same three files.", "action": "open", "file": "live/dist/daemon.ts" },
+        { "id": "prove-adapter", "label": "Find the platform in the bundle", "cue": "“One import names the platform. Everything else the compiler emits is shape, not Discord.”", "action": "command", "command": "grep -n channel-adapter live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "two hits: channel-adapter-discord (the platform) and channel-adapter-base (the shape)" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-reject", "label": "Ask run to run it", "cue": "“run is the cli/browser REPL. A daemon isn't a chat — the CLI names the shapes it takes.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `crewhaus run supports target: cli or browser (got \"channel\")`" } },
+        { "id": "run-gate", "label": "Boot the daemon with no secrets", "cue": "“Scrub the secrets back out and it names every one of them — before it binds a port — then exits 2.”", "action": "command", "command": "env -u DISCORD_APPLICATION_ID -u DISCORD_BOT_TOKEN -u DISCORD_PUBLIC_KEY -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY bun live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 2, "note": "designed refusal — `[daemon] missing required env vars: DISCORD_APPLICATION_ID, DISCORD_BOT_TOKEN, DISCORD_PUBLIC_KEY, ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY`. env -u is load-bearing: Setup already sourced .env into this same terminal, so without it a provisioned take boots the daemon instead of showing the gate" } },
+        { "id": "run-boot", "label": "Boot it for real", "cue": "[needs-key] “Secrets present, and it serves the interactions endpoint on PORT — 3000 by default.” Backgrounded, so the terminal stays yours.", "action": "command", "command": "bun live/dist/daemon.ts &", "verify": { "mode": "needs-key", "note": "needs the three Discord vars + Anthropic credentials; long-running HTTP interactions endpoint — `&` keeps the manifest's one terminal free for the beats after it (`kill %1` when the take is done, or port 3000 is still held on the re-take)" } },
+        { "id": "run-slash", "label": "Fire a slash command", "cue": "[manual] Invoke the command in Discord; the adapter renders it as “/<name> <options>” for the agent.", "action": "command", "command": "ls .crewhaus/sessions | tail -3", "verify": { "mode": "manual", "note": "a real Discord app + a public interactions URL has to deliver the interaction first" } }
+      ]
+    },
+    {
+      "title": "One more thing · the Discord app setup is a command too",
+      "beats": [
+        { "id": "extra-provision", "label": "Derive the interactions endpoint + invite URL", "cue": "“channel provision derives the endpoint PATCH, the permission bits, and the invite URL.”", "action": "command", "command": "crewhaus channel provision live/crewhaus.yaml --platform discord --base-url https://demo.example.com --dry-run", "verify": { "mode": "offline", "expectedExit": 0, "note": "dry run prints the applications/@me PATCH payload + invite URL + the slash-command registration step; writes nothing" } },
+        { "id": "extra-verify-dry", "label": "Preview the endpoint doctor", "cue": "“Exactly one call it would make — GET applications/@me — before you own an app.”", "action": "command", "command": "crewhaus channel verify live/crewhaus.yaml --dry-run", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the would-GET applications/@me plan; no network" } },
+        { "id": "extra-verify-live", "label": "Run the endpoint doctor for real", "cue": "[needs-key] Live application fetch — exit 1 the moment the interactions URL doesn't match.", "action": "command", "command": "crewhaus channel verify live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "hits discord.com with $DISCORD_BOT_TOKEN; exits 1 on a mismatched interactions endpoint" } }
+      ]
+    }
+  ]
+}

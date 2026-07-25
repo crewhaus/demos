@@ -2,6 +2,10 @@ node_modules/
 **/node_modules/
 dist/
 **/dist/
+# Demo Driver scratch — every starter's demo.beats.json types its spec into
+# live/ so the committed crewhaus.yaml is never touched on camera.
+live/
+**/live/
 .DS_Store
 *.log
 .env
@@ -23,6 +27,11 @@ dist/
 **/.crewhaus/audit/
 **/.crewhaus/graphs/
 **/.crewhaus/research/
+# Written by a live demo-driver take (durable steps, flywheel runs). Note
+# .crewhaus/datasets/ is deliberately NOT ignored — starters/eval vendors its
+# dataset there — so a take that distills a new one shows up for review.
+**/.crewhaus/idempotency/
+**/.crewhaus/flywheel/
 # starters/trader — the paper broker's runtime state (ledger + journal)
 **/.paper-broker/
 .claude/

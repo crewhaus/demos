@@ -1,0 +1,55 @@
+{
+  "title": "hello-research — an autonomous research agent that must cite (target: research)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“An agent that researches one sub-question at a time using local source documents.”", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beats.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec — a research contract",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“target: research” — plan, branch, cite, report. No REPL in this one.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 2], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent and its job", "cue": "Haiku, and the rule that shapes everything after it: one sub-question at a time.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [3, 7] },
+        { "id": "spec-workflow", "label": "Spell out the four steps", "cue": "Load every source, pick at most 2 verbatim snippets, CiteFact each one, then answer.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [8, 20] },
+        { "id": "spec-goal", "label": "Give it the goal", "cue": "The question ships in the spec: what shapes exist, grouped shipped versus planned.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [21, 24] },
+        { "id": "spec-budget", "label": "Cap the run", "cue": "Three branches, four minutes. The budget is a spec field, not a hope.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [25, 26] },
+        { "id": "spec-fence", "label": "Fence the filesystem", "cue": "Its entire world is ./sources — harness-relative, so a copy works anywhere.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [27, 33] },
+        { "id": "spec-open-sources", "label": "Open the corpus it's fenced to", "cue": "Three markdown files. This is the one with the shipped-versus-planned split.", "action": "open", "file": "sources/target-shapes-roadmap.md" }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "Goal, branching factor and the allowed file roots all lower into the IR.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target research (33 lines)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (7 anchors); install ok; boot gated at the credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "One .ts file — the other is the generated README — and it holds the whole loop: decompose the goal, run a branch each, write a cited report.", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-refuse", "label": "Try crewhaus run", "cue": "“run supports target cli or browser” — research is compile-only. The bundle is the runtime.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection, exit 1: `crewhaus run` supports cli|browser; other shapes are compile-only" } },
+        { "id": "run-bundle", "label": "Boot the bundle", "cue": "[needs-key] It writes its own sub-questions first, then researches them one branch at a time.", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "plan → branch per sub-question → report; needs Anthropic credentials" } },
+        { "id": "run-report", "label": "Read the report it wrote", "cue": "[needs-key] No merge step, no executive summary: the goal as the title, one section per sub-question, then the numbered Citations list — each number a file:// URI and the snippet a branch quoted from it.", "action": "command", "command": "cat \"$(ls -t .crewhaus/research/*/report.md | head -1)\"", "verify": { "mode": "needs-key", "note": "newest report only — a bare `*/report.md` glob cats every earlier run on a re-take. report-writer's renderMarkdown emits exactly `# <goal>`, `## <sub-question>` + that branch's answer, then `## Citations`; there is no synthesis pass, and the Citations block appears only if some branch actually called CiteFact" } }
+      ]
+    },
+    {
+      "title": "One more thing · the goal is a flag",
+      "beats": [
+        { "id": "extra-goal", "label": "Point it at a different question", "cue": "[needs-key] Same bundle, same fenced corpus — a new goal and a single branch.", "action": "command", "command": "bun live/dist/agent.ts --goal \"Which target shapes are still planned, and what ships each one?\" --branching 1", "verify": { "mode": "needs-key", "note": "--goal and --branching override the spec defaults at launch" } },
+        { "id": "extra-runs", "label": "List the runs on disk", "cue": "[needs-key] One directory per run: report.md, report.json, and the state.json --resume reads.", "action": "command", "command": "ls .crewhaus/research", "verify": { "mode": "needs-key", "note": "the directory only exists after a needs-key run" } }
+      ]
+    }
+  ]
+}

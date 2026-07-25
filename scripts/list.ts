@@ -4,7 +4,8 @@
  *
  * Walks `starters/` (top tier + channels/{...} + showcases/{...}), finds
  * every directory with a `crewhaus.yaml`, and prints the demo name + its
- * `target:` field + whether a `README.md` is present. Drop-in replacement
+ * `target:` field + whether a `README.md` and a `demo.beats.json` screencast
+ * driver are present (see DEMO-DRIVERS.md). Drop-in replacement
  * for the discoverability that `bun run --list` provided when every demo
  * had its own `compile:hello-*` script.
  */
@@ -25,7 +26,7 @@ function targetOf(spec: string): string {
   }
 }
 
-type Entry = { name: string; target: string; hasReadme: boolean };
+type Entry = { name: string; target: string; hasReadme: boolean; hasDriver: boolean };
 
 function walk(dir: string, entries: Entry[]): void {
   const spec = join(dir, "crewhaus.yaml");
@@ -34,12 +35,13 @@ function walk(dir: string, entries: Entry[]): void {
       name: relative(REPO_ROOT, dir),
       target: targetOf(spec),
       hasReadme: existsSync(join(dir, "README.md")),
+      hasDriver: existsSync(join(dir, "demo.beats.json")),
     });
     return; // don't descend into a demo dir
   }
   for (const name of readdirSync(dir).sort()) {
     if (name.startsWith(".")) continue;
-    if (name === "node_modules" || name === "dist") continue;
+    if (name === "node_modules" || name === "dist" || name === "live") continue;
     const child = join(dir, name);
     if (statSync(child).isDirectory()) walk(child, entries);
   }
@@ -62,12 +64,15 @@ function main(): void {
   const nameWidth = Math.max(...entries.map((e) => e.name.length));
   const targetWidth = Math.max(...entries.map((e) => e.target.length));
   process.stdout.write(
-    `${"DEMO".padEnd(nameWidth)}  ${"TARGET".padEnd(targetWidth)}  README\n`,
+    `${"DEMO".padEnd(nameWidth)}  ${"TARGET".padEnd(targetWidth)}  README  DRIVER\n`,
   );
-  process.stdout.write(`${"".padEnd(nameWidth, "-")}  ${"".padEnd(targetWidth, "-")}  ------\n`);
+  process.stdout.write(
+    `${"".padEnd(nameWidth, "-")}  ${"".padEnd(targetWidth, "-")}  ------  ------\n`,
+  );
   for (const e of entries) {
     process.stdout.write(
-      `${e.name.padEnd(nameWidth)}  ${e.target.padEnd(targetWidth)}  ${e.hasReadme ? "✓" : "✗"}\n`,
+      `${e.name.padEnd(nameWidth)}  ${e.target.padEnd(targetWidth)}  ` +
+        `${e.hasReadme ? "✓" : "✗"}       ${e.hasDriver ? "✓" : "✗"}\n`,
     );
   }
   process.stdout.write(`\n${entries.length} demos. Run \`bun run compile <demo>\` to build.\n`);

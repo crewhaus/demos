@@ -1,0 +1,55 @@
+{
+  "title": "hello-workflow — a deterministic two-step pipeline (target: workflow)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“A two-step sequential agent: step 1 lists the directory, step 2 summarizes what it found.” Hold on to that “Run it” block — one of its two lines does not work for this shape, and Beat 3 shows you which.", "action": "open", "file": "README.md" },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the boot beats.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec: two steps, in order",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“Three lines: what it's called, which runtime spine to compile, which model runs the steps.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 3], "replace": true },
+        { "id": "spec-permission-note", "label": "Write down the trap", "cue": "“Workflow steps run single-turn — there's no interactive surface to prompt on.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [4, 8] },
+        { "id": "spec-permissions", "label": "Allow Bash explicitly", "cue": "Anything that would ask becomes deny — so grant Bash here, or step 1 never runs ls -la.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [9, 11] },
+        { "id": "spec-step-list", "label": "Step 1 · list-files", "cue": "“Run ls -la. Report in 1–3 short sentences. Do not editorialize beyond what the listing shows.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [12, 17] },
+        { "id": "spec-step-tools", "label": "Fence step 1's tools", "cue": "Tools are granted per step, not per agent — step 1 gets bash, and nothing else.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [18, 19] },
+        { "id": "spec-step-summarize", "label": "Step 2 · summarize", "cue": "“You will receive the previous step's directory listing as context.” — and it calls no tools.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [20, 24] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Two steps, each with its own instructions, model and tool grant — that's the whole program.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target workflow (2 steps)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, with no key in the room.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted pipeline", "cue": "“Step 1's answer is seeded into step 2 as ‘## Output of previous step’ — the thread is code.”", "action": "open", "file": "live/dist/agent.ts" },
+        { "id": "prove-worker", "label": "Try to ship it to the edge", "cue": "“Refused: step 1 runs a host shell, and a Cloudflare Worker has no shell to run it in.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-as cf-worker -o live/worker", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — cf-worker cannot run the host tool `bash`; the compiler refuses instead of dropping it" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-reject", "label": "Ask run to run it", "cue": "There it is — that's the line the README's “Run it” block hands you, and it's wrong for this shape. run is the cli/browser REPL; a workflow isn't a chat, so the CLI names the shapes it does take.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `crewhaus run supports target: cli or browser (got \"workflow\")`. NB the starter README's \"Run it\" block still documents this exact command (README.md:12); the cue turns that into the beat rather than pretending it isn't on screen." } },
+        { "id": "run-bundle", "label": "Boot the compiled pipeline", "cue": "[needs-key] “So you boot the bundle: step 1/2 looks around, step 2/2 summarizes, and it exits.”", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "runs both steps against Anthropic; deps were installed by the --check beat" } }
+      ]
+    },
+    {
+      "title": "One more thing · exactly-once steps",
+      "beats": [
+        { "id": "extra-clear", "label": "Start the store empty", "cue": "The run id is fixed, so take two would replay take one. Clear the store and the contrast is real.", "action": "command", "command": "rm -rf live/idem", "verify": { "mode": "offline", "expectedExit": 0, "note": "re-take hygiene: `take-1` is a stable id, so without this the very first boot below would return take one's cached steps instead of running them, and the two beats would look identical" } },
+        { "id": "extra-durable", "label": "Name the run, store the steps", "cue": "[needs-key] A stable run id plus a file store: every finished step is recorded as it completes.", "action": "command", "command": "CREWHAUS_RUN_ID=take-1 CREWHAUS_IDEMPOTENCY_STORE=file:live/idem bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "same two steps; records land under live/idem/hello-workflow — inside the gitignored scratch dir, so a take leaves no diff (the bare `file` value would write .crewhaus/idempotency/, which is NOT ignored)" } },
+        { "id": "extra-durable-replay", "label": "Boot the same run again", "cue": "[needs-key] “Resumes at the first not-yet-completed step” — the finished ones never re-run.", "action": "command", "command": "CREWHAUS_RUN_ID=take-1 CREWHAUS_IDEMPOTENCY_STORE=file:live/idem bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "durable exactly-once replay: completed steps return their cached result instead of re-running; same run id and same store as the beat above" } }
+      ]
+    }
+  ]
+}
