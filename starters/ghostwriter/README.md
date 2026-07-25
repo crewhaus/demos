@@ -24,6 +24,22 @@ you ask for a draft ──► ghostwriter drafts ──► you send it as-is?
                                     (better instructions, reviewed by you)
 ```
 
+**The `autoDistill` arrow is threshold-gated** — worth knowing before you
+plan a session around it. Nothing is registered until **5 unprocessed
+ratings** have accumulated, and below that the `crewhaus run` teardown
+prints nothing at all; there is no "waiting for 4 more" line. So
+`--dataset registry:ghostwriter-ratings` exits 1 with `has no versions in
+the registry` until the fifth rating lands. Two ways through it:
+
+```bash
+CREWHAUS_AUTODISTILL_THRESHOLD=1 crewhaus run crewhaus.yaml   # fold on the next teardown
+crewhaus datasets list                                        # ghostwriter-ratings  v1  …
+```
+
+…or work off a file until then — `crewhaus scaffold-evals crewhaus.yaml -o
+eval` writes a day-one `eval/dataset.jsonl` + `eval/graders.yaml` you can
+point `flywheel run --dataset eval/dataset.jsonl` at with zero ratings.
+
 > Walkthrough:
 > [72 — Zero to self-improving](../../walkthroughs/72-zero-to-improving.md)
 > uses this starter to teach the whole eval vocabulary (sample, dataset,

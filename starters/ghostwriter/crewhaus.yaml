@@ -7,7 +7,8 @@
 #   crewhaus rate      → 👍/👎/stars on a draft
 #   crewhaus feedback --correction "<what you actually sent>"
 #                      → the strongest signal there is (the gold answer)
-#   autoDistill: true  → ratings fold into a versioned dataset at teardown
+#   autoDistill: true  → once 5 unprocessed ratings accumulate, a run
+#                        teardown folds them into a versioned dataset
 #   crewhaus flywheel run → gated, reviewable spec improvements, nightly
 #
 # Walkthrough: ../../walkthroughs/72-zero-to-improving.md walks the whole
@@ -34,9 +35,13 @@ agent:
 
 tools: [read, glob, grep]
 
-# The zero-setup improvement contract: the harness collects ratings, and
-# accumulated ratings become a versioned `ghostwriter-ratings` registry
-# dataset at run teardown (autoDistill) — no JSONL is ever hand-written.
+# The zero-setup improvement contract: the harness collects ratings, and a
+# `crewhaus run` teardown folds them into a versioned `ghostwriter-ratings`
+# registry dataset — no JSONL is ever hand-written. The fold is
+# threshold-gated: nothing is registered until 5 unprocessed ratings have
+# accumulated (CREWHAUS_AUTODISTILL_THRESHOLD tunes it), and under the
+# threshold the teardown is silent. Until the fifth rating lands,
+# `--dataset registry:ghostwriter-ratings` exits 1 with "no versions".
 feedback:
   modality: stars
   scale: { min: 1, max: 5 }

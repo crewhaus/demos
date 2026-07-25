@@ -28,8 +28,8 @@ ANTHROPIC_API_KEY=sk-ant-... \
 From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
 
 ```bash
-bun run compile showcases/multichat
-bun run run showcases/multichat
+bun run compile starters/showcases/multichat
+bun run run starters/showcases/multichat
 ```
 
 </details>
@@ -104,9 +104,9 @@ infrastructure.
 | Tool planner | `sub_agents.planner` (called via `Task` tool) |
 | Compaction (memory window) | `compaction: { model: claude-haiku-* }` |
 | Skills / slash commands | `.crewhaus/skills/`, `.crewhaus/commands/` (auto-discovered) |
-| Heartbeat scheduled wake | `heartbeat: { every, instructions }` (Phase 3 §3.1) |
-| Per-channel emoji reactions (👀 / ✅ / ⚠️) | Slack adapter ships full; Telegram/Discord/WhatsApp/iMessage pending (Phase 3 §3.2) |
-| Control-UI gateway | `gateway: { port, ui }` — `/status` JSON + minimal HTML dashboard (Phase 3 §3.4) |
+| Heartbeat scheduled wake | `heartbeat: { every, instructions }` — a `setInterval` in the emitted daemon |
+| Per-channel emoji reactions (👀 / ✅ / ⚠️) | Automatic, no spec block: the session router reacts where the adapter implements `react()` (Slack, Telegram, WhatsApp). Discord's inbound is an interaction with no message to react to, and iMessage has no reaction API — both skip silently |
+| Control-UI gateway | `gateway: { port, ui }` — `/status` JSON + minimal HTML dashboard |
 
 ### What's still out of scope
 
@@ -159,9 +159,9 @@ Catalog modules touched (per factory's
 - **Heartbeat** — every 2h, the agent wakes itself, reads HEARTBEAT.md,
   and decides whether to surface anything. The default verdict is
   silence.
-- **Emoji status acks** — 👀 on inbound, ✅ on success, ⚠️ on
-  need-approval. Slack ships full; other channels' adapter
-  implementations are tracked.
+- **Emoji status acks** — 👀 on inbound, ✅ on success, ⚠️ on error or
+  need-approval, added by the daemon itself. Slack, Telegram and
+  WhatsApp react; Discord and iMessage have no reaction hook and skip.
 - **Control-UI gateway** — `http://localhost:19001/` shows daemon
   health (channels, turn count, heartbeat ticks). 🦞 branding.
 

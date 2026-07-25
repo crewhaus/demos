@@ -27,11 +27,19 @@ live/
 **/.crewhaus/audit/
 **/.crewhaus/graphs/
 **/.crewhaus/research/
-# Written by a live demo-driver take (durable steps, flywheel runs). Note
-# .crewhaus/datasets/ is deliberately NOT ignored — starters/eval vendors its
-# dataset there — so a take that distills a new one shows up for review.
+# Written by a live demo-driver take (continuity state, durable steps,
+# flywheel runs). state/ is the continuity store: continuity is ON BY DEFAULT
+# in 0.4.0, so EVERY run of EVERY starter writes .crewhaus/state/<agent>/
+# handoff.md — measured by running `crewhaus run crewhaus.yaml` inside
+# starters/cli with no memory: block in the spec at all.
+# trash/ is where the continuity store's clear() (/clear-plan, /clear-focus)
+# moves files; it is never source. Note .crewhaus/datasets/ is deliberately
+# NOT ignored — starters/eval vendors its dataset there — so a take that
+# distills a new one shows up for review.
 **/.crewhaus/idempotency/
 **/.crewhaus/flywheel/
+**/.crewhaus/state/
+**/.crewhaus/trash/
 # starters/trader — the paper broker's runtime state (ledger + journal)
 **/.paper-broker/
 .claude/

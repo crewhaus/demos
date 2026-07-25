@@ -8,10 +8,10 @@
  *   C) federation-router happy path with injected transport — verifies
  *      envelope shape, fingerprint pin check, traceparent propagation
  *   D) router error mapping → recovery taxonomy
- *   E) live two-deployment smoke: in-process double Bun.serve over
- *      self-signed certs, deployment-a calls deployment-b, response
- *      stitched back through trace events. (No docker-compose
- *      required — all in this process.)
+ *   E) live two-deployment smoke: an in-process Bun.serve stands in for
+ *      deployment-b over plain HTTP, deployment-a routes a question to it,
+ *      and the response is stitched back through the envelope. (No
+ *      docker-compose required — all in this process.)
  *   F) live docker-compose probe: gated on `docker compose version` +
  *      a working CrewHaus deployment fixture. Skipped on plain CI.
  */
@@ -99,10 +99,18 @@ log("probe B: discovery cache");
 
 // ── Probe C: router happy path ─────────────────────────────────────────────
 log("probe C: router happy path");
-// Use the static fixture cert from packages/federation-protocol — the
-// earlier on-the-fly openssl req approach timed out CI runners with slow
-// entropy. The fixture is test-only (no production deployment uses it).
-const FIXTURE_DIR = join(import.meta.dir, "..", "..", "..", "factory", "packages", "federation-protocol", "src");
+// Static fixture cert + key, vendored next to this smoke so it runs from a
+// clean demos checkout with no sibling repo. Generating them on the fly with
+// `openssl req` timed out CI runners with slow entropy, so they are committed:
+//
+//   openssl req -x509 -newkey rsa:2048 -nodes \
+//     -keyout fixtures-key.pem -out fixtures-cert.pem \
+//     -days 3650 -subj "/CN=fed-fixture" -sha256
+//
+// Test-only throwaway pair — no deployment, service, or account uses it.
+// `federationCall` runs `validateCredentials()` before every call (even with
+// an injected transport), so the key has to be a real, parseable one.
+const FIXTURE_DIR = import.meta.dir;
 const certPemFixture = readFileSync(join(FIXTURE_DIR, "fixtures-cert.pem"), "utf8");
 const keyPemFixture = readFileSync(join(FIXTURE_DIR, "fixtures-key.pem"), "utf8");
 const certs = {

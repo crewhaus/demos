@@ -1,9 +1,27 @@
-# Single grader: case-insensitive containment of the expected output.
-# The terse default instructions tend to produce wordy answers; the
-# optimizer's rule-based provider biases toward "Be concise" rewrites
-# which improves grader pass-rate.
+# The dataset is the contract: every sample's expected_output is the
+# machine-readable line `capital=<City>`, so a passing answer is that
+# line and nothing else — no prose, no markdown, nothing to strip.
+#
+# Two graders. CLI 0.4.0 combines every grader in this file with `all`,
+# so a sample passes only when both do:
+#
+#   format-line   `contains` takes a LITERAL substring — the SAME string
+#                 for every sample. It can check the contract's marker,
+#                 never the per-sample answer. (Writing
+#                 `substring: expected_output` here would search the
+#                 answer for the literal text "expected_output" and fail
+#                 every sample — the trap this line exists to name.)
+#   exact-answer  the per-sample check: `exact_match` compares the whole
+#                 output against THIS sample's expected_output.
+#
+# Measured on CLI 0.4.0 with the terse prompt in crewhaus.yaml:
+# pass_rate=0.0% — every answer names the right city, in prose.
 graders:
-  - name: contains-expected
+  - name: format-line
     type: contains
-    substring: expected_output
+    substring: "capital="
+    case_insensitive: true
+  - name: exact-answer
+    type: exact_match
+    trim: true
     case_insensitive: true

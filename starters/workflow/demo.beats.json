@@ -10,7 +10,7 @@
     {
       "title": "Setup",
       "beats": [
-        { "id": "setup-readme", "label": "Open the starter README", "cue": "“A two-step sequential agent: step 1 lists the directory, step 2 summarizes what it found.” Hold on to that “Run it” block — one of its two lines does not work for this shape, and Beat 3 shows you which.", "action": "open", "file": "README.md" },
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“A two-step sequential agent: step 1 lists the directory, step 2 summarizes what it found.” Note what the “Run it” block does *not* offer: no `crewhaus run`. A workflow ships as a bundle you boot yourself — Beat 3 shows you why.", "action": "open", "file": "README.md" },
         { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
         { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the boot beats.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
       ]
@@ -39,7 +39,7 @@
     {
       "title": "Beat 3 · Run it",
       "beats": [
-        { "id": "run-reject", "label": "Ask run to run it", "cue": "There it is — that's the line the README's “Run it” block hands you, and it's wrong for this shape. run is the cli/browser REPL; a workflow isn't a chat, so the CLI names the shapes it does take.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `crewhaus run supports target: cli or browser (got \"workflow\")`. NB the starter README's \"Run it\" block still documents this exact command (README.md:12); the cue turns that into the beat rather than pretending it isn't on screen." } },
+        { "id": "run-reject", "label": "Ask run to run it", "cue": "“run is the cli/browser REPL — a workflow isn't a chat.” It doesn't just fail: it names the shapes it does take. That's the reason the README's “Run it” block boots the bundle instead.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `crewhaus run supports target: cli or browser (got \"workflow\")`. The starter README documents the compile --check → `bun dist/agent.ts` path instead, and says in as many words that run is cli/browser-only." } },
         { "id": "run-bundle", "label": "Boot the compiled pipeline", "cue": "[needs-key] “So you boot the bundle: step 1/2 looks around, step 2/2 summarizes, and it exits.”", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "runs both steps against Anthropic; deps were installed by the --check beat" } }
       ]
     },

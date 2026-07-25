@@ -1,7 +1,7 @@
 # hello-cli — minimal vertical slice
 
 The smallest possible end-to-end demonstration of the meta-harness pipeline:
-a 5-line spec → compiled to a runnable streaming chat agent.
+a 7-line spec → compiled to a runnable streaming chat agent.
 
 ## Run it
 
@@ -9,11 +9,16 @@ This starter is self-contained — run it from its own directory:
 
 ```bash
 cd starters/cli            # if you copied it elsewhere, cd into that copy
-bunx crewhaus compile crewhaus.yaml -o dist               # writes dist/agent.ts
-ANTHROPIC_API_KEY=sk-... bunx crewhaus run crewhaus.yaml  # or: bun install --cwd dist && bun dist/agent.ts
+bunx crewhaus compile crewhaus.yaml -o dist --check        # writes dist/agent.ts and installs its deps
+ANTHROPIC_API_KEY=sk-... bunx crewhaus run crewhaus.yaml   # or: bun dist/agent.ts
 ```
 
 Type messages, get streaming replies, type `exit` to quit.
+
+> `--check` is what writes the bundle's `package.json` and `bun.lock` on CLI
+> 0.4.0 (it also asserts the emitted shape and smoke-boots it). A plain
+> `compile -o dist` emits only `agent.ts`, so `bun install --cwd dist` has no
+> manifest to install from and exits 1.
 
 > `bunx crewhaus` resolves the published CLI, so this works after the
 > starter is copied anywhere — no repo checkout required. (Install it
@@ -25,8 +30,8 @@ Type messages, get streaming replies, type `exit` to quit.
 From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
 
 ```bash
-bun run compile cli                       # writes starters/cli/dist/agent.ts
-bun run run cli                           # opens an interactive REPL
+bun run compile starters/cli              # writes starters/cli/dist/agent.ts
+bun run run starters/cli                  # opens an interactive REPL
 ```
 </details>
 

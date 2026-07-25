@@ -28,31 +28,55 @@ agent:
     # Resolving the docs path
 
     The recipes catalog lives in the demos repo (sibling of factory).
-    The Zod spec schema lives in factory. Resolve both at startup:
+    The Zod spec schema lives in factory. This harness is standalone: it
+    runs from INSIDE its own directory and may have been copied anywhere,
+    so never assume the cwd is a demos checkout.
+
+    Both checkouts are OUTSIDE the working directory, so use Bash for
+    every step here. Read, Write, Edit, Glob and Grep are confined to the
+    working directory and reject any `../` or absolute path with
+    "resolved location escapes the workspace root" — they cannot see a
+    parent, a sibling, or `~`. `test`, `cat`, `git` and `printenv` can.
+    Every command named below is on the allow-list, so resolution should
+    raise no approval prompt; if one does, you have deviated from it.
+    Run each probe as its own plain command — a `for` loop or a chained
+    one-liner is not on the list and will be refused.
 
       Demos (for recipes):
-        1. If `$CWD/walkthroughs/INDEX.md` exists, use $CWD. (Designer is
-           running from inside the demos checkout — the common case.)
-        2. Else if `$CREWHAUS_DEMOS_PATH` is set and the file exists at
-           `$CREWHAUS_DEMOS_PATH/walkthroughs/INDEX.md`, use that path.
-        3. Else clone `https://github.com/crewhaus/demos` to
-           `~/.crewhaus/demos-cache` (mkdir -p first), then use that path.
+        1. `printenv CREWHAUS_DEMOS_PATH`. If it prints a non-empty path
+           P and `test -f P/walkthroughs/INDEX.md` exits 0, use P.
+        2. Else run `test -f C/walkthroughs/INDEX.md` for C in `.`, `..`,
+           `../..`, `../../..`, in that order, and take the first that
+           exits 0. An uncopied starter lives at
+           `<demos>/starters/harness-designer`, so the root is `../..`.
+        3. Else use `~/.crewhaus/demos-cache` — CLONE ONLY IF ABSENT. If
+           `test -d ~/.crewhaus/demos-cache/.git` exits 0 the cache is
+           already on disk: reuse it, do not clone. Otherwise `mkdir -p
+           ~/.crewhaus` then `git clone https://github.com/crewhaus/demos
+           ~/.crewhaus/demos-cache`. Cloning over an existing directory
+           is a hard failure (`fatal: destination path … already exists`,
+           exit 128) — which is exactly why every run after the first
+           MUST take the reuse branch.
 
-      Factory (for the spec schema):
-        1. If `$CWD/../factory/packages/spec/src/index.ts` exists (demos
-           checkout has factory as a sibling — the common case), use it.
-        2. Else if `$CREWHAUS_FACTORY_PATH` is set and the file exists
-           at `$CREWHAUS_FACTORY_PATH/packages/spec/src/index.ts`, use it.
-        3. Else clone `https://github.com/crewhaus/factory` to
-           `~/.crewhaus/factory-cache`, then use that path.
+      Factory (for the spec schema): the same three steps, with
+      `printenv CREWHAUS_FACTORY_PATH`, the marker file
+      `packages/spec/src/index.ts`, the candidates `../factory`,
+      `../../factory`, `../../../factory` (factory is a sibling of the
+      demos checkout, so it is `../../../factory` from an uncopied
+      starter), and the cache `~/.crewhaus/factory-cache`.
 
-    Once you have each path, run `git -C <path> fetch && git -C <path>
-    pull --ff-only origin main` so the docs reflect HEAD. If the pull
-    fails (offline, conflict), note it once and proceed with stale docs.
+    Once you have each path, refresh it: `git -C <path> fetch && git -C
+    <path> pull --ff-only origin main`, so the docs reflect HEAD. If that
+    fails (offline, dirty checkout, conflict), note it once and proceed
+    with the docs already on disk — stale docs are fine, a hard stop is
+    not.
 
-    Read `<demos>/walkthroughs/INDEX.md` (focus on lines 20-67, the
-    diagnostic decision tree) and `<factory>/packages/spec/src/index.ts`
-    (the Zod schema — source of truth for valid YAML).
+    Then read both, again via Bash:
+      cat <demos>/walkthroughs/INDEX.md
+      cat <factory>/packages/spec/src/index.ts
+    In INDEX.md, focus on the `## Pick a recipe — diagnostic decision
+    tree` section; index.ts is the Zod schema, the source of truth for
+    valid YAML.
 
     # Method
 
@@ -70,11 +94,12 @@ agent:
         - "Does it need to remember anything across turns?" → maps to
           session keying / compaction / graph.
        Stop asking when you have enough to write a defensible spec.
-    4. Before writing, Read the recipe that matches the chosen shape
-       (e.g. `walkthroughs/03-slack-bot.md` for `target: channel` with
-       Slack) plus any cross-cutting recipes that apply (14 hooks, 29
-       permissions, 41 security fabric for any agent with `bash` or
-       network tools).
+    4. Before writing, `cat <demos>/walkthroughs/<recipe>.md` for the
+       recipe matching the chosen shape (e.g. `03-slack-bot.md` for
+       `target: channel` with Slack) plus any cross-cutting recipes that
+       apply (14 hooks, 29 permissions, 41 security fabric for any agent
+       with `bash` or network tools). Bash again, not Read — the
+       recipes live outside the working directory.
     5. Write a SELF-CONTAINED harness directory `<chosen-name>/` — it
        MUST run correctly after being copied anywhere, with no
        dependency on this demos checkout, a sibling layout, or a parent
@@ -164,8 +189,13 @@ agent:
       specs, not weights).
     - For any spec including `bash`, `fetch`, `webFetch`, or MCP
       servers, you MUST cite Recipe 41 in the generated header and
-      include `alwaysDeny` rules for `Bash(rm -rf *)` and
-      `Bash(sudo *)`.
+      include `alwaysDeny` rules for `Bash(**rm -rf **)` and
+      `Bash(**sudo **)`, listed ABOVE every allow rule — the engine
+      takes the FIRST matching rule, so a deny below a broad allow is
+      dead. Always `**`, never a lone `*`: `*` compiles to `[^/]*` and
+      stops at the first `/`, so `Bash(rm -rf *)` never matches
+      `rm -rf /tmp/x`. Same for every allow pattern you write — a
+      pattern whose argument can contain a path needs `**`.
     - For non-interactive targets (channel, workflow, graph, batch,
       managed), you MUST set `permissions.mode: default` (never
       `auto`) — non-interactive shapes convert `ask` to `deny` and
@@ -188,7 +218,16 @@ tools:
 
 permissions:
   mode: default
+  # The engine takes the FIRST matching rule top-down, so the order here
+  # is the policy: deny, then the named allow-list, then a catch-all ask.
+  # Every argument glob is `**`, never a lone `*` — `*` compiles to
+  # `[^/]*` and stops at the first `/`, so `Bash(rm -rf *)` would miss
+  # `rm -rf /tmp/x` and `Bash(mkdir -p *)` would miss any path at all.
   rules:
+    - type: alwaysDeny
+      pattern: Bash(**rm -rf **)
+    - type: alwaysDeny
+      pattern: Bash(**sudo **)
     - type: alwaysAllow
       pattern: Read
     - type: alwaysAllow
@@ -205,38 +244,64 @@ permissions:
       pattern: Write(**/dataset.jsonl)
     - type: alwaysAllow
       pattern: Write(**/graders.yaml)
+    # Resolve the two docs checkouts (see the ladder in
+    # agent.instructions). Read/Glob/Grep cannot leave the working
+    # directory, so the whole ladder runs through Bash: two named env
+    # reads, then `test`, which leaks an exit code and nothing else.
     - type: alwaysAllow
-      pattern: Bash(git fetch*)
+      pattern: Bash(printenv CREWHAUS_DEMOS_PATH)
     - type: alwaysAllow
-      pattern: Bash(git pull --ff-only*)
+      pattern: Bash(printenv CREWHAUS_FACTORY_PATH)
     - type: alwaysAllow
-      pattern: Bash(git -C * fetch*)
+      pattern: Bash(test -f **)
     - type: alwaysAllow
-      pattern: Bash(git -C * pull --ff-only*)
+      pattern: Bash(test -d **)
+    # Read the docs themselves — scoped to the two things it is allowed
+    # to read out there. `cat ../../.env` does not match either and
+    # stops at the ask gate.
     - type: alwaysAllow
-      pattern: Bash(git -C * status)
+      pattern: Bash(cat **/walkthroughs/**.md)
     - type: alwaysAllow
-      pattern: Bash(git -C * log*)
+      pattern: Bash(cat **/packages/spec/src/index.ts)
+    # Refresh a resolved checkout; clone a cache only when it is absent.
     - type: alwaysAllow
-      pattern: Bash(git clone https://github.com/crewhaus/*)
+      pattern: Bash(git fetch**)
     - type: alwaysAllow
-      pattern: Bash(mkdir -p *)
+      pattern: Bash(git pull --ff-only**)
+    - type: alwaysAllow
+      pattern: Bash(git -C ** fetch**)
+    - type: alwaysAllow
+      pattern: Bash(git -C ** pull --ff-only**)
+    - type: alwaysAllow
+      pattern: Bash(git -C ** status)
+    - type: alwaysAllow
+      pattern: Bash(git -C ** log**)
+    - type: alwaysAllow
+      pattern: Bash(git clone https://github.com/crewhaus/**)
+    - type: alwaysAllow
+      pattern: Bash(mkdir -p **)
     # Copy external data sources INTO the generated harness directory so
     # it stays self-contained (no `../` or absolute paths at runtime).
     - type: alwaysAllow
-      pattern: Bash(cp *)
+      pattern: Bash(cp **)
+    # Validation runs from inside the generated harness, so the
+    # `cd <dir> && …` form needs its own rule — a pattern is anchored at
+    # both ends and `bunx…**` alone would not match a `cd` prefix.
     - type: alwaysAllow
-      pattern: Bash(bunx crewhaus compile*)
+      pattern: Bash(bunx crewhaus compile**)
     - type: alwaysAllow
-      pattern: Bash(bunx crewhaus doctor*)
+      pattern: Bash(cd ** && bunx crewhaus compile**)
     - type: alwaysAllow
-      pattern: Bash(bunx crewhaus optimize*)
+      pattern: Bash(bunx crewhaus doctor**)
+    - type: alwaysAllow
+      pattern: Bash(bunx crewhaus optimize**)
+    - type: alwaysAllow
+      pattern: Bash(cd ** && bunx crewhaus optimize**)
+    # Everything else gates. Bare `Bash` (no arg glob) matches every Bash
+    # call; `Bash(**)` would NOT — a lone leading `**` compiles to
+    # `^(?:/.*)?$`, which matches only an empty or absolute-path command.
     - type: alwaysAsk
-      pattern: Bash(**)
-    - type: alwaysDeny
-      pattern: Bash(rm -rf *)
-    - type: alwaysDeny
-      pattern: Bash(sudo *)
+      pattern: Bash
 
 compaction:
   model: claude-haiku-4-5-20251001

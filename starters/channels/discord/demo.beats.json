@@ -10,7 +10,7 @@
     {
       "title": "Setup",
       "beats": [
-        { "id": "setup-readme", "label": "Open the starter README", "cue": "“Minimal target: channel wired for Discord — slash commands, buttons, modals, one turn each.” Read past the “Gateway WebSocket” line: this adapter is signed HTTP interactions only, and slash commands are registered by provision, not at startup.", "action": "open", "file": "README.md" },
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“Serves Discord's interactions endpoint at POST /discord/events — one model turn per slash command, button click, or modal submit.” Signed HTTP only: no Gateway WebSocket, and registering the commands is a call provision prints for you.", "action": "open", "file": "README.md" },
         { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
         { "id": "setup-env", "label": "Load the credentials", "cue": "[needs-key] Sources demos/.env for the boot beats — Anthropic plus the three Discord refs.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env; the Discord beats also want DISCORD_APPLICATION_ID + DISCORD_BOT_TOKEN + DISCORD_PUBLIC_KEY" } }
       ]

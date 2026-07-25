@@ -1,6 +1,6 @@
-# trader-advisor — a self-improving trading RESEARCH advisor that starts
-# with ZERO evals, ZERO datasets, ZERO graders, and earns all three from
-# its own performance.
+# trader-advisor — a self-improving trading RESEARCH advisor that ships a
+# seed exam and ZERO track record, and earns the record — plus a second,
+# journal-derived dataset — from its own paper trades.
 #
 # Three pieces do the work:
 #   thredz:    — the hosted wiki + goals = the advisor's brain and its
@@ -92,8 +92,9 @@ mcp_servers:
     command: bun
     args: ["mcp/paper-broker.ts"]
 
-# Ratings on the advisor's answers/alerts feed the flywheel; accumulated
-# ratings become a versioned `trader-advisor-ratings` dataset at teardown.
+# Ratings on the advisor's answers feed the flywheel: once 5 unprocessed
+# ones accumulate (CREWHAUS_AUTODISTILL_THRESHOLD tunes it) a `crewhaus run`
+# teardown registers them as a versioned `trader-advisor-ratings` dataset.
 feedback:
   modality: stars
   scale: { min: 1, max: 5 }

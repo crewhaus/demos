@@ -21,9 +21,9 @@
         { "id": "spec-head", "label": "Name it, pick the shape, pick the entry", "cue": "“Four lines: the name, the graph spine, the model — and which node the run starts at.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 4], "replace": true },
         { "id": "spec-plan", "label": "Node 1 · plan", "cue": "“Read the user's input from the Upstream state and produce a 3-bullet plan.” No preamble.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [5, 10] },
         { "id": "spec-execute", "label": "Node 2 · execute", "cue": "“Read the plan from the Upstream state's plan field and execute it.” Grounded, 4–6 sentences.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [11, 16] },
-        { "id": "spec-hitl", "label": "Put a human in the loop", "cue": "Two lines buy an approval gate: execute runs, then the graph checkpoints and waits for a person before summarise.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [17, 18] },
-        { "id": "spec-summarise", "label": "Node 3 · summarise", "cue": "“A 2-sentence executive summary. Do not include lists or bullets — prose only.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [19, 23] },
-        { "id": "spec-edges", "label": "Wire the DAG", "cue": "Nodes are inert until you connect them: plan → execute → summarise.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [24, 28] }
+        { "id": "spec-hitl", "label": "Put a human in the loop", "cue": "One block buys an approval gate: the run stops at execute and waits for a person before summarise. The comment says what the gate really does — the checkpoint holds the state from *before* the node, so approving replays it.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [17, 22] },
+        { "id": "spec-summarise", "label": "Node 3 · summarise", "cue": "“A 2-sentence executive summary. Do not include lists or bullets — prose only.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [23, 27] },
+        { "id": "spec-edges", "label": "Wire the DAG", "cue": "Nodes are inert until you connect them: plan → execute → summarise.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [28, 32] }
       ]
     },
     {

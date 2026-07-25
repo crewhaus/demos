@@ -8,27 +8,15 @@
 # 🦞 EXFOLIATE! EXFOLIATE!
 #
 # Usage:
-#   bun run compile showcases/multichat
+#   bun run compile starters/showcases/multichat
 #   ANTHROPIC_API_KEY=... \
 #     SLACK_BOT_TOKEN=... SLACK_SIGNING_SECRET=... \
 #     TELEGRAM_BOT_TOKEN=... TELEGRAM_SECRET_TOKEN=... \
 #     DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... DISCORD_PUBLIC_KEY=... \
-#     bun run run showcases/multichat
+#     bun run run starters/showcases/multichat
 #
 # At minimum one channel's creds must be set; the others can be
 # commented out below if you only care about one or two surfaces.
-#
-# NOW FULLY ENABLED (Phase 3 §3.1, §3.2, §3.3, §3.4 of the plan):
-#   - heartbeat: scheduled proactive wakes (§3.1)
-#   - per-channel emoji reactions (👀 / ✅ / ⚠️) on Slack — Telegram,
-#     Discord, WhatsApp, iMessage pending adapter-level implementation
-#     (§3.2)
-#   - cli.banner: tagline rotation on cold start (§3.3 — applies to
-#     `target: cli`; channel daemons announce via [daemon] log lines)
-#   - gateway: control-UI HTTP listener with /status JSON + minimal
-#     HTML dashboard at the root (§3.4)
-#
-# ALL OPENCLAW PARITY CHECKPOINTS REACHED.
 
 name: hello-multichat
 target: channel
@@ -121,6 +109,10 @@ agent:
           - WebFetch
         deny: []
 
+# The daemon acks each inbound message with a status reaction where the
+# platform has one — 👀 on receipt, ✅ on reply, ⚠️ if the turn errors or
+# parks on an approval. Slack, Telegram and WhatsApp implement react();
+# Discord (interactions — no message to react to) and iMessage skip it.
 channels:
   slack:
     botToken: $SLACK_BOT_TOKEN
@@ -136,9 +128,9 @@ channels:
 routing:
   sessionKey: thread
 
-# Phase 3 §3.1 — heartbeat scheduled wake. Every 2h, a fresh synthetic
-# session fires with these instructions. Use a short interval (e.g.
-# `every: 5m`) for testing; bump back to `2h` for production.
+# A scheduled wake. Every 2h a fresh synthetic session fires with these
+# instructions. Use a short interval (e.g. `every: 5m`) for testing;
+# bump back to `2h` for production.
 heartbeat:
   every: 2h
   instructions: |
@@ -148,9 +140,9 @@ heartbeat:
     `heartbeat_tick: silent` and exit. Use the `heartbeat-decide` skill
     for the decision framework.
 
-# Phase 3 §3.4 — control-UI gateway. Operator dashboard for daemon
-# health (channels, turn counts, heartbeat ticks). Visit
-# http://localhost:19001/ for the HTML view or /status for raw JSON.
+# Control-UI gateway. Operator dashboard for daemon health (channels,
+# turn counts, heartbeat ticks). Visit http://localhost:19001/ for the
+# HTML view or /status for raw JSON.
 gateway:
   port: 19001
   ui: true
