@@ -100,7 +100,7 @@ function shimPath(): string {
 const SHIM_DIR = shimPath();
 const BEAT_PATH = `${SHIM_DIR}:${process.env.PATH ?? ""}`;
 
-// ── beat types (mirrors demo-series/demo-driver/src/extension.ts) ───────────
+// ── beat types (mirrors crewhaus/demo-driver's src/extension.ts) ────────────
 type VerifyMode = "offline" | "needs-key" | "manual";
 type Beat = {
   id: string;

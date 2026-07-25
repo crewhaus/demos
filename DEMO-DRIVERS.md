@@ -1,9 +1,8 @@
 # Demo drivers — every starter, on camera, beat by beat
 
 Every starter under [`starters/`](./starters/) ships a **`demo.beats.json`** — a
-manifest for the **Demo Driver** VS Code extension (CrewHaus internal tooling,
-not published: it lives in the `demo-series/demo-driver` working tree). The
-manifests are plain JSON, so any comparable driver can consume them.
+manifest for the **[Demo Driver](https://github.com/crewhaus/demo-driver)** VS Code
+extension. The manifests are plain JSON, so any comparable driver can consume them.
 
 Click a beat (or tap **⌘⌥N**) and the driver **types** that
 starter's real spec into a scratch file keystroke by keystroke, **runs** real
@@ -23,9 +22,10 @@ bun run drivers:verify --report r.json
 ## Drive one
 
 1. Open **this repo** as the VS Code workspace.
-2. Install the Demo Driver extension from the `demo-series/demo-driver` working
-   tree — `npm install && npm run compile`, then **F5** for a dev host, or
-   package a `.vsix` with `npx @vscode/vsce package` and install it permanently.
+2. Install the [Demo Driver](https://github.com/crewhaus/demo-driver) extension —
+   clone it and run `npm install`, then package a `.vsix` with
+   `npx @vscode/vsce package` and install it (*Extensions ▸ … ▸ Install from
+   VSIX*), or press **F5** there for a dev host.
 3. **⌘⌥⇧D** opens the beats panel. Pick a starter from the manifest dropdown —
    the driver auto-discovers all of them.
 4. Put your API key in `demos/.env` (`ANTHROPIC_AUTH_TOKEN` or
