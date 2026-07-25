@@ -14,8 +14,12 @@ nodes:
       `plan` field and execute it: produce concrete findings, talking
       points, or evidence in 4–6 sentences. Stay grounded in the plan;
       do not free-associate.
+    # Human gate. The pause checkpoints the state from BEFORE this node, so
+    # `--resume <graphRunId> <decision>` replays execute from the top. On CLI
+    # 0.4.0 the emitted bundle asks AFTER the node's model turn, so execute's
+    # draft streams past, is discarded, and the replay pays for it again.
     hitl:
-      prompt: "Approve the plan and continue to execute?"
+      prompt: "Approve execute and continue to summarise?"
   summarise:
     instructions: |
       You are the SUMMARISE node. Read the plan and execute results

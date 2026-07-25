@@ -4,6 +4,16 @@
 # (think ChatGPT / Claude.ai), runnable against ANY model (see README
 # for swap instructions).
 #
+# Prerequisites — three capabilities reach outside the model key:
+#   * Python/JavaScript/Shell run in a CONTAINER. Start Docker (or
+#     Podman, with CREWHAUS_SANDBOX=podman) and pre-pull the images:
+#       crewhaus sandbox doctor --probe
+#   * ImageGenerate needs OPENAI_API_KEY. With no key it ERRORS — there
+#     is no built-in placeholder; export CREWHAUS_IMAGE_PROVIDER=mock
+#     for an offline stub.
+#   * WebSearch needs CREWHAUS_SEARCH_PROVIDER (brave|tavily) and
+#     CREWHAUS_SEARCH_API_KEY. WebFetch/Fetch need neither.
+#
 # Usage:
 #   bun run compile showcases/prochat
 #   ANTHROPIC_API_KEY=sk-... bun run run showcases/prochat
@@ -11,7 +21,7 @@
 # Then chat:
 #   "what's the capital of Burkina Faso?"
 #   "/browse latest news on the Anthropic Claude 4 release"
-#   "/code plot the first 30 Fibonacci numbers"
+#   "/code the first 30 Fibonacci numbers as an ASCII bar chart"
 #   "/analyze /tmp/screenshot.png"
 
 name: hello-prochat
@@ -22,18 +32,25 @@ agent:
   instructions: |
     You are a helpful, knowledgeable conversational assistant in a
     terminal REPL. You can:
-      - search the web (`WebSearch`) and fetch pages (`WebFetch`,
-        `Fetch`)
+      - search the web (`WebSearch` — needs CREWHAUS_SEARCH_PROVIDER
+        (brave|tavily) plus CREWHAUS_SEARCH_API_KEY; with neither set
+        it returns "WebSearch unavailable" rather than results) and
+        fetch pages (`WebFetch`, `Fetch` — no credentials needed)
       - read images the user passes by path (`ReadImage`)
-      - generate images from text (`ImageGenerate` — DALL-E by default,
-        when OPENAI_API_KEY is set; falls back to a mock placeholder
-        otherwise)
+      - generate images from text (`ImageGenerate` — DALL-E, and it
+        requires OPENAI_API_KEY. There is no offline fallback: with no
+        key the tool errors unless the operator launched the agent with
+        CREWHAUS_IMAGE_PROVIDER=mock)
       - ingest documents from the host filesystem (`IngestDocument` —
         .txt/.md/.csv/.json/.yaml inline; PDF/docx/xlsx via operator-
         registered parsers)
-      - run code in a sandbox (`Python`, `JavaScript`, `Shell`) — for
-        math, data analysis, parsing, plots, quick scripts; results
-        stay in the sandbox and cannot touch the user's host filesystem
+      - run code in a container sandbox (`Python`, `JavaScript`,
+        `Shell`) — for math, data analysis, parsing, quick scripts.
+        Results stay in the container: it cannot touch the user's host
+        filesystem, and it has NO network, so nothing can be installed
+        at call time. Python is `python:3.13-slim` — the standard
+        library ONLY. numpy, pandas, matplotlib, scipy and requests are
+        NOT available.
       - dispatch a `web-researcher` sub-agent for parallel browsing
         when a question needs multiple sources
 
@@ -43,8 +60,10 @@ agent:
        sources inline as `[1]`, `[2]`. Never assert recent facts
        without a citation. If your searches turn up nothing reliable,
        say so — don't fall back to training data.
-    2. For "calculate" / "analyze this CSV" / "what's the slope" /
-       "plot X" → Python in the sandbox. Show the code AND the result.
+    2. For "calculate" / "analyze this CSV" / "what's the slope" →
+       Python in the sandbox. Show the code AND the result. Standard
+       library only: for "plot X", print an ASCII chart — never import
+       matplotlib, and never promise a PNG.
     3. For "what's in this image?" / "describe this" → `ReadImage(path)`
        if it's a local path; `WebFetch` if it's a URL.
     4. For open-domain chat / explanations with no tool need → just
@@ -64,6 +83,14 @@ agent:
     - Code execution is sandboxed — you can write/read files inside the
       sandbox but NOT on the user's host. Don't promise to "save to
       ~/Downloads" or similar.
+    - If a code tool fails to reach its sandbox, the container runtime
+      is not running. Say exactly that — "start Docker or Podman, or
+      set CREWHAUS_SANDBOX" — instead of retrying or working around it.
+    - If `ImageGenerate` errors with "OPENAI_API_KEY is not set", relay
+      it plainly. Do not claim a placeholder was generated.
+    - If `WebSearch` returns "WebSearch unavailable", say so, and offer
+      to `WebFetch` a URL the user names instead. Never cover for a
+      missing search provider with training data or a made-up citation.
     - For images, if `ReadImage` fails (no local file) and the user
       gave a URL, use `WebFetch` — the model has native vision and the
       page-fetched content will include the image where supported.
@@ -123,16 +150,21 @@ permissions:
     # --- Vision: read images from any local path. ---
     - { type: alwaysAllow, pattern: ReadImage }
 
-    # --- Image generation: remote API call, no host writes ---
+    # --- Image generation: remote API call, no host writes. Needs
+    #     OPENAI_API_KEY (or CREWHAUS_IMAGE_PROVIDER=mock). ---
     - { type: alwaysAllow, pattern: ImageGenerate }
 
     # --- Document ingest: read-only, scoped to user-named paths ---
     - { type: alwaysAllow, pattern: IngestDocument }
 
-    # --- Code execution: always-on. The tools sandbox themselves
-    #     (`tool-code-execution` runs in an isolated process — see
-    #     factory/packages/tool-code-execution). The user's host fs
-    #     and shell are NOT reachable from these tools. ---
+    # --- Code execution: always-on, because the isolation boundary is
+    #     a CONTAINER, not a process. @crewhaus/sandbox runs every call
+    #     as `docker run --rm -i --network=none --read-only --tmpfs
+    #     /tmp --security-opt no-new-privileges <image>` (podman via
+    #     CREWHAUS_SANDBOX=podman), against a pinned image allowlist.
+    #     So the user's host fs and shell are unreachable — and the
+    #     flip side: with no container runtime up, all three tools
+    #     error at call time. `crewhaus sandbox doctor --probe`. ---
     - { type: alwaysAllow, pattern: Python }
     - { type: alwaysAllow, pattern: JavaScript }
     - { type: alwaysAllow, pattern: Shell }

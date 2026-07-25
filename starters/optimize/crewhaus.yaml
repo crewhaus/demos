@@ -1,16 +1,19 @@
-# hello-optimize — a CLI agent whose system prompt is deliberately short
-# so the active optimizer has room to improve. Pair this with a small
-# dataset and run:
+# hello-optimize — a CLI agent whose system prompt is deliberately short,
+# so the active optimizer has something to improve.
 #
-#   crewhaus optimize hello-optimize/crewhaus.yaml \
-#     --dataset hello-optimize/dataset.jsonl \
-#     --graders hello-optimize/graders.yaml \
-#     --iterations 5 \
-#     --seed 42
+# dataset.jsonl is the contract: every expected_output is the machine
+# line `capital=<City>`, graded with exact_match. This prompt never
+# mentions that format, so the baseline scores 0.000 — correct prose
+# that no pipeline can parse.
 #
-# Add --write-back to apply the winning candidate to this file directly.
-# Add --mutator claude to use Claude-driven rewrites instead of the
-# deterministic rule-based provider.
+# Run it from THIS directory (the starter is self-contained):
+#
+#   crewhaus optimize crewhaus.yaml --dataset dataset.jsonl \
+#     --graders graders.yaml --iterations 3 --mutator claude
+#
+# Measured on CLI 0.4.0: 0.000 → 1.000 on the dev split. Add
+# --write-back to apply the winner here. The default rule-based mutator
+# only appends canned edits and stays at 0.000 — see README.md.
 
 target: cli
 name: hello-optimize

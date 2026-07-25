@@ -81,7 +81,7 @@ to wire Ragas-style faithfulness and answer-relevancy graders.
 ## The smallest spec
 
 The bundled example [`starters/rag/crewhaus.yaml`](../starters/rag/crewhaus.yaml)
-is one agent and four inline documents:
+is one agent and six inline documents:
 
 ```yaml
 name: hello-rag
@@ -95,7 +95,7 @@ agent:
 retrieve:
   embedderModel: mock/det
   vectorBackend: in-memory
-  defaultK: 4
+  defaultK: 2
 permissions:
   mode: default
   rules:
@@ -108,9 +108,10 @@ indexing:
   documents:
     - id: target-shapes
       text: |
-        CrewHaus Factory supports multiple target harness shapes:
-        cli, workflow, channel, graph, managed, pipeline, eval,
-        research, voice, browser, batch, crew.
+        CrewHaus Factory compiles one spec into one of fourteen
+        target harness shapes: cli, workflow, channel, graph,
+        managed, pipeline, crew, research, batch, voice, browser,
+        eval, onchain and onchain-game.
     - id: section-19
       text: |
         Section 19 lands the GRPH target shape: checkpoint-store,
@@ -256,7 +257,7 @@ The result comes back as a numbered text list, one block per hit:
 
 ```
 [1] id=target-shapes:0:0 doc=target-shapes score=0.8123
-CrewHaus Factory supports multiple target harness shapes: ...
+CrewHaus Factory compiles one spec into one of fourteen target ...
 
 [2] id=section-19:0:0 doc=section-19 score=0.6310
 Section 19 lands the GRPH target shape: ...
@@ -296,6 +297,17 @@ The two non-negotiables:
 - **Empirically:** longer chunks (1000+) help when the chunks
   themselves contain self-contained explanations; shorter chunks
   (200) help when queries target specific facts.
+
+`defaultK` is the third knob, and it only means anything relative to
+how many chunks you indexed. The boot line `[pipeline] indexed N
+chunks` is the denominator: a `defaultK` close to `N` hands the model
+the whole store on every question — including the ones the corpus
+cannot answer — so retrieval stops filtering and the refusal falls
+entirely to the prompt. `Retrieve` has no relevance floor — it hands
+back the `k` nearest chunks however distant they are, and no score
+threshold trims them. Keep `k` a small fraction of `N`
+(the example indexes to 7 chunks and asks for 2), and grow it as the
+corpus grows.
 
 Wire it to [Recipe 12 — Eval Harness](12-eval-harness.md) to A/B-test
 chunk strategies — the eval target is the natural way to compare

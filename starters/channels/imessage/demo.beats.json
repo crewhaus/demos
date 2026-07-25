@@ -10,7 +10,7 @@
     {
       "title": "Setup",
       "beats": [
-        { "id": "setup-readme", "label": "Open the starter README", "cue": "“Watches the local chat.db, runs one model turn per message, replies via AppleScript.”", "action": "open", "file": "README.md" },
+        { "id": "setup-readme", "label": "Open the starter README", "cue": "“Host-bound: chat.db in, AppleScript out — one model turn per message. And nothing polls until you poll.”", "action": "open", "file": "README.md" },
         { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "action": "reset", "file": "live/crewhaus.yaml" },
         { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the daemon beats — three levels up from a channel starter.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
       ]

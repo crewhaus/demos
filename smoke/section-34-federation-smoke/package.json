@@ -3,5 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Section 34 federation smoke"
+  "description": "Section 34 federation smoke",
+  "//": "The three federation packages are declared so this smoke resolves from a clean demos checkout after `bun install`. Contributors with a sibling ../factory/ still get the live source: the root tsconfig.json paths block wins over node_modules.",
+  "dependencies": {
+    "@crewhaus/federation-discovery": "^0.4.0",
+    "@crewhaus/federation-protocol": "^0.4.0",
+    "@crewhaus/federation-router": "^0.4.0"
+  }
 }

@@ -1,11 +1,16 @@
 # trader-advisor — a self-improving trading research advisor
 
-An advisor that starts with **zero evals, zero datasets, zero graders** and
-earns all three from its own performance. It studies real markets and what
-successful traders publish, writes **playbooks** to its own wiki, tests
-every playbook with **simulated trades at real (delayed) prices under real
-fees and constraints**, and lets the resulting track record — not
-enthusiasm — decide when it has earned the right to send you trade alerts.
+An advisor that starts with **zero track record** and earns one. Its only
+eval assets on day 0 are a seed exam — 10 costs-and-constraints questions
+in `eval/dataset.jsonl` and an `llm_judge` rubric in `eval/graders.yaml`,
+wired in as `learning.exam` and sat with `/exam`. Everything past that it
+writes itself: it studies real markets and what successful traders
+publish, writes **playbooks** to its own wiki, tests every playbook with
+**simulated trades at real (delayed) prices under real fees and
+constraints**, and lets the resulting track record — not enthusiasm —
+decide when it has earned the right to send you trade alerts. The journal
+that record lives in becomes the second dataset mechanically —
+`export_dataset`, below.
 
 > **This is a research and learning harness, not financial advice.** It
 > cannot execute real trades — no tool for that exists in the spec. Only

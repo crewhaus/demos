@@ -6,9 +6,13 @@ This directory is **intentionally light**. Federation is the cross-deployment ro
 
 ## Run it
 
+From anywhere in the repo, after a one-time `bun install` at the repo root:
+
 ```bash
 bun run smoke:section-34
 ```
+
+The smoke depends on `@crewhaus/federation-{protocol,discovery,router}` from npm and vendors its own test-only mTLS fixture pair, so a clean `demos` clone is enough — no sibling checkout required.
 
 Six probes exercise the federation surface end-to-end (no docker required, no live cross-host call):
 
@@ -16,7 +20,7 @@ Six probes exercise the federation surface end-to-end (no docker required, no li
 2. Discovery cache with TTL.
 3. Router happy path with an injected transport.
 4. Error-classification taxonomy (retry / tombstone / fail).
-5. In-process two-server demo over HTTP.
+5. In-process two-deployment round-trip over HTTP (one `Bun.serve` stands in for the peer).
 6. Docker-compose fixture (gated on `CREWHAUS_FEDERATION_LIVE=1`).
 
 The full smoke source lives at [`smoke/section-34-federation-smoke/smoke.ts`](https://github.com/crewhaus/demos/blob/main/smoke/section-34-federation-smoke/smoke.ts).

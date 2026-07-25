@@ -7,25 +7,25 @@ end to end (spec → IR → codegen → runtime).
 ## Run it
 
 ```bash
-cd starters/workflow                           # if copied elsewhere, cd into that copy
-bunx crewhaus compile crewhaus.yaml -o dist    # writes dist/agent.ts
-ANTHROPIC_AUTH_TOKEN=sk-ant-oat... bunx crewhaus run crewhaus.yaml
-```
-
-Or run the compiled entrypoint directly:
-
-```bash
-bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
+cd starters/workflow                                   # if copied elsewhere, cd into that copy
+bunx crewhaus compile crewhaus.yaml -o dist --check    # writes dist/agent.ts and installs its deps
 ANTHROPIC_AUTH_TOKEN=sk-ant-oat... bun dist/agent.ts
 ```
+
+> A workflow is not a chat, so `crewhaus run` rejects it — `run` supports
+> `target: cli` and `browser` only, and every other shape ships as a compiled
+> bundle you boot yourself. `--check` is also what writes the bundle's
+> `package.json` and `bun.lock` on CLI 0.4.0; a plain `compile -o dist` emits
+> only `agent.ts`, so `bun install --cwd dist` has no manifest to install from
+> and exits 1.
 
 <details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
 
 From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
 
 ```bash
-bun run compile workflow
-bun run run workflow
+bun run compile starters/workflow
+bun run run starters/workflow
 ```
 
 </details>

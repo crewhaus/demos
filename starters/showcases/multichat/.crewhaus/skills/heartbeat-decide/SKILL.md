@@ -15,11 +15,6 @@ triggers:
 The default verdict on a heartbeat is **silence**. Acting requires a
 specific, time-sensitive reason that you can name in one sentence.
 
-> **Note:** the heartbeat feature itself is deferred to Phase 3 §3.1
-> of the plan. This skill is forward-compatible — once `heartbeat:`
-> lands on the channel schema, the agent loads this skill on each
-> tick.
-
 ## Good reasons to act (in priority order)
 
 1. **Time-sensitive event the user explicitly asked you to surface.**

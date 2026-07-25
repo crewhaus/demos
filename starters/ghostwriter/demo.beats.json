@@ -18,13 +18,13 @@
     {
       "title": "Beat 1 · The spec: a persona and a feedback block",
       "beats": [
-        { "id": "spec-premise", "label": "State the premise", "cue": "“Day 0 this harness has NO dataset, NO graders, NO evals — that is the point.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 11], "replace": true },
-        { "id": "spec-usage", "label": "Point at the walkthrough, then the run", "cue": "Day 0 to day 30 in one header — and the two lines that get you running.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [12, 18] },
-        { "id": "spec-shape", "label": "Name it, pick the shape", "cue": "target: cli — the one shape eval, optimize and flywheel all require.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [19, 21] },
-        { "id": "spec-agent", "label": "Add the persona", "cue": "“Output ONLY the draft, ready to paste.” Ask ONE question rather than invent a fact.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [22, 33] },
-        { "id": "spec-tools", "label": "Three read-only tools", "cue": "read, glob, grep — enough to study voice/ before every draft. Nothing that can send.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [34, 35] },
-        { "id": "spec-feedback", "label": "Add the improvement contract", "cue": "Stars — and once five unprocessed ratings pile up, autoDistill folds them into a versioned ghostwriter-ratings dataset at teardown.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [36, 43] },
-        { "id": "spec-permissions", "label": "Pre-allow the reads", "cue": "A drafting double shouldn't stop to ask before reading your own samples.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [44, 50] }
+        { "id": "spec-premise", "label": "State the premise", "cue": "“Day 0 this harness has NO dataset, NO graders, NO evals — that is the point.”", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 12], "replace": true },
+        { "id": "spec-usage", "label": "Point at the walkthrough, then the run", "cue": "Day 0 to day 30 in one header — and the two lines that get you running.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [13, 19] },
+        { "id": "spec-shape", "label": "Name it, pick the shape", "cue": "target: cli — the one shape eval, optimize and flywheel all require.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [20, 22] },
+        { "id": "spec-agent", "label": "Add the persona", "cue": "“Output ONLY the draft, ready to paste.” Ask ONE question rather than invent a fact.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [23, 34] },
+        { "id": "spec-tools", "label": "Three read-only tools", "cue": "read, glob, grep — enough to study voice/ before every draft. Nothing that can send.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [35, 36] },
+        { "id": "spec-feedback", "label": "Add the improvement contract", "cue": "Stars — and once five unprocessed ratings pile up, autoDistill folds them into a versioned ghostwriter-ratings dataset at teardown. Under five, the teardown says nothing and the registry name doesn't resolve.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [37, 48] },
+        { "id": "spec-permissions", "label": "Pre-allow the reads", "cue": "A drafting double shouldn't stop to ask before reading your own samples.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [49, 55] }
       ]
     },
     {

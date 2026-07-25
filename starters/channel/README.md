@@ -1,7 +1,7 @@
 # hello-channel — channel-bot vertical slice (Section 12)
 
 The smallest possible end-to-end demonstration of the `target: channel`
-shape: a 20-line spec → a compiled long-running daemon that listens for
+shape: a 24-line spec → a compiled long-running daemon that listens for
 inbound Slack webhooks, resumes per-thread sessions, runs one model turn
 per inbound message, and replies in-thread.
 
@@ -9,10 +9,9 @@ per inbound message, and replies in-thread.
 
 ```bash
 cd starters/channel                           # if copied elsewhere, cd into that copy
-bunx crewhaus compile crewhaus.yaml -o dist   # writes dist/{daemon,gateway,session-router,agent}.ts
+bunx crewhaus compile crewhaus.yaml -o dist --check   # --check writes dist/package.json and installs the bundle's @crewhaus deps
 
 # Real Slack workspace mode — set both creds in .env first.
-bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
   ANTHROPIC_AUTH_TOKEN=sk-ant-oat... \
   bun dist/daemon.ts
@@ -21,6 +20,11 @@ SLACK_BOT_TOKEN=xoxb-... SLACK_SIGNING_SECRET=... \
 # Event Subscription Request URL at https://<public-host>/slack/events
 # (use ngrok or similar for local dev).
 ```
+
+One spec, five files: `dist/{agent,session-router,gateway,daemon}.ts` plus a
+generated `dist/README.md`. Both Slack values are required alongside an
+Anthropic credential — drop one and the daemon prints `[daemon] missing
+required env vars: …` and exits 2 before it opens a socket.
 
 For an offline smoke test (no real Slack workspace required, but uses
 the live Anthropic API):
@@ -34,8 +38,8 @@ bun run smoke:section-12
 From the demos repo root (resolves the sibling `../factory` checkout and loads `demos/.env`):
 
 ```bash
-bun run compile channel
-bun run run channel
+bun run compile starters/channel
+bun run run starters/channel
 ```
 
 </details>

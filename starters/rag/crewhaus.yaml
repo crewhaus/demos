@@ -12,7 +12,9 @@ agent:
 retrieve:
   embedderModel: mock/det
   vectorBackend: in-memory
-  defaultK: 4
+  # Keep defaultK well under the chunk count the bundle prints at boot
+  # (`[pipeline] indexed N chunks`) — a k near N is not a filter.
+  defaultK: 2
 permissions:
   mode: default
   rules:
@@ -25,13 +27,31 @@ indexing:
   documents:
     - id: target-shapes
       text: |
-        CrewHaus Factory supports multiple target harness shapes:
-        cli (single-agent REPL), workflow (sequential steps),
-        channel (long-running daemon for Slack and other channels),
-        graph (stateful node/edge runtime with HITL pauses),
-        managed (multi-tenant gateway with audit logs and budgets),
-        and pipeline (component-DAG runtime for RAG / retrieval).
-        Additional shapes planned: eval, res, voice, brow, batch.
+        CrewHaus Factory compiles one spec into one of fourteen
+        target harness shapes: cli, workflow, channel, graph,
+        managed, pipeline, crew, research, batch, voice, browser,
+        eval, onchain and onchain-game. Every one has a compiler
+        emitter today; `crewhaus lint` rejects any other value for
+        `target:`.
+    - id: run-vs-compile
+      text: |
+        Only the cli and browser shapes run straight from the spec
+        with `crewhaus run`. Every other shape is compile-first:
+        `crewhaus compile spec.yaml -o dist --check` asserts the
+        emitted bundle, installs its dependencies and boots it, and
+        `bun dist/agent.ts` runs it. Pointing `crewhaus run` at a
+        compile-only shape exits 1.
+    - id: retrieval-knobs
+      text: |
+        Retrieval quality is configuration, not code. chunkStrategy
+        picks fixed, semantic or markdown boundaries; chunkSize and
+        chunkOverlap decide how the corpus is cut up; embedderModel
+        selects the provider (mock/det offline, or openai/, voyage/,
+        cohere/, gemini/, local/); vectorBackend picks the store
+        (in-memory, lance, qdrant, pinecone, weaviate); defaultK sets
+        how many chunks each Retrieve call returns. The optimizer
+        treats chunkSize, chunkOverlap and defaultK as tunable
+        parameters, so an eval can search them.
     - id: section-18
       text: |
         Section 18 lands the production safety floor: sandbox (docker

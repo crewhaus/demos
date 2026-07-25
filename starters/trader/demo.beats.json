@@ -28,11 +28,11 @@
         { "id": "spec-researcher", "label": "Add the read-only researcher", "cue": "One narrow question, primary sources, 2–4 verbatim cited snippets, 180 words, no synthesis.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [66, 83] },
         { "id": "spec-tools-broker", "label": "Eight tools, plus the paper brokerage", "cue": "A zero-dependency stdio MCP server in this repo; its tools arrive as broker__*.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [84, 93] },
         { "id": "spec-open-broker", "label": "Open the referee", "cue": "Real fees, settled cash, market hours, the risk rail, the confidence gate — enforced in code.", "action": "open", "file": "mcp/paper-broker.ts" },
-        { "id": "spec-feedback", "label": "Wire ratings into the flywheel", "cue": "Stars on its answers distil into a versioned trader-advisor-ratings dataset at teardown.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [94, 100] },
-        { "id": "spec-perms-research", "label": "Make research friction-free", "cue": "mode: default, and reading, searching and fetching never stop to ask.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [101, 111] },
-        { "id": "spec-perms-brain", "label": "Let it write to its own brain", "cue": "“The wiki is the job” — plus the goal ticks the Thredz dashboard cards read.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [112, 129] },
-        { "id": "spec-perms-broker", "label": "Let it trade — on paper", "cue": "Free to act, because the broker enforces the rails and no tool here touches real money.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [130, 141] },
-        { "id": "spec-perms-curation", "label": "Let it curate its own exam", "cue": "It may edit the curriculum and the eval assets. Markdown and JSONL only — nothing else.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [142, 146] }
+        { "id": "spec-feedback", "label": "Wire ratings into the flywheel", "cue": "Stars on its answers distil into a versioned trader-advisor-ratings dataset — once five unprocessed ratings have piled up, at a `crewhaus run` teardown.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [94, 101] },
+        { "id": "spec-perms-research", "label": "Make research friction-free", "cue": "mode: default, and reading, searching and fetching never stop to ask.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [102, 112] },
+        { "id": "spec-perms-brain", "label": "Let it write to its own brain", "cue": "“The wiki is the job” — plus the goal ticks the Thredz dashboard cards read.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [113, 130] },
+        { "id": "spec-perms-broker", "label": "Let it trade — on paper", "cue": "Free to act, because the broker enforces the rails and no tool here touches real money.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [131, 142] },
+        { "id": "spec-perms-curation", "label": "Let it curate its own exam", "cue": "It may edit the curriculum and the eval assets. Markdown and JSONL only — nothing else.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [143, 147] }
       ]
     },
     {

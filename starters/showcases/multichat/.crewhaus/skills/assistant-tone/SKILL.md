@@ -57,11 +57,14 @@ The runtime doesn't auto-translate yet — you have to notice which
 channel you're on (the inbound payload tells you) and pick the
 formatting accordingly.
 
-## Channel-aware status (when §3.2 ships)
+## Channel-aware status
 
-Once per-channel emoji reactions are wired (Phase 3 §3.2), you'll
-react with 👀 on receipt, ✅ on done, ⚠️ on need-approval — and you
-can drop those words from your text reply because the emoji says it.
+Status emoji are the *daemon's* job, not yours. The session router
+reacts to the inbound message on your behalf — 👀 on receipt, ✅ on
+reply, ⚠️ if the turn errors or parks on an approval — wherever the
+platform exposes a reaction API (Slack, Telegram, WhatsApp). So don't
+open a reply with "Looking…"; the eyes are already there.
 
-Until then, write a tiny status word as the first token: "Looking…"
-"Done." "Need approval first."
+Discord (interactions have no message to react to) and iMessage have
+no reaction hook, so nothing is acked visually on those two. There,
+lead with a one-word status instead: "Done." "Need approval first."
