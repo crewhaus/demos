@@ -1,12 +1,14 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 73 recipes are **complete** (56 through the v0.1 line, recipes
+> All 74 recipes are **complete** (56 through the v0.1 line, recipes
 > 56–61 for the v0.2.0 automation release, recipe 62 for response
 > ratings, recipe 63 for the session-knowledge commands, recipe 64 for
 > the self-teaching expert, recipes 65–71 for the v0.4.0 loop
-> contract, and recipes 72–73 for the zero-to-improving bootstrap
-> narratives). Every recipe is
+> contract, recipes 72–73 for the zero-to-improving bootstrap
+> narratives, and recipe 74 for the 0.4.x eval-practice surfaces —
+> suite tiering, tool cassettes, red-team probes, and the review
+> queue). Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`.
@@ -51,7 +53,7 @@ for `run`).
 
 ## Pick a recipe — diagnostic decision tree
 
-The 73 recipes cover a lot of ground. Most readers don't need to scan
+The 74 recipes cover a lot of ground. Most readers don't need to scan
 the table of contents; they need to find the shape that matches the
 problem they brought. Walk this tree from the top:
 
@@ -118,6 +120,13 @@ problem they brought. Walk this tree from the top:
    advisor](73-trading-advisor.md): the grader lives in code and the
    market does the labeling (skim 72's five-sentence vocabulary first
    if the words are new).
+7.7. **You already have one eval you trust, and now CI is too slow, too
+   shallow, or too flaky to believe?** → [Recipe 74 — Eval suites,
+   cassettes, red teams](74-eval-suites-and-cassettes.md): tier the
+   suite (`eval suite --tier fast|nightly|release`), make a tool-using
+   agent's runs deterministic with cassettes, generate an adversarial
+   corpus you never wrote, and route the verdicts nobody could decide
+   into a human review queue.
 8. **Are you running long-horizon autonomous work (research, batch
    jobs)?** → [Recipe 07 — Autonomous Research](07-autonomous-research.md)
    or [Recipe 08 — Batch Worker](08-batch-worker.md). Both lean on
@@ -377,6 +386,20 @@ nightly behind the standard gate.
 | 72 | [Zero to self-improving: your usage writes your evals](72-zero-to-improving.md) | human — ratings + corrections ([`starters/ghostwriter`](../starters/ghostwriter)) | complete |
 | 73 | [The trading advisor: when the market is your grader](73-trading-advisor.md) | objective — P&L after costs, gate in code ([`starters/trader`](../starters/trader)) | complete |
 
+## Part O — Eval practice at scale (0.4.x)
+
+Recipes 12/34/42/56/61/62 build the eval *instruments*. This one is
+about running them as a **practice**: a tiered CI ladder with one
+verdict per rung, deterministic reruns for tool-using agents, an
+adversarial corpus generated against your own agent, and a persistent
+queue for the verdicts a judge could not honestly produce. It is the
+user-facing companion of the 0.4.x evals campaign — see
+[factory CHANGELOG](https://github.com/crewhaus/factory/blob/main/CHANGELOG.md).
+
+| #  | Recipe                                                          | Theme                                  | Status   |
+| -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
+| 74 | [Eval suites, tool cassettes, red teams, and the review queue](74-eval-suites-and-cassettes.md) | Pillar 2 — `eval suite` / `--record-tools` / `redteam` / `review` ([`starters/eval`](../starters/eval)) | complete |
+
 ---
 
 ## Quick paths (for readers who already know the shape they want)
@@ -388,7 +411,8 @@ a known scenario:
 
 - **Newcomer.** 01 → 17 → 13 → 14 → 29.
 - **Putting an agent in Slack.** 01 → 03 → 14 → 17.
-- **Building an internal eval / canary loop.** 12 → 21 → 17 → 34.
+- **Building an internal eval / canary loop.** 12 → 34 → 74 → 21 → 17.
+- **Making CI's eval fast, deterministic, and adversarial.** 12 → 74 → 61.
 - **Shipping a SaaS.** 11 → 19 → 20 → 22 → 23 → 24 → 36.
 - **Multi-agent system.** 04 → 28 → 05 → 27.
 - **RAG / research.** 06 → 07 → 12.
@@ -449,7 +473,7 @@ thing to check when asking "is module X covered anywhere?".
 | **R12** | RAG / Retrieval / Knowledge | 06 · 07 |
 | **R13** | Channels & Messaging | 00 · 03 · 37–40 · 51 |
 | **R14** | Scheduling & Background | 08 · 19 · 51 · 73 |
-| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 · 56 · 72 |
+| **R15** | Telemetry, Tracing, Eval | 12 · 17 · 21 · 34 · 42 · 56 · 72 · 74 |
 | **R16** | UI / TUI / Voice / Media | 09 · 11 · 35 |
 | **R17** | Infrastructure & Cross-Cutting | GS · 11 · 20 · 22 |
 | **R18** | Specialized / Advanced | 10 · 30 · 54 |
@@ -498,8 +522,8 @@ catalog name:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 74            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62 + session-knowledge 63 + self-teaching expert 64 + 0.4.0 loop contract 65-71 + zero-to-improving narratives 72-73) |
-| 74            | Walkthrough complete    |
+| 75            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62 + session-knowledge 63 + self-teaching expert 64 + 0.4.0 loop contract 65-71 + zero-to-improving narratives 72-73 + eval practice at scale 74) |
+| 75            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a

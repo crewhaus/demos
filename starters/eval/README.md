@@ -47,6 +47,19 @@ dataset file shape is what `@crewhaus/dataset-registry` reads;
 `graders.yaml` is what `@crewhaus/eval-grader.parseGradersConfig`
 reads.
 
+**Two grader grammars, one word apart.** They are not the same file:
+
+- **`graders.yaml`** (what `--graders` takes) — every entry declares an
+  explicit `type:` (`exact_match`, `expected_contains`, `contains`,
+  `regex`, `json_path`, `tool_call_sequence`, `llm_judge`, `registry`),
+  and `name:` is just the report label. The top level is strict and also
+  takes `combine: all | any | weighted` (default `all`) plus
+  `passing_threshold:`. Only `type: registry` entries take `opts:`.
+- **`crewhaus.yaml`'s `graders:` list** (the `target: eval` spec) —
+  entries are `{name, opts?}` and `name` doubles as the type
+  discriminator, which is why `- name: exact_match` alone is enough
+  there.
+
 ## CLI eval subcommand
 
 The `agent.cli.yaml` companion spec is the same math agent as a

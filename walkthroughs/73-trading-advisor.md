@@ -205,6 +205,16 @@ answers with wrong fee rates fail. Like Recipe 64's exam, it's alive:
 `/reflect` grows it as rungs are mastered, and every failed question
 becomes a knowledge gap that the next study pass attacks first.
 
+A spec-declared exam is **no longer judge-only**: `learning.exam.graders`
+accepts `type: registry` entries and builds the same default grader
+registry `crewhaus eval` falls back to (the eight namespaces plus
+`.crewhaus/graders` plugins from the harness cwd, `opts:` included), so
+an unknown name fails loudly at exam start. For this domain the useful
+addition is `calibration.abstentionAware`, which separates *answered
+wrong* from *honestly did not attempt* — a distinction a trading advisor
+should be graded on. Render the exam rubric for review with
+`crewhaus graders card --graders eval/graders.yaml`.
+
 ## 4 — Three graders, no authoring
 
 Here is the recipe's eval story in one table — compare it with Recipe
@@ -248,6 +258,12 @@ crewhaus distill --all-sessions --judge --register trader-advisor-ratings
 crewhaus flywheel run --dataset registry:trader-advisor-ratings \
   --graders eval/graders.yaml --concurrency 1
 ```
+
+(A bare `registry:` ref resolves **train + dev only** — the locked
+`#test` split never enters the nightly loop, and an explicit `#test` is
+refused. Spend the holdout deliberately with `crewhaus datasets release`.
+Every flywheel run also prints the dataset it resolved and where the
+choice came from.)
 
 …and the human-plus-market **union** is one optimize invocation — the
 journal export as the dataset, ratings distilled inline on top:
@@ -345,14 +361,21 @@ Your replies close the loop:
 - `that one stopped out at 184` → the outcome is journaled against the
   live book, and the lesson goes to the wiki.
 - 👍/👎 reactions on its messages → rating signal
-  (`feedback.channelReactions: true`). Note the spec uses
-  `routing.sessionKey: channel` deliberately — reactions **silently
-  no-op under `thread`** ([Recipe 62 §Rating surfaces](62-response-ratings.md#rating-surfaces-beyond-the-cli)).
+  (`feedback.channelReactions: true`). The spec uses
+  `routing.sessionKey: channel`, but that is no longer a *requirement*:
+  reactions now attribute to the exact reacted-to turn through the
+  outbound-`ts` join store under **every** session key, `thread`
+  included. The one degradation is a join **miss** (a reply posted by an
+  older build, or a receipt-less adapter): `channel`/`user` fall back to
+  the last turn, `thread` drops the reaction rather than guessing
+  ([Recipe 62](62-response-ratings.md)).
 
-Two daemon-specific facts from the fine print: `autoDistill` is a
-cli-teardown feature and **never fires on a channel daemon** — schedule
-`crewhaus distill --all-sessions --register trader-advisor-ratings` from
-the daemon's directory (cron, or your flywheel workflow) instead. And
+One daemon fact from the fine print that has changed and one that
+hasn't: `autoDistill` now **also runs on the channel daemon's janitor
+clock** (same ≥5-unprocessed-ratings trigger; `CREWHAUS_AUTODISTILL=0`
+disables it), so a scheduled `crewhaus distill --all-sessions --register
+trader-advisor-ratings` is a belt-and-braces habit rather than the only
+path. And
 keep the *no source, no commit* discipline even on operational articles —
 `dashboard` and `ops-config` cite the broker journal or the operator's
 instruction under `## Sources`; that's provenance, not bureaucracy (and
@@ -423,8 +446,8 @@ before the journal makes it *feel* it.
 | Gotcha | Rule |
 | ------ | ---- |
 | Serving the daemon | `crewhaus run` refuses channel specs (it only drives cli/browser targets) — compile + `bun dist/daemon.ts`; and `crewhaus dev` breaks this starter's *relative* broker path (temp-dir cwd), so run from the harness dir |
-| Reactions under `thread` sessions | silently no-op; the daemon uses `sessionKey: channel` on purpose |
-| `autoDistill` on a daemon | inert (cli teardown only) — schedule `distill --all-sessions --register` |
+| Reactions attribute through a join file | every session key works now; on a join **miss** `channel`/`user` fall back to the last turn and `thread` drops the reaction. `compile` warns (`channel-reactions-join`) |
+| `autoDistill` on a daemon | it fires on the daemon janitor clock too (≥5 unprocessed ratings; `CREWHAUS_AUTODISTILL=0` disables) — a scheduled `distill --all-sessions --register` is still a safe habit |
 | `optimize`/`flywheel` are cli-shape commands | accepted patches land on `crewhaus.yaml`; port instruction changes to `daemon.yaml` by hand |
 | Delayed quotes | learning-grade, not execution-grade; polling fast meets HTTP 429 — scans are half-hourly on purpose |
 | The gate is the product | lowering `CONFIDENCE_MIN_TRADES` to get alerts sooner re-creates the problem this recipe solves; and the *verdict* is code, but consulting it is instructions — hook `SendMessage` for structural enforcement |

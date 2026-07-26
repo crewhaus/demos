@@ -1,0 +1,64 @@
+# A SUITE MANIFEST — the CI ladder for this harness as one file with one
+# verdict per tier. Run it from inside this directory:
+#
+#   bunx crewhaus eval suite eval-suite.yaml --tier fast --gate
+#   bunx crewhaus eval suite eval-suite.yaml --tier nightly --gate
+#   bunx crewhaus eval suite eval-suite.yaml --tier release --gate
+#
+# Tier names are a FIXED vocabulary (fast | nightly | release) so
+# `--tier fast` means the same thing in every repo. Paths resolve from the
+# CWD, exactly like a hand-typed `crewhaus eval`, and every entry runs
+# through that same code path (registry refs, regression union, preflight,
+# triage, run history, baselines). A tier passes only when EVERY entry
+# passes; the verdict and every entry's aggregates land in
+# <out>/suite.json.
+#
+# Walkthrough: ../../walkthroughs/74-eval-suites-and-cassettes.md
+name: hello-eval
+spec: agent.cli.yaml
+
+tiers:
+  # Per-change: fast, cheap, and gated by ABSOLUTE floors so it bites from
+  # run one — including in a fresh CI workspace with no pinned baseline.
+  fast:
+    - name: smoke
+      dataset: .crewhaus/datasets/hello-eval/dev.jsonl
+      graders: graders.yaml
+      seed: 42
+      concurrency: 2
+      thresholds:
+        min_pass_rate: 0.8
+
+  # Nightly: the whole registry dataset, repeated so flake shows up, plus
+  # the (spec, dataset) BASELINE regression gate. max_p95_latency_ms is a
+  # criterion OF that gate, which is why `gate: true` is required beside
+  # it — declaring a ceiling that can never bite is refused at parse time.
+  #
+  # NOTE the bare `registry:hello-eval` ref resolves train + dev ONLY; the
+  # locked #test split is excluded (with a stderr note) and is spent by the
+  # release tier below.
+  nightly:
+    - name: full
+      dataset: registry:hello-eval
+      graders: graders.yaml
+      seed: 42
+      repeats: 3
+      concurrency: 2
+      gate: true
+      thresholds:
+        min_pass_rate: 0.8
+        max_p95_latency_ms: 30000
+
+  # Release: the sanctioned holdout spend. `allow_test_split: true` mirrors
+  # `crewhaus eval --allow-test-split` — without it an explicit #test ref is
+  # refused. Record the burn with `crewhaus datasets release` so the
+  # version's release history says how many first looks it has left (none).
+  release:
+    - name: holdout
+      dataset: registry:hello-eval#test
+      graders: graders.yaml
+      seed: 42
+      concurrency: 1
+      allow_test_split: true
+      thresholds:
+        min_pass_rate: 1.0

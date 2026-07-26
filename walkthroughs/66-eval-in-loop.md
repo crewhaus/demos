@@ -2,7 +2,7 @@
 
 **Pillar:** Pillar 2 — eval is active, not passive.
 **Catalog modules:** `evaluation` (spec block), `eval-judge` (judge steps/nodes), `eval-grader` (grader registry), `runtime-core` (the in-loop scorer).
-**Shipped:** crewhaus 0.4.0 (Batch B — `evaluation:` on cli/channel/managed, `kind: "judge"` workflow steps + graph nodes, `eval --repeats` for pass^k).
+**Shipped:** crewhaus 0.4.0 (Batch B — `evaluation:` on cli/channel/managed, `kind: "judge"` workflow steps + graph nodes, `eval --repeats` for pass^k); extended in 0.4.x (judge abstention in-loop, `eval_graded`/`judge_verdict` OTel spans, the `eval-fail` mining signal in `dataset mine`, `feedback:` on `target: managed`).
 
 Every other eval recipe in this series scores the agent **offline** — after a
 run, over a dataset, on your machine or in CI ([Recipe 12 — Eval
@@ -94,6 +94,45 @@ eval_graded  grader=llm_judge score=0.55 threshold=0.75 verdict=fail retry=0
 eval_graded  grader=llm_judge score=0.82 threshold=0.75 verdict=pass retry=1
 ```
 
+### An abstaining judge scores 0
+
+The offline `llm_judge` grader can **abstain** when the evidence is
+insufficient to score honestly. In-loop, an abstention is treated as
+**score 0** with a `judge abstained: …` rationale on all three shapes —
+so a guessed best-estimate can never clear the threshold. This is the
+in-loop counterpart of the offline needs-human bucket
+([Recipe 12 §The five buckets](12-eval-harness.md#the-five-result-buckets)),
+and the asymmetry is deliberate: offline you can afford to set a sample
+aside for a human; in the serving loop there is a reply about to ship,
+and the conservative reading is the only safe one.
+
+### A failed in-loop verdict is a mining signal
+
+`crewhaus dataset mine --sessions all --review` harvests turns whose
+in-loop judge failed, reading them from the session's **trace sidecar**
+`<id>.events.jsonl` (the durable event log carries no `eval_graded`
+kind; both flat and enveloped carriers are accepted). There is no
+per-signal selector — `mine` always scans the full union, and `eval-fail`
+is one of its signal *values*.
+
+**The `eval-fail` signal is opt-in.** The trace sidecar is written only
+when the run had `CREWHAUS_WATCHME=1` set, so `evaluation:` alone is not
+enough: a compiled `cli` or `channel` bundle stamps that env only when
+the spec also carries a `watchme:` block with `enabled: true` and
+`capture: full`; `crewhaus run` stamps it for that case plus after a
+`crewhaus watchme start`; the managed daemon does not stamp it yet. A
+harness with the judge wired and watchme off yields **zero** `eval-fail`
+candidates — which is why `dataset mine` prints how many scanned
+sessions carried a sidecar, and names the env var when none did.
+
+The retry ladder is respected: a turn `on_fail: retry` **recovered** is
+**not** harvested — it worked. A turn that burned the ladder and still
+failed is flagged `eval_retries_exhausted`, ranks just below `error` in
+dedupe, and carries the judge score, threshold and grader into the
+quarantine sample's metadata. That is how a quality floor in production
+becomes a hard case in your offline dataset
+([Recipe 61](61-self-building-evals.md#grow-the-dataset-from-real-usage)).
+
 ### Grader kinds at a glance
 
 | `grader.type` | Scores | `threshold`? | Model spend |
@@ -176,6 +215,25 @@ judge_verdict  at=quality-gate verdict=fail score=0.62
 judge_verdict  at=quality-gate verdict=pass score=0.87
 ```
 
+### Both events are first-class telemetry now
+
+`eval_graded` and `judge_verdict` emit **OTel spans**
+(`eval_graded.<verdict>` / `judge_verdict.<verdict>`, with typed
+`crewhaus.eval.*` / `crewhaus.judge.*` attributes and **ERROR status on
+a failing verdict**), and fold into the metrics
+`crewhaus_eval_verdicts_total{source,verdict}` and
+`crewhaus_eval_score{source}`. The `source` label is `in_loop` /
+`judge_step` / `eval_sample`, so one dashboard can trend live quality
+beside the last gated offline run without confusing the two.
+
+**State the boundary, because it's the part that bites:**
+`attachDefaultSubscribers` attaches only the printer, the metrics
+collector and the generic OTLP exporter — a `DD_API_KEY` alone exports
+nothing, you still need the OTLP endpoint wired
+([Recipe 17](17-observability.md)). And there is **no quality-drop alert
+in `alert-watchdog`**: the metric exists, the alert on it is yours to
+define.
+
 Constraints the schema pins: a judge step **can't be the first step** (there's
 no previous output to gate), and it carries **only the gate config** — no
 `instructions`, no `tools`. The identical `kind: "judge"` node exists on the
@@ -201,13 +259,22 @@ Two adjacent offline knobs pair naturally with in-loop evaluation:
   ```
 
 - **The reachable grader registry.** Offline `graders.yaml` entries of `type:
-  registry` resolve against the default grader registry — the six specialty
-  packs (`continuity.*`, `twelve.*`, `nlg.*`, `semantic.similarity`,
-  `multimodal.*`, `safety.*`) plus any `.crewhaus/graders` plugins, which win on
-  name collisions. That's how the offline harness reaches graders the in-loop
-  `evaluation.grader` (deliberately just `llm_judge`/`contains`/`regex`) does
-  not — the in-loop grader stays small and hot; the registry is for the deep
-  offline rubric.
+  registry` resolve against the default grader registry — **eight** namespaces
+  (`continuity.*`, `twelve.*`, `nlg.*`, `semantic.similarity`, `multimodal.*`,
+  `safety.*`, `calibration.*`, `consistency.*`) plus any `.crewhaus/graders`
+  plugins, which win on name collisions. Entries may carry `opts:`, validated
+  **per pack at run start** — an unknown key is a loud error naming that pack's
+  accepted vocabulary. That's how the offline harness reaches graders the
+  in-loop `evaluation.grader` (deliberately just `llm_judge`/`contains`/`regex`)
+  does not — the in-loop grader stays small and hot; the registry is for the
+  deep offline rubric ([Recipe 12 §Registry graders](12-eval-harness.md#registry-graders-packs-and-plugins)).
+
+- **`run_exam` accepts `type: registry` too.** A spec-declared
+  `learning.exam.graders` file used to reject registry entries; it now builds
+  the **same** default registry `crewhaus eval` falls back to (the eight
+  namespaces plus `.crewhaus/graders` plugins from the harness cwd, `opts:`
+  included), and an unknown name fails loudly at exam start. A living
+  competency exam is no longer judge-only.
 
 ## When to NOT reach for this
 
@@ -227,6 +294,7 @@ Two adjacent offline knobs pair naturally with in-loop evaluation:
 - **The offline scoring this mirrors.** [Recipe 12 — Eval Harness](12-eval-harness.md).
 - **Graders beyond the three in-loop kinds.** [Recipe 34 — Building custom graders](34-building-custom-graders.md).
 - **The classified-failure + exit-code machinery `halt` reuses.** [Recipe 53 — Justification gates](53-justification-gates.md).
+- **Where the in-loop failures you mine end up.** [Recipe 61 — Self-building evals](61-self-building-evals.md) and [Recipe 74 — Eval suites, cassettes, red teams](74-eval-suites-and-cassettes.md).
 
 ## Pointers to source
 

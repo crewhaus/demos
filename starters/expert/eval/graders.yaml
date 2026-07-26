@@ -1,13 +1,19 @@
 # The competency exam's rubric. A knowledge exam grades PROSE answers
 # against a gold answer, so a per-sample llm_judge is the right grader — it
 # sees each question's `expected_output` and scores the expert's answer
-# against it. (Deterministic graders like `contains`/`exact_match` apply one
-# fixed check to EVERY sample, which doesn't fit open-ended domain answers.)
+# against it. (`contains`/`regex` apply one fixed check to EVERY sample,
+# which doesn't fit open-ended domain answers. The per-sample deterministic
+# options, if you want a cheap floor beside the judge: `expected_contains`
+# — output must contain THIS sample's gold — and the registry pack
+# `calibration.abstentionAware`, which separates answered-wrong from
+# honestly-not-attempted. Spec-declared exams accept `type: registry`
+# entries now, so both are reachable from this file.)
 #
 # The expert curates this over time: `/reflect` tightens the rubric and
 # `/exam` adds questions as its expertise grows. `crewhaus flywheel run`
 # uses this exam + user ratings as the fitness function for gated,
-# human-reviewed spec improvements.
+# human-reviewed spec improvements. Render this instrument for a release
+# PR with `crewhaus graders card --graders eval/graders.yaml`.
 graders:
   - name: domain_correctness
     type: llm_judge
