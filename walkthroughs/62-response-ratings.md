@@ -2,7 +2,7 @@
 
 **Pillar:** Pillar 2 — eval is active, not passive.
 **Catalog modules:** `eval-runner` (109), `dataset-registry` (110), `grader-registry` (111), `prompt-optimizer` (114), `spec-patch` (278), `eval-optimizer-orchestrator` (279), `prompt-optimizer-claude` (280), plus the CLI's response-feedback core ([`apps/cli/src/feedback.ts`](https://github.com/crewhaus/factory/blob/main/apps/cli/src/feedback.ts), brief 291).
-**Shipped in:** crewhaus 0.1.8 ([CHANGELOG](https://github.com/crewhaus/factory/blob/main/CHANGELOG.md)).
+**Shipped in:** crewhaus 0.1.8 ([CHANGELOG](https://github.com/crewhaus/factory/blob/main/CHANGELOG.md)); extended in 0.4.x (`--adjudicate` + multi-rater resolution, the reaction→turn join store, `feedback:` on `target: managed`, daemon-side autoDistill, ingestion redaction).
 
 ## What this recipe shows
 
@@ -94,6 +94,24 @@ time: the newest value of each field wins, but a later comment-only
 `feedback` does **not** erase an earlier `rate`'s vote — so
 `rate --thumbs up` followed by `feedback --text "…"` yields one record
 carrying both.
+
+**Several people rating the same turn is a different case**, and it is
+no longer resolved by "whoever went last." Both verbs take
+`--adjudicate`, but an adjudication must carry a **verdict**:
+`rate --adjudicate` takes any rating, while `feedback --adjudicate`
+**requires** `--correction` (a bare `--text` comment settles nothing, so
+the combination is rejected before the record is written):
+
+```bash
+crewhaus rate --session sess_0123456789abcdef --turn 2 --stars 5 --adjudicate
+crewhaus feedback --session sess_0123456789abcdef --turn 2 \
+  --text "the first rater misread the ask" \
+  --correction "the deadline is 3 business days, not 3 calendar days" \
+  --adjudicate
+```
+
+See [Multi-rater agreement](#multi-rater-agreement) below for the
+resolution rules.
 
 **Turn numbering.** `--turn N` is the 1-based ordinal of *user-text*
 turns — the same count the web UI shows and the runtime's
@@ -244,7 +262,7 @@ channels:
     botToken: $SLACK_BOT_TOKEN
     signingSecret: $SLACK_SIGNING_SECRET
 routing:
-  sessionKey: channel   # channel or user — NOT thread; see below
+  sessionKey: thread    # any session key works now — see below
 feedback:
   channelReactions: true
 ```
@@ -257,25 +275,75 @@ session, deduped by Slack's event id. Everything else is ignored: any
 other emoji, and the bot's own 👀/✅/⚠️ status reactions, map to no
 vote.
 
-Three deliberate semantics to know before you rely on it:
+**The vote lands on the exact reacted-to turn.** The generated
+session-router appends an outbound-`ts` → `(sessionId, turnNumber)` join
+to `.crewhaus/feedback/joins/channel.jsonl` on **every posted reply**,
+and `handleReaction` resolves through it — for **all** session keys,
+`thread` included. (Two claims that were true in 0.1.8 and are false
+now: `sessionKey: thread` no longer no-ops, and the vote no longer lands
+on the session's latest turn.)
 
-- **`sessionKey: thread` no-ops.** A Slack reaction event carries the
-  reacted-to message's `ts`, not the thread root, so a thread-keyed
-  session can't be recovered from it. Reactions only produce feedback
-  in `channel` and `user` session modes (the default
-  [`starters/channel`](../starters/channel/crewhaus.yaml) spec uses
-  `thread` — switch it, as above, to collect reactions).
-- **The vote lands on the session's latest turn** (`lastTurnIndex`),
-  not on the specific older message reacted to — v0 keeps no
-  outbound-message→turn join store. React promptly, or treat channel
-  ratings as session-level signal.
+Three semantics to know before you rely on it:
+
+- **A join miss degrades, and says so.** The join file only covers
+  replies posted once the daemon runs *this* build (and adapters
+  without a post receipt never populate it). On a miss, `channel` and
+  `user` keep the last-turn fallback; **`thread` drops the reaction
+  rather than guessing**. `crewhaus compile` prints a one-line
+  `channel-reactions-join` warning saying exactly this — and
+  `compile --strict` deliberately does **not** escalate that code,
+  because the degradation is honest and temporary.
 - **Removing a reaction does not retract the rating.** The event log
   is append-only.
+- **Reactions are a rating, not an adjudication.** Two people reacting
+  opposite ways on the same turn is a disagreement `distill` resolves by
+  the rules below — or withholds.
+
+## Multi-rater agreement
+
+When more than one person rates the same turn, `crewhaus distill`
+resolves it **explicitly** — it used to be later-timestamp-wins:
+
+| Case | Resolution |
+| ---- | ---------- |
+| all thumbs | **majority** |
+| stars / scale (or a mix of modalities) | **mean** normalized score |
+| any `--adjudicate` record present | the adjudication **always wins** and closes the disagreement |
+| a true split (even thumbs, no adjudication) | the turn is **withheld from the dataset** and enqueued for human review |
+
+Feedback stays append-only — every rater's record is kept — and every
+multi-rater sample records each rater's normalized verdict in
+`metadata.ratings`, plus `metadata.adjudicated` when an adjudication
+settled it. `distill` prints per-turn agreement and overall **Cohen's
+kappa** (pairwise, common-turn-weighted) whenever any turn has ≥2
+raters.
+
+**Single-rater corpora — including everything you recorded before this
+release — distill byte-identically.**
+
+Withheld turns land in `.crewhaus/review/queue.jsonl` as
+`rater_disagreement` items. Drain them with `crewhaus review next`,
+which in a TTY routes your verdict through the **same** capture
+machinery `crewhaus rate --adjudicate` uses, so the disagreement closes
+at the feedback source and not just in the queue. Full walkthrough in
+[Recipe 74](74-eval-suites-and-cassettes.md#part-4--the-review-queue).
+
+## Ingestion redacts by default
+
+`crewhaus distill`, the unattended `feedback.autoDistill` teardown, and
+`crewhaus dataset mine` all run the same PII/secret detector set over
+every free-text field at sample construction, deterministically
+replacing hits with `[REDACTED:<kind>]` and leaving non-PII text
+byte-identical.
+
+`--no-redact` opts out on `distill`, `dataset mine`, and
+`optimize --ratings`. It is deliberately **not** available on the
+autoDistill teardown — that path is unattended, so it always redacts.
 
 ## The `feedback:` spec block, in full
 
 `feedback:` is cross-cutting (like `security:`) and carried on the
-interactive shapes that consume it — `cli` and `channel`. Every
+shapes that consume it — `cli`, `channel`, and `managed`. Every
 sub-key is optional; the block is `.strict()`, so a typo'd key fails
 the compile:
 
@@ -286,7 +354,8 @@ feedback:
   scale: { min: 1, max: 10 } # integer bounds, for modality: scale
   storage:
     location: feedback       # capture-sink directory name (safe-name rules)
-  autoDistill: false         # forward-looking: continuous distillation flywheel
+  autoDistill: false         # fold ratings into a versioned dataset automatically
+  exitPrompt: true           # cli shape: the one-keystroke REPL exit rating
   channelReactions: true     # channel shape: Slack 👍/👎 → user_feedback
 ```
 
@@ -296,6 +365,25 @@ feedback-collection policy. Rating capture itself works on a `cli`
 harness *without* the block (`crewhaus rate` needs only a session
 transcript); the block is how a *compiled* surface (the channel bot,
 a hosted UI) knows to wire rating capture in.
+
+### On `target: managed`
+
+The block parses on the managed shape too. The gateway daemon serves a
+**`feedback.submit` JSON-RPC method** that appends to
+`.crewhaus/feedback/<tenant>.jsonl` (mode 0600, audited,
+provenance-stamped as daemon-originated). Two sub-keys describe surfaces
+the gateway does not have, and say so at compile time rather than
+looking configured: `exitPrompt` (there is no REPL to exit) and
+`channelReactions` (inbound reactions are the channel shape's surface)
+each emit a `managed-feedback-unsupported` warning.
+
+### autoDistill runs on the daemon clock too
+
+`autoDistill` used to fire only at `crewhaus run` teardown. The
+**channel and managed daemons** now register a `feedback_distill`
+janitor step with the same ≥5-unprocessed-ratings trigger and the same
+watermark. `CREWHAUS_AUTODISTILL=0` disables the daemon tick entirely;
+`CREWHAUS_AUTODISTILL_THRESHOLD` tunes the trigger count.
 
 ## Observability
 
@@ -312,8 +400,9 @@ cost and latency (Recipe 17's pipelines pick it up with no config).
 | Correction beats the transcript | a `--correction` turn is gold even if down-voted, and the correction is the `expected_output` |
 | 3★ is *not* positive by default | normalization is (n−1)/4 against `--min-score 0.7`; pass `--min-score 0.5` to flip it |
 | `expected_tools` casing | tool names are recorded verbatim in PascalCase (`Read`, `Bash`) |
-| Slack `thread` sessions | reactions no-op under `routing.sessionKey: thread`; use `channel` or `user` |
-| Reaction turn attribution | channel votes land on the session's latest turn, not the reacted-to message's turn |
+| Reaction join misses | reactions attribute to the exact turn via `.crewhaus/feedback/joins/channel.jsonl`; on a **miss** (reply posted by an older build, receipt-less adapter) `channel`/`user` fall back to the last turn and `thread` **drops** the reaction. `compile` warns (`channel-reactions-join`); `--strict` does not escalate it |
+| A split rater verdict is withheld | it is not silently labeled — it goes to `.crewhaus/review/queue.jsonl`. `--adjudicate` settles it |
+| Redaction is on by default | `distill` / `dataset mine` / `optimize --ratings` take `--no-redact`; the unattended autoDistill teardown does **not** |
 | Tiny datasets | the 70/30 split needs ≥ 2 samples; trust deltas only after dozens of ratings |
 
 ## Where to go next
@@ -323,5 +412,7 @@ cost and latency (Recipe 17's pipelines pick it up with no config).
   and the worked refusal for volatile fields.
 - [Recipe 12 — Eval Harness](12-eval-harness.md) — the dataset +
   graders contract the distilled artifacts satisfy.
+- [Recipe 74 — Eval suites, cassettes, red teams](74-eval-suites-and-cassettes.md) —
+  the review queue that catches everything the ratings couldn't settle.
 - [Recipe 03 — Slack Bot](03-slack-bot.md) — the channel harness the
   reactions flow builds on.

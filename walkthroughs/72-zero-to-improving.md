@@ -198,14 +198,24 @@ default 0.7 threshold.
 ## Day 7 — watch ratings become a dataset and a grader
 
 `autoDistill` has been quietly doing this after each run (it triggers once
-≥5 unprocessed ratings accumulate), but run it once by hand to *see* the
-transformation — this is the moment the eval vocabulary becomes concrete:
+≥5 unprocessed ratings accumulate — and on a channel or managed harness it
+also runs on the daemon's janitor clock, which `CREWHAUS_AUTODISTILL=0`
+disables). Run it once by hand to *see* the transformation — this is the
+moment the eval vocabulary becomes concrete:
 
 ```bash
 crewhaus distill --all-sessions --register ghostwriter-ratings
 crewhaus datasets list
 crewhaus datasets get ghostwriter-ratings --split dev
+crewhaus datasets card ghostwriter-ratings          # the datasheet, in markdown
 ```
+
+Two things happen for free that are worth knowing on day 7: free-text
+fields are **PII/secret-redacted at construction** (`--no-redact` opts
+out, dev/local only), and if you ever get a second rater, disagreements
+resolve by majority/mean — with a true split **withheld** and queued for
+review rather than silently labeled
+([Recipe 62 §Multi-rater agreement](62-response-ratings.md#multi-rater-agreement)).
 
 The tag-all policy ([62 §Step 2](62-response-ratings.md#step-2--distill-ratings-into-a-dataset--grader)):
 every rated turn becomes a sample — up-rated turns (and *any* turn with a
@@ -241,11 +251,23 @@ the run history any time:
 ```bash
 crewhaus eval-report history
 crewhaus eval-report baseline show
+crewhaus eval-report trends --spec ghostwriter    # once you have a few runs
 ```
 
 From now on, "did that change help?" has a numeric answer, and any
 pass→fail flip on a previously-passing sample is a **regression** the gate
 below will refuse.
+
+Two honesty notes about that number, both printed for you:
+
+- The summary line carries **95% confidence intervals**
+  (`pass_rate_ci95=[…]`). At a dozen samples the point estimate alone
+  overstates certainty badly, and the interval says so. Before you scale
+  the dataset up, `crewhaus eval plan --target-delta 0.05 --pilot <runDir>`
+  tells you how many samples the change you care about actually needs.
+- A bare `--dataset registry:ghostwriter-ratings` resolves **train + dev
+  only**; the locked `#test` split is held back for a release gate. If a
+  test split exists, a stderr note says it was excluded.
 
 ## Day 9+ — close the loop, then automate it
 
@@ -276,10 +298,14 @@ crewhaus flywheel init                    # nightly GitHub Actions + PRs
 One precedence rule worth learning now: without `--dataset`, the
 flywheel prefers a conventional `eval/dataset.jsonl` **over** the
 ratings registry — and Day 0 scaffolded exactly that file, so a bare
-`flywheel run` would quietly optimize against the 8 shallow stubs
-instead of your ratings. Pass the registry explicitly (as above), and
-once real ratings flow, either retire the scaffolded file or keep it as
-a separate smoke set. Everything else resolves by convention from the
+`flywheel run` would optimize against the 8 shallow stubs instead of
+your ratings. It is no longer quiet about it: every run prints
+`[flywheel] dataset: <resolved> (source: flag|convention|ratings-registry)`,
+and when the conventional file shadows an existing `<spec>-ratings`
+dataset it warns with the exact remediation. Pass the registry
+explicitly (as above), and once real ratings flow, either retire the
+scaffolded file or keep it as a separate smoke set. Everything else
+resolves by convention from the
 harness directory: the spec, your graders, the `claude` mutator when
 credentials are present. The acceptance gate is strict: pass-rate
 strictly up, zero per-sample regressions, or the patch never touches
@@ -294,11 +320,15 @@ Each of these has a home recipe; you now have the data they need:
 
 | Want | Command | Deep-dive |
 | ---- | ------- | --------- |
-| Find behaviors no eval covers | `crewhaus eval coverage --sessions all` | [61](61-self-building-evals.md#find-the-gaps-eval-coverage) |
+| Catch dataset rot before you spend | `crewhaus dataset lint --dataset registry:ghostwriter-ratings --strict` | [61](61-self-building-evals.md#keep-the-dataset-honest-dataset-lint-and-dataset-audit) |
+| Find behaviors no eval covers | `crewhaus eval coverage --sessions all --graders eval/graders.yaml` | [61](61-self-building-evals.md#find-the-gaps-eval-coverage) |
 | Harvest hard cases from real struggle | `crewhaus dataset mine --sessions all --review` | [61](61-self-building-evals.md#grow-the-dataset-from-real-usage) |
 | Stress-test with paraphrase/injection variants | `crewhaus dataset synthesize --from registry:ghostwriter-ratings --count 3 --budget-usd 1.00` | [61](61-self-building-evals.md#grow-the-dataset-from-real-usage) |
 | Draft graders from failure rationale | `crewhaus graders suggest --runs last:10` | [61](61-self-building-evals.md#draft-graders-from-failure-rationale) |
+| Check the grader agrees with YOU | `crewhaus graders test --graders eval/graders.yaml --golden eval/golden.jsonl` | [34](34-building-custom-graders.md#meta-eval-is-your-grader-any-good) |
 | Calibrate the judge to your taste | `crewhaus judge calibrate --graders eval/graders.yaml --sessions all --apply` | [61](61-self-building-evals.md#draft-graders-from-failure-rationale) |
+| Decide what the judges couldn't | `crewhaus review next` | [74](74-eval-suites-and-cassettes.md#part-4--the-review-queue) |
+| Watch quality over weeks, not runs | `crewhaus eval-report trends -o .crewhaus/evals/trends` | [12](12-eval-harness.md#trends-and-export) |
 | Lift your best drafts into the prompt | `crewhaus fewshot harvest` | [63](63-harness-self-knowledge.md) |
 | Spec advice beyond the prompt | `crewhaus advise` → `optimize --from-advice` | [57](57-advisor-loop.md) |
 
@@ -307,9 +337,9 @@ Each of these has a home recipe; you now have the data they need:
 | When | You do | The system does |
 | ---- | ------ | --------------- |
 | Daily | use it; rate on exit; paste corrections | `autoDistill` folds ratings into the registry |
-| Weekly | skim `eval-report history`; read one distilled rubric | baseline/regression bookkeeping |
+| Weekly | skim `eval-report history`; read one distilled rubric; drain `review next` | baseline/regression bookkeeping; the queue collects what judges couldn't decide |
 | Nightly (from day ~10) | review the flywheel PR over coffee | compile → eval → optimize → gate → PR |
-| Monthly | `eval coverage` + `dataset mine --review` + `judge calibrate` | dataset stays representative; judge stays honest |
+| Monthly | `dataset lint --strict` + `eval coverage` + `dataset mine --review` + `judge calibrate` + `datasets status` | dataset stays representative and un-saturated; judge stays honest |
 
 Total hand-written eval artifacts after 30 days: **zero.**
 
@@ -320,9 +350,10 @@ Total hand-written eval artifacts after 30 days: **zero.**
 | 3★ is not positive | normalization is (n−1)/4 vs `--min-score 0.7`; pass `--min-score 0.5` to flip it |
 | Corrections outrank votes | a `--correction` turn becomes gold even if down-voted — and the correction is the expected output |
 | One grader per distill | stacked graders min-collapse; don't append extras to the distilled file ([62](62-response-ratings.md)) |
-| autoDistill needs volume | it fires at ≥5 unprocessed ratings (tunable via `CREWHAUS_AUTODISTILL_THRESHOLD`) |
-| Tiny datasets overfit | ≥2 samples to even split; trust deltas after dozens of ratings |
-| `eval` has no default paths | always pass `--dataset` and `--graders`; and the flywheel's convention prefers `eval/dataset.jsonl` over the ratings registry — pass `--dataset registry:…` explicitly |
+| autoDistill needs volume | it fires at ≥5 unprocessed ratings (tunable via `CREWHAUS_AUTODISTILL_THRESHOLD`; `CREWHAUS_AUTODISTILL=0` disables the daemon tick on channel/managed harnesses) |
+| Tiny datasets overfit | ≥2 samples to even split; trust deltas after dozens of ratings — and read the `pass_rate_ci95` the run prints |
+| `eval` has no default paths | always pass `--dataset` and `--graders`. The flywheel's convention prefers `eval/dataset.jsonl` over the ratings registry — but it now **prints the resolved dataset and its source on every run** and warns when the convention shadows your ratings dataset, with the exact remediation. (`eval suite <suite.yaml>` supplies both per entry instead.) |
+| A bare registry ref is train+dev | the locked `#test` split is excluded, and both `optimize` and `flywheel` refuse it outright |
 | The flywheel refuses dirty specs | commit your own edits first, or `--allow-dirty` knowingly |
 
 ## When NOT to use this path

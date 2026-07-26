@@ -2,15 +2,20 @@
 # machine-readable line `capital=<City>`, so a passing answer is that
 # line and nothing else — no prose, no markdown, nothing to strip.
 #
-# Two graders. CLI 0.4.0 combines every grader in this file with `all`,
-# so a sample passes only when both do:
+# Two graders. `combine:` defaults to `all`, so a sample passes only when
+# both do (declare `combine: any` for OR, or `combine: weighted` plus a
+# per-grader `weight:` and a top-level `passing_threshold:` for a soft
+# score — see walkthrough 12):
 #
 #   format-line   `contains` takes a LITERAL substring — the SAME string
 #                 for every sample. It can check the contract's marker,
 #                 never the per-sample answer. (Writing
 #                 `substring: expected_output` here would search the
 #                 answer for the literal text "expected_output" and fail
-#                 every sample — the trap this line exists to name.)
+#                 every sample — the trap this line exists to name. When
+#                 you want the SAMPLE'S OWN gold as the needle, that's
+#                 `type: expected_contains`, which takes no `substring:`
+#                 at all and fails loudly on a missing or empty gold.)
 #   exact-answer  the per-sample check: `exact_match` compares the whole
 #                 output against THIS sample's expected_output.
 #

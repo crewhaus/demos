@@ -2,7 +2,7 @@
 
 **Pillar:** Pillar 2 — eval is active, not passive.
 **Catalog modules:** `eval-runner`, `dataset-registry`, `grader-registry`, `prompt-optimizer`, `prompt-optimizer-claude`, `spec-patch`, `eval-optimizer-orchestrator`, `feedback-distill`.
-**Shipped:** crewhaus 0.2.0 (`crewhaus flywheel`, `distill --register`, `feedback.autoDistill`, `eval --gate`).
+**Shipped:** crewhaus 0.2.0 (`crewhaus flywheel`, `distill --register`, `feedback.autoDistill`, `eval --gate`); extended in 0.4.x (`flywheel run --gate-split`, `flywheel init --suite`, dataset-source disclosure, the test-split lock, multi-rater distill).
 
 Recipe 42 showed the manual optimize loop — you hand it a dataset and
 graders, it hands you a spec patch. This recipe wires the loop so it
@@ -50,8 +50,8 @@ order.
 
 The `feedback:` block (0.2.0) tells the compiled harness to capture
 human ratings and, with `autoDistill`, to fold them into a versioned
-dataset at run teardown. It's cross-cutting — carried on the `cli` and
-`channel` shapes:
+dataset at run teardown. It's cross-cutting — carried on the `cli`,
+`channel`, and (since 0.4.x) `managed` shapes:
 
 ```yaml
 name: support-agent
@@ -138,6 +138,12 @@ You now reference it anywhere a dataset is expected with the
 `registry:<name>[@version][#split]` shorthand:
 `--dataset registry:support-agent-ratings`.
 
+> **A bare ref resolves train + dev only** — the locked `#test` split is
+> excluded (with a stderr note when one existed), and the flywheel
+> **refuses an explicit `#test` outright**. The holdout gates releases,
+> not nightly loops. See
+> [Recipe 12 §The test-split lock](12-eval-harness.md#the-test-split-lock-on-every-consumption-path).
+
 For a graded LLM-judge instead of deterministic graders, add `--judge`:
 the rubric is seeded from the praised-vs-criticized comment themes and
 runs one judge call per sample under `crewhaus eval`.
@@ -145,6 +151,27 @@ runs one judge call per sample under `crewhaus eval`.
 ```bash
 crewhaus distill --all-sessions --judge --register support-agent-ratings
 ```
+
+Three things `distill` does differently now, all of them about not
+inventing a label nobody gave you:
+
+- **Free text is PII/secret-redacted at sample construction** (the
+  unattended `autoDistill` teardown and `dataset mine` too), replacing
+  hits with `[REDACTED:<kind>]` and leaving non-PII text byte-identical.
+  `--no-redact` opts out on `distill` — **not** on the autoDistill
+  teardown, which is unattended and always redacts.
+- **Multi-rater turns resolve explicitly**, not later-timestamp-wins:
+  all-thumbs → majority; stars/scale (or mixed) → mean normalized score;
+  a `crewhaus rate --adjudicate` / `crewhaus feedback --adjudicate`
+  record always wins. Every rater's normalized verdict is kept in
+  `metadata.ratings`.
+- **A true split verdict is not silently labeled.** The turn is withheld
+  from the dataset and enqueued for human review
+  ([Recipe 74](74-eval-suites-and-cassettes.md#part-4--the-review-queue)).
+
+`distill` also prints per-turn agreement plus overall **Cohen's kappa**
+whenever any turn has ≥2 raters. Single-rater corpora — including
+everything recorded before this release — distill byte-identically.
 
 ## Step 4 — run the flywheel
 
@@ -181,22 +208,59 @@ directory and the loop resolves:
 - mutator → `claude` when an `ANTHROPIC_AUTH_TOKEN` /
   `ANTHROPIC_API_KEY` is present, `rule-based` otherwise
 
-Two safety rails worth knowing:
+Conventional paths resolve from the **spec's** directory, not the cwd,
+so a spec passed by path brings its own `eval/` files along.
+
+### The dataset the run actually used
+
+The old trap here was silent: a conventional `eval/dataset.jsonl` — the
+one `scaffold-evals` writes on day zero — **shadows** a distilled
+`<spec>-ratings` registry dataset, so a bare `flywheel run` could
+quietly optimize against eight scaffolded stubs instead of your real
+ratings. It is no longer silent. Every run prints:
+
+```
+[flywheel] dataset: eval/dataset.jsonl (source: flag|convention|ratings-registry)
+```
+
+and when the conventional file shadows an existing `<spec>-ratings`
+dataset, the run **warns with the exact remediation**: pass
+`--dataset registry:<spec>-ratings` to optimize against real user
+ratings. Do that, and either retire the scaffolded file or keep it as a
+separate smoke set.
+
+Three safety rails worth knowing:
 
 - The flywheel **refuses to run over uncommitted spec changes** — a
   rejected write-back can't be told apart from your own edits. Pass
   `--allow-dirty` only when you know what you're doing.
 - `--dry-run` runs the whole loop (evals + optimize + gate) but never
   writes the spec, registers, or pins — a rehearsal.
+- **`--gate-split train|dev`** narrows the before/after **acceptance**
+  evals to one registry split; the optimizer's own train/dev sets are
+  unchanged, so the search still reads what it always read. A
+  split-gated run keys into its own baseline lineage
+  (`<name>@<version>#<split>`). It is **refused for flat-file datasets**
+  (no split boundaries) and **for `#test`**. Omitted, the gate scores
+  every split the ref resolved — train+dev.
 
 ```bash
 # Rehearse without touching anything:
 crewhaus flywheel run --dataset registry:support-agent-ratings --dry-run
+
+# Gate on dev only, keeping train purely for the search:
+crewhaus flywheel run --dataset registry:support-agent-ratings --gate-split dev
 ```
 
 At `--concurrency 1` the loop makes one eval pass per iteration without
 tripping a low provider rate-limit tier — the recommended setting on a
 30k-TPM plan.
+
+> **The numeric-dial search is library-only.** `@crewhaus/prompt-optimizer`
+> implements a `knob-step` mutation, but no CLI flag builds the dial set
+> — the flywheel's own `--help` says so — so a flywheel run proposes
+> **no knob changes**. It rewrites instructions.
+> ([Recipe 42 §Numeric-knob search](42-active-optimization.md#numeric-knob-search--library-only).)
 
 ## Step 5 — schedule it
 
@@ -215,6 +279,20 @@ and the optimizer never touches `permissions` or `model` fields
 a score delta in the PR body, or an empty run that found nothing to
 improve.
 
+### Run a measurement tier beside the loop
+
+```bash
+crewhaus flywheel init --suite eval-suite.yaml
+```
+
+appends a `crewhaus eval suite --tier nightly --gate` step to the **same
+cron**, after the improvement PR is opened — and it runs **even when the
+flywheel step failed**, so neither signal can hide the other. The path
+is harness-relative, and a manifest declaring no `nightly` tier warns at
+scaffold time rather than failing the job later. Without `--suite` the
+scaffold is byte-identical to before. The manifest grammar is
+[Recipe 74 §The suite manifest](74-eval-suites-and-cassettes.md#part-1--the-suite-manifest).
+
 ## What each step writes
 
 | Command                         | Writes                                                                 |
@@ -224,6 +302,7 @@ improve.
 | `crewhaus flywheel run`         | `.crewhaus/optimize/<runId>/` (patch, report, trajectory) + `.crewhaus/evals/` (run history) |
 | an **accepted** patch           | the spec YAML (CST write-back) + a `.crewhaus/specs` version + a `<name>-regressions` dataset pin |
 | `crewhaus flywheel init`        | `.github/workflows/crewhaus-flywheel.yml`                             |
+| an unresolved rater split       | a `rater_disagreement` item in `.crewhaus/review/queue.jsonl`         |
 
 ## Where the loop can't hurt you
 
@@ -238,6 +317,12 @@ improve.
 - **Nothing auto-merges.** The scheduled path opens a PR. A human
   merges. The dirty-tree refusal means the loop never silently mixes its
   own write-back with your in-flight edits.
+- **The holdout never enters the loop.** A bare registry ref resolves
+  train+dev; an explicit `#test` is refused. The one thing that can
+  spend it is `crewhaus datasets release`, which records the burn.
+- **Ambiguous human signal is withheld, not guessed.** A split rater
+  verdict with no adjudication goes to the review queue instead of
+  becoming a labeled sample.
 
 ## When to NOT use the flywheel
 
@@ -256,6 +341,7 @@ improve.
 - **Safe production rollout of an accepted patch.** [Recipe 58 — Safe production ops](58-safe-production-ops.md).
 - **The single-shot loop this packages.** [Recipe 42 — Active Optimization](42-active-optimization.md).
 - **The dataset + graders behind the gate.** [Recipe 12 — Eval Harness](12-eval-harness.md).
+- **The measurement tier that runs beside the loop.** [Recipe 74 — Eval suites, cassettes, red teams](74-eval-suites-and-cassettes.md).
 
 ## Pointers to source
 

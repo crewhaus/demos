@@ -166,12 +166,90 @@ A concurrent promote and rollback will serialize; one wins, the
 other sees the updated manifest and fails-or-retries based on its
 flags.
 
-## The canary controller
+## The `crewhaus deploy canary` verb
 
-A canary splits traffic between two versions. It's driven
-**programmatically** by the `canary-controller` package — there's no
-CLI verb; you instantiate the controller and call it from a rollout
-script or your deploy automation:
+There **is** a CLI verb, and its flags parse now — the whole canary flag
+block used to be misfiled on `propose`'s arg schema, so every documented
+invocation died at arg parse with `unknown flag: --dataset`:
+
+```bash
+crewhaus deploy canary crewhaus.yaml v3 \
+  --traffic 5,25,50,100 \
+  --dataset registry:support-agent-golden \
+  --graders eval/graders.yaml \
+  --from v2 --env prod \
+  --max-pass-rate-drop 0.05 --max-p95-latency-ms 5000
+```
+
+It registers the candidate spec version, then drives the ramp: at each
+step it evals **both** the baseline and candidate versions against the
+dataset+graders and feeds the two results into the real
+`regression-runner` gate (pass-rate + p95 latency). Pass every step and
+the env pin auto-promotes to the candidate; fail the first step and it
+auto-rolls-back to the baseline and stops. Every promote/rollback is
+audit-logged (`deployment_action`).
+
+| Flag | Default | Notes |
+| ---- | ------- | ----- |
+| `--traffic 5,25,50,100` | `5,25,50,100` | strictly-increasing ramp steps |
+| `--dataset <data>` | — | file path or `registry:<name>[@ver][#split]` |
+| `--allow-test-split` | off | canary gates a **release**, so it is one of exactly two verbs (with `crewhaus eval`) that may consume an explicit `#test` ref. A bare ref is train+dev |
+| `--graders`, `--from`, `--env`, `--name` | `--env prod`; `--from` = the env's current pin | |
+| `--concurrency`, `--seed`, `--judge-model` | | eval knobs, as `crewhaus eval` |
+| `--max-pass-rate-drop <f>` | 0.05 | gate threshold |
+| `--max-p95-latency-ms <n>` | 5000 | gate threshold |
+| `--traffic-split` `[--experiment <n>] [--experiment-dir <d>]` | off | see the boundary below |
+
+> **The ramp % gates eval sampling and promotion, not live traffic.**
+> `crewhaus eval` runs `target: cli`, and the canary controller's
+> `route()` has no serving-path consumer, so each step evals the **full**
+> dataset against both versions; the percentages sequence the confidence
+> ramp. A real request-level split matters only for gateway/managed
+> shapes with a serving-path `route()` consumer.
+
+### `--traffic-split` — what it does and does not do
+
+The flag ships the honest **subset** of an online experiment. After each
+**passing** step it writes
+`.crewhaus/experiments/<name>.assignment.json` — a deterministic map
+from any stable request key to exactly one version (sha256 bucket, the
+same hash `route()` uses, sticky across processes) — and records the
+ramp's per-version **eval** samples into
+`.crewhaus/experiments/<name>.jsonl`.
+
+**Nothing in CrewHaus's serving surfaces reads that assignment.** Routing
+real requests through it is an explicit integration at your own serving
+boundary. The flag is named for the capability it **prepares**, not one
+it performs. Lifecycle detail that matters: the assignment file is
+**removed when the ramp concludes** — promotion pins 100% candidate,
+rollback pins 100% baseline, and a surviving 50/50 file would keep a
+compliant integration routing half its keys at a version nobody is
+running. The ledger gets **one batch per version** (the ramp's final
+measurement of each), because a 4-step ramp re-measures the same samples
+4× and repeat measurements are not independent observations.
+
+The decision function and the outcome path are their own verb (note the
+ledger name is `--name` here, and `--experiment` on `deploy canary`):
+
+```bash
+crewhaus experiment assign --name support-agent --key user_42
+crewhaus experiment record --name support-agent --version v3 --outcome pass
+crewhaus experiment status --name support-agent --min-n 30 --json
+```
+
+`experiment status` reports per-version deltas with **Wilson 95%
+intervals**, breaks the sources down under `--json`, and **refuses to
+name a winner below `--min-n`** (default **30**) per version. It also
+**collapses repeat EVAL measurements** of the same (version, dataset
+sample): re-running a ramp re-measures the same fixed samples, and
+counting those as independent observations would narrow the intervals on
+evidence that did not grow. Serving/CLI records are never collapsed —
+there a repeated key is a repeated request.
+
+## The canary controller (programmatic)
+
+Under the verb sits the `canary-controller` package. Instantiate it
+directly when you're driving a rollout from your own automation:
 
 ```typescript
 import { createCanaryController } from "@crewhaus/canary-controller";
@@ -309,6 +387,7 @@ regression gate confirms it on the next check.
 ## What to read next
 
 - **Eval harness behind the gate.** [Recipe 12 — Eval Harness](12-eval-harness.md).
+- **The release-tier suite that runs before you ramp.** [Recipe 74 — Eval suites, cassettes, red teams](74-eval-suites-and-cassettes.md).
 - **Audit-logged promotions.** [Recipe 22 — Compliance and Audit](22-compliance-and-audit.md).
 - **Kubernetes / Helm deployment.** [Recipe 24 — Docker and Helm](24-docker-and-helm.md).
 

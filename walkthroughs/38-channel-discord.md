@@ -196,7 +196,7 @@ POST https://discord.com/api/v10/channels/<channelId>/messages
 Authorization: Bot <DISCORD_BOT_TOKEN>
 ```
 
-Used by the `SendMessage` tool (see [Recipe 03 — Step 6](03-slack-bot.md#step-6--proactive-sends-with-the-sendmessage-tool))
+Used by the `SendMessage` tool (see [Recipe 03 — Step 7](03-slack-bot.md#step-7--proactive-sends-with-the-sendmessage-tool))
 for proactive sends. Discord doesn't gate this beyond bot permissions
 — if the bot is in the channel, the message posts.
 
