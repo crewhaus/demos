@@ -3,6 +3,14 @@
 # right grader. Numbers and effective dates are load-bearing in this domain
 # — a plausible answer with the wrong fee rate is a WRONG answer.
 #
+# (`contains`/`regex` apply one fixed check to EVERY sample and don't fit
+# prose. The per-sample deterministic options, if you want a cheap floor
+# beside the judge: `expected_contains` — the output must contain THIS
+# sample's gold — and the registry pack `calibration.abstentionAware`,
+# which separates answered-wrong from honestly-not-attempted, exactly the
+# distinction this domain cares about. Spec-declared exams accept
+# `type: registry` entries now, so both are reachable from this file.)
+#
 # The advisor curates this over time: `/reflect` tightens the rubric and
 # grows the exam as new rungs are mastered; every failed question is
 # auto-logged as a knowledge gap. This exam measures KNOWLEDGE confidence;

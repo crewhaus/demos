@@ -77,10 +77,16 @@ counts, the trace pattern. This is a review surface, not an
 auto-apply: you decide which suggestions are worth an eval.
 
 The patches only ever target fields in `OPTIMIZABLE_PATHS` —
-`agent.max_tokens`, `compaction.curate`, `compaction.threshold`,
-`failure_taxonomy`, retrieval knobs, `security.justification`. Anything
-outside that whitelist can't be constructed as a patch, so the advisor
-can't propose rewriting your permission rules or model.
+`agent.max_tokens`, `agent.thinking.budget_tokens`, `compaction.curate`,
+`compaction.threshold`, `failure_taxonomy`, `limits.max_tool_iterations`,
+retrieval knobs, `security.justification`, the model-pool policy fields,
+and the per-stage instruction paths on multi-stage shapes. It is a
+broader surface than "the prompt" — the full list lives in
+[`packages/spec-patch/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)
+and is summarized in
+[Recipe 42 §Optimizable paths](42-active-optimization.md#optimizable-paths).
+Anything outside that whitelist can't be constructed as a patch, so the
+advisor can't propose rewriting your permission rules or model.
 
 ## Step 3 — apply through the eval gate
 
@@ -95,6 +101,13 @@ crewhaus optimize crewhaus.yaml \
   --dataset registry:support-agent-ratings \
   --write-back
 ```
+
+> **`--from-advice` and `--stage` are mutually exclusive.** The advice
+> path applies pre-computed patches and runs no per-stage search, so a
+> `--stage` beside it would be a silently-ignored flag — it is refused
+> up front instead. `--mutator` and `--iterations` are refused for the
+> same reason. And a bare `--dataset registry:<name>` resolves
+> **train+dev only** here, like everywhere else.
 
 `--from-advice` is mutually exclusive with `--mutator` / `--iterations`
 (it's applying known patches, not searching for new ones), but

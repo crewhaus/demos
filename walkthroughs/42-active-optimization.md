@@ -88,10 +88,23 @@ crewhaus optimize <spec> --mutator claude --iterations 10
 
 Requires `ANTHROPIC_AUTH_TOKEN` (Claude Max OAuth) or `ANTHROPIC_API_KEY`. Cost-gated via `cost-tracker`: pass `--budget-usd N` to bound the run by a dollar ceiling (see [Bounding cost](#bounding-cost) below).
 
+### meta-harness (EXPERIMENTAL)
+
+A third mutator, built the same way `--mutator claude` builds its provider (the spec's own model through `@crewhaus/model-router`). **What differs is the proposer's INPUT**: instead of a fixed summary window, it reads the run's filesystem-backed **experience store** — every prior candidate's artifact, per-sample scores and trace, written under `<out>/experience/candidate_NNN/` as the run measures them. Iteration N sees every earlier measurement. It rewrites the whole prompt each iteration rather than editing it.
+
+```bash
+crewhaus optimize <spec> --mutator meta-harness --budget-usd 2.00 --iterations 10
+```
+
+Same accept gate, same `--budget-usd` meter, same `OPTIMIZABLE_PATHS` validation as the other two. **Every run prints an experimental notice**, and published results on trajectory-level scaffold search are mixed — review every accepted patch.
+
+**It is deliberately spec-shaped.** The CLI proposer returns replacement *instructions*, so a candidate still round-trips through `parseSpec` and lands behind the same gate. The package's whole-**bundle** rewriting mode stays **library-only**: a model-authored `agent.ts` has neither the `OPTIMIZABLE_PATHS` gate nor the `parseSpec` round-trip that make an automated write-back reviewable.
+
 ### When to use which
 
 - **Rule-based** when you want a deterministic CI gate, a fast probe of "does the prompt have obvious room to improve", or you don't have Claude credentials.
 - **Claude** when the prompt is the bottleneck (failures look like instruction-following issues, not skill issues) and you can spend real model dollars.
+- **meta-harness** when a long search keeps rediscovering the same dead ends and you want the proposer to see the whole history — and you're prepared to read every patch it proposes.
 
 ## Bounding cost
 
@@ -143,11 +156,56 @@ With `--write-back`, the source YAML is rewritten with a leading header comment:
 # comments and key order preserved by the CST round-trip)
 ```
 
+## Multi-stage specs and `--stage`
+
+`crewhaus optimize` accepts **workflow / graph / crew / pipeline** specs, not just `cli`. Each candidate is compiled with the eval-entry variant — the *same* emission `crewhaus compile --with-eval-harness` performs, not a second bespoke emitter — and measured by driving that compiled runtime per sample through the same bridge invoker `crewhaus eval` uses, behind the identical eval-gated accept loop, budget gate and post-accept regression pinning.
+
+```bash
+crewhaus optimize workflow.yaml --dataset eval/dataset.jsonl --graders eval/graders.yaml
+crewhaus optimize workflow.yaml --stage draft --iterations 8   # just that step
+```
+
+- Only the per-stage prompt paths already in `OPTIMIZABLE_PATHS` are rewritten: workflow step / graph node / crew role instructions, and a pipeline's `agent.instructions`. **`kind: judge` steps and nodes run no agent turn and are never mutated** — the optimizer cannot relax the gate it's being measured by.
+- **`--stage <name>`** narrows to one step/node/role. An unknown name errors and **lists the valid ones**.
+- **Without `--stage`**, stages optimize **sequentially in declaration order, each gated independently**: a winning stage composes into the working spec the next stage starts from; a losing stage leaves the spec untouched and the run moves on.
+- **`--iterations` is per stage**; **`--budget-usd` stays a RUN ceiling**, threaded down as remaining budget so a three-stage run cannot spend 3× the cap. The source spec is written once, at the end, and only with `--write-back`.
+- **`--stage` is refused alongside `--from-advice`** (which applies pre-computed patches and runs no per-stage search).
+- **Boundary the `--help` states:** the candidate bundle carries bare `@crewhaus/*` imports, so a bridged run resolves them from the candidate directory upward — **run it inside a harness whose dependencies are installed** (the default `-o` under `.crewhaus/optimize/<runId>/` already is).
+
+There is no `--path` flag, and there never was — `OPTIMIZE_SCHEMA` never defined one. The old refusal message that pointed at it has been rewritten to name the spec's **actual stages** and `--stage`.
+
+### What the search measures (narrower than the gate)
+
+The fitness eval reduces each sample to `{id, input, expected_output?}`:
+
+- Samples carrying **`history`** are **refused up front** on the bridged, non-chat-capable shapes (workflow/graph/crew) — their compiled runtimes take one trigger input.
+- **`expected_tools` and `metadata` are stripped during the search**, so tool-accuracy graders and slice reporting apply at the `crewhaus eval` gate, not inside the loop. Regression pinning keeps the **original, un-stripped** records, so the gate grades them in full.
+
 ## Optimizable paths
 
-The orchestrator's v0 only mutates `agent.instructions`. Workflow / graph / crew specs (with nested prompts) raise an error pointing at a follow-up that adds `--path <step.instructions>` support.
+The full `OPTIMIZABLE_PATHS` whitelist (in [`packages/spec-patch/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)) covers every shipped target shape and is much broader than instructions alone — `agent.max_tokens`, `agent.thinking.budget_tokens`, `failure_taxonomy`, the compaction knobs (`threshold`, `curate`, `dedupeThreshold`, `relevanceTopK`), `limits.max_tool_iterations`, `security.justification`, `chains`, `transaction_policy`, `agent.model_pool.policy`/`routing`/`learning`, the memory quality knobs, `evaluation.threshold`/`max_retries`, the indexing/retrieve dials, and the multi-stage per-stage instruction paths above.
 
-The full `OPTIMIZABLE_PATHS` whitelist (in [`packages/spec-patch/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)) covers every shipped target shape. Adding a new field to the whitelist is the explicit signal that "this field is safe to autotune." Security-critical fields (`permissions.mode`, `model_router` rules, MCP server configs) are deliberately excluded — the optimizer can't accidentally rewrite the production safety floor.
+Adding a new field to the whitelist is the explicit signal that "this field is safe to autotune." Security-critical fields (`permissions.mode`, `model_router` rules, MCP server configs) are deliberately excluded — the optimizer can't accidentally rewrite the production safety floor.
+
+### Numeric-knob search — library-only
+
+`@crewhaus/prompt-optimizer` gained a **`knob-step`** mutation: bounded coordinate-ascent steps over declared `OPTIMIZABLE_PATHS` numeric dials, alternating with instruction rewrites, every proposal gated by the same fitness accept loop. The orchestrator threads `knobs` through, validates each dial against the whitelist **before** anything is spent, and emits one whitelist-validated `SpecPatch` per moved dial (`patches.json` beside `patch.json`).
+
+> **State the boundary honestly: there is NO `--knobs` CLI flag.** The dial set is reachable programmatically (`optimizeSpec({ knobs })`) only. Nothing in the CLI builds one, so a `crewhaus optimize` or `crewhaus flywheel run` today proposes **no knob changes** — the flywheel's own `--help` says exactly that. Declaring no knobs leaves the search prompt-only and byte-identical.
+
+### The few-shot leak guard
+
+`--few-shot <pool|auto>` injects the top-K harvested examples into the candidate instructions. Injection now runs **after** the dataset is materialized and drops every pool example whose `(sessionId, turnNumber)` provenance appears in the eval dataset's `metadata.sessionId` / `metadata.turnNumber` stamps:
+
+```
+[optimize] few-shot: excluded 3 pool turn(s) overlapping the eval dataset
+```
+
+Counted, logged, never silent. A pool with no provenance metadata excludes nothing — and if **every** pool example overlaps, the run **refuses** rather than injecting nothing and pretending the flag applied.
+
+### Inline ratings redact by default
+
+`--ratings <session>|all` distills feedback inline for the run. Sample text is now PII/secret-redacted **by default** before it reaches the sample pool, the synthesized graders, or the optimizer meta-prompt — the same detector set as `crewhaus distill`. `--no-redact` keeps it raw (dev/local only).
 
 ## What `--write-back` actually does
 
@@ -234,7 +292,7 @@ OPTIMIZABLE_PATHS for target "cli"; add it to
 packages/spec-patch/src/index.ts if it's intended to be tunable
 ```
 
-For the v0 surface (`agent.instructions`, `compaction.threshold`, `indexing.chunkSize`, `indexing.chunkOverlap`, `retrieve.defaultK`, `retrieve.maxDepth`), the lowering is a 1:1 field copy from spec to IR. No dedup, no reorder, no rewrite. The patch path, the spec path, and the CST path are the same path. The "lossy lower" question doesn't apply at this layer; it's gated upstream.
+For every whitelisted path, the lowering is a 1:1 field copy from spec to IR. No dedup, no reorder, no rewrite. The patch path, the spec path, and the CST path are the same path. The "lossy lower" question doesn't apply at this layer; it's gated upstream. That is exactly the property a path must have to *earn* a place on the whitelist.
 
 If you want to extend the autotuning surface to a field that currently *is* lossy-lowered (e.g. `permissions.rules` after a "merge equivalent rules" pass), the contract is:
 
@@ -257,13 +315,31 @@ See [docs/COMPILER-ARCHITECTURE.md §The lossy lower, and how `crewhaus optimize
 This recipe is crewhaus's answer to DSPy's MIPRO result. The differences:
 
 - **Crewhaus mutates SPECS, not in-memory Python programs.** Patches are version-controllable; DSPy's program state typically isn't.
-- **The mutation provider seam is explicit.** Rule-based and Claude-driven mutators are first-class; future providers (a DSPy bridge, an OPRO implementation) can plug in via the same `MutationProvider` interface without changing the orchestrator.
+- **The mutation provider seam is explicit.** Rule-based, Claude-driven, and meta-harness mutators are first-class; future providers (a DSPy bridge, an OPRO implementation) can plug in via the same `MutationProvider` interface without changing the orchestrator.
 - **Comments and key order survive** via the YAML CST round-trip. A developer reviewing a `--write-back` diff sees exactly what changed.
+- **Multi-stage programs optimize stage by stage**, each gated independently, driving the shape's real compiled runtime through the eval bridge.
+
+## Dataset-split hygiene
+
+Two rules the optimizer enforces so a search can never train on its own exam:
+
+- A bare `--dataset registry:<name>` resolves **train + dev only**; the locked `#test` split is excluded with a stderr note.
+- An explicit `#test` ref is **refused outright** — flag or no flag. Only `crewhaus eval` and `crewhaus deploy canary` can consume it, behind `--allow-test-split`, and `crewhaus datasets release` is the sanctioned way to spend it. See [Recipe 12 §The test-split lock](12-eval-harness.md#the-test-split-lock-on-every-consumption-path).
+
+A registry record with populated train **and** dev splits is used as-is; otherwise the selected samples get the inline 70/30 split.
 
 ## When to NOT use the optimizer
 
 - **Before you have a real dataset.** The optimizer is only as good as the fitness function; a dataset with 5 samples will produce noise, not signal.
 - **For security policy decisions.** The optimizer is a safety regression if it can write permission rules. `OPTIMIZABLE_PATHS` exists to prevent this.
 - **As a substitute for thinking.** The Claude mutator can fix surface-level instruction-following issues, not architectural problems. If your eval is failing because your agent is missing a tool, no amount of prompt tuning will help.
+- **`--mutator meta-harness` as a default.** It is experimental, it says so on every run, and the published evidence for trajectory-level scaffold search is mixed.
+
+## What to read next
+
+- **The eval stack this optimizes against.** [Recipe 12 — Eval Harness](12-eval-harness.md).
+- **Scheduling the loop and gating it nightly.** [Recipe 56 — The self-improvement flywheel](56-self-improvement-flywheel.md).
+- **Bringing a non-cli shape into the loop.** [Recipe 61 — Self-building evals](61-self-building-evals.md).
+- **Tiering the gate in CI.** [Recipe 74 — Eval suites, cassettes, red teams](74-eval-suites-and-cassettes.md).
 
 See [/CLAUDE.md §Pillar-2](https://github.com/crewhaus/factory/blob/main/CLAUDE.md) for the contributor invariants this recipe is the user-facing companion of.

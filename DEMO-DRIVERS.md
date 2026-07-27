@@ -85,13 +85,19 @@ One more thing              the starter's own payoff — eval, optimize, provisi
 
 `crewhaus compile <spec> -o live/dist --check` is the money beat: it asserts the
 emitted bundle's shape, installs its `@crewhaus/*` deps, and boots it — **exit 0
-with no key** whenever the only thing missing is provider credentials or the
-spec's own env refs, which it reports as a gate rather than a failure. It is
-*not* unconditionally green: a spec whose MCP server declares a required env var
-boots RED and exits 1 — both `starters/expert` and `starters/trader` need
-`THREDZ_API_KEY` — so those drivers classify the beat as a deliberate non-zero
-exit instead of pretending. Note `--check` scrubs the environment, so exporting
-the key first changes nothing: the gate is structural.
+with no key** whenever the only thing missing is a credential or input the spec
+itself declares, which it reports as a *named gate* rather than a failure. Since
+factory PR #345 that includes an unset **MCP server** env var, alongside provider
+credentials and the spec's own env refs: both `starters/expert` and
+`starters/trader` need `THREDZ_API_KEY`, and their `--check` beat is now GREEN /
+`expectedExit: 0` with `boot gated (boot reached its MCP server credentials
+gate …)`. The bundle's own boot still exits 21 on the missing variable — only
+`--check`'s classification of it changed. Note `--check` scrubs the environment
+(PATH/HOME/proxy/CA only, empty `--env-file`, no `--allow-env`), so exporting the
+key first changes nothing: the verdict is structural, and a real credential is
+proved by `crewhaus run` / a `needs-key` beat instead. `--check` is still *not*
+unconditionally green — a structural break (SyntaxError, unresolved import,
+anything matching no gate) stays RED and exits 1.
 
 Only `cli` and `browser` targets can `crewhaus run`; `eval`, `optimize`, and
 `flywheel` are `cli`-only. Everything else demos by compiling and booting the
@@ -118,3 +124,12 @@ real code and say so in the cue.
 
 Scratch dirs are swept afterwards (`--keep` to inspect them). `--schema-only`
 skips execution. `CREWHAUS_BIN=/path/to/cli` verifies against a specific build.
+
+Which CLI a beat reaches matters: locally an installed `crewhaus` on PATH wins,
+while CI (which has none) falls through to the sibling `factory` checkout's
+source. When factory `main` carries an unreleased behaviour change, the two
+disagree and only CI is authoritative — beats track factory `main`. This is live
+right now for the `expert`/`trader` `--check` beats (PR #345, unreleased): they
+are `expectedExit: 0` for factory `main`, and report `exit 1 (want 0)` against an
+installed `crewhaus` ≤ 0.4.0 until 0.4.x ships. Reproduce the CI result with
+`CREWHAUS_BIN=<shim that runs factory/apps/cli/src/index.ts> bun run drivers:verify`.

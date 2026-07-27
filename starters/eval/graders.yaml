@@ -1,3 +1,23 @@
+# A STANDALONE graders.yaml — what `crewhaus eval --graders` reads (and
+# what `@crewhaus/eval-grader.parseGradersConfig` parses). Every entry
+# needs an explicit `type:`; `name:` is just the label the report shows.
+# That is a DIFFERENT grammar from the `graders:` list inside a
+# `target: eval` spec (crewhaus.yaml), where an entry is `{name, opts?}`
+# and `name` doubles as the type discriminator.
+#
+# The top level is strict — a typo'd `combined:` / `passing_treshold:` is
+# a loud parse error, never a silently ignored policy. Available here:
+#
+#   combine: all           # default — AND of every grader; score = mean
+#   combine: any           #           OR; score = max
+#   combine: weighted      #           score = Σ(weight·score)/Σweight,
+#   passing_threshold: 0.7 #           passes at ≥ this cut (default 0.5)
+#
+# plus a positive `weight:` on any grader entry. Other types worth
+# knowing: `expected_contains` (output contains THIS sample's gold),
+# `regex`, `json_path`, `tool_call_sequence`, `llm_judge` (with an inline
+# `rubric:`), and `registry` (a grader pack or `.crewhaus/graders`
+# plugin, with `opts:`). Walkthrough 12 has the full table.
 graders:
   - name: exact_match
     type: exact_match

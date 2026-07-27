@@ -158,7 +158,10 @@ Key things to notice:
 - **`routing.sessionKey: thread`** — every Slack thread gets its own
   conversation. Other options: `user` (one session per Slack user
   across all channels), `channel` (one session per Slack channel —
-  rarely what you want).
+  rarely what you want). All three now collect 👍/👎 reaction feedback
+  when you add `feedback: { channelReactions: true }`; a thread-keyed
+  session used to no-op there and no longer does — see
+  [Recipe 62 — Response Ratings](62-response-ratings.md).
 - **Permissions** — `Read` is allow-listed for fast answers; `Bash`
   asks every time. In a daemon context "ask" means the daemon prints
   the question to its own stdout/logs; in plain Slack you'd typically
