@@ -43,3 +43,8 @@ live/
 # starters/trader — the paper broker's runtime state (ledger + journal)
 **/.paper-broker/
 .claude/
+# Editor-local config. A Demo Driver launch config has to name the local path of
+# a demo-driver checkout (github.com/crewhaus/demo-driver), which is specific to
+# one machine's layout and broken for anyone who clones this repo on its own — so
+# it stays out of git. Install the extension from a .vsix instead (DEMO-DRIVERS.md).
+.vscode/
