@@ -92,9 +92,9 @@ Adding a new starter: drop a directory under `starters/` with a `crewhaus.yaml`;
 ## Demo drivers
 
 Every starter also ships a **`demo.beats.json`** — a beat-by-beat screencast driver
-for that starter. Open this repo in VS Code with the **Demo Driver** extension
-(CrewHaus internal tooling, unpublished — it lives in the `demo-series/demo-driver`
-working tree) and each tap of **⌘⌥N** types the starter's real spec into a scratch
+for that starter. Open this repo in VS Code with the
+**[Demo Driver](https://github.com/crewhaus/demo-driver)** extension
+and each tap of **⌘⌥N** types the starter's real spec into a scratch
 file keystroke by keystroke, runs the real `crewhaus` commands, and feeds the REPL
 the questions the starter is built to answer. The manifests are plain JSON, so any
 comparable tool can drive them.
