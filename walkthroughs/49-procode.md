@@ -56,7 +56,8 @@ a skill" — not "fork the compiler."
   CLI walkthrough.
 - Read [recipe 29](29-permissions-deep-dive.md) — every coding agent
   is one bad bash pattern away from a disaster, and you need to know
-  the tier order before reading the spec's `permissions:` block.
+  how rule order decides the outcome before reading the spec's
+  `permissions:` block.
 
 ## Step 1 — Run it first, read it second
 
@@ -99,30 +100,31 @@ reviewer, security-auditor, debugger, docs-writer, verifier, …) — here
 are the two foundational roles:
 
 ```yaml
-sub_agents:
-  code-explorer:
-    description: |
-      Read-only codebase mapper. ...
-    instructions: |
-      You are a read-only codebase explorer. ...
-    # Sub-agent tool lists use the REGISTERED (PascalCase) tool names.
-    tools: [Read, Glob, Grep]
-    permissions:
-      allow: [Read, Glob, Grep]
-      deny: []
-  test-runner:
-    description: |
-      Runs the project's test command exactly once ...
-    tools: [Read, Bash]
-    permissions:
-      allow:
-        - Read
-        - Bash(npm test*)
-        - Bash(bun test*)
-        # ... 8 more test-runner patterns
-      deny:
-        - Bash(rm -rf *)
-        - Bash(sudo *)
+agent:
+  sub_agents:                     # nested under `agent:` — never top-level
+    code-explorer:
+      description: |
+        Read-only codebase mapper. ...
+      instructions: |
+        You are a read-only codebase explorer. ...
+      # Sub-agent tool lists use the REGISTERED (PascalCase) tool names.
+      tools: [Read, Glob, Grep]
+      permissions:
+        allow: [Read, Glob, Grep]
+        deny: []
+    test-runner:
+      description: |
+        Runs the project's test command exactly once ...
+      tools: [Read, Bash]
+      permissions:
+        allow:
+          - Read
+          - Bash(npm test*)
+          - Bash(bun test*)
+          # ... 8 more test-runner patterns
+        deny:
+          - Bash(**rm -rf **)
+          - Bash(**sudo **)
 ```
 
 The `description:` field is **required** (Zod-validated) and is what
@@ -144,10 +146,10 @@ permissions:
   mode: default
   rules:
     # Destructive patterns: denied, and written FIRST.
-    - { type: alwaysDeny,  pattern: Bash(rm -rf *) }
-    - { type: alwaysDeny,  pattern: Bash(sudo *) }
-    - { type: alwaysDeny,  pattern: Bash(git push --force*) }
-    - { type: alwaysDeny,  pattern: Bash(git reset --hard*) }
+    - { type: alwaysDeny,  pattern: Bash(rm -rf**) }
+    - { type: alwaysDeny,  pattern: Bash(sudo**) }
+    - { type: alwaysDeny,  pattern: Bash(git push --force**) }
+    - { type: alwaysDeny,  pattern: Bash(git reset --hard**) }
 
     # Reads: always-on.
     - { type: alwaysAllow, pattern: Read }
@@ -243,7 +245,7 @@ Recompile after every spec edit.
 - [Recipe 28 — Sub-Agents & Task](28-sub-agents-and-task.md) — the
   sub-agent dispatch model
 - [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md) —
-  tier order, pattern grammar, mode invariants
+  declaration order, pattern grammar, mode invariants
 - [Recipe 14 — Hooks](14-hooks.md) — pre-tool hooks as an optional
   defense-in-depth layer on top of permissions. This demo doesn't wire
   one in; its defense-in-depth is the permission ruleset (recipe 29).

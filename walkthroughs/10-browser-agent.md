@@ -293,16 +293,38 @@ on this domain"), use pattern arguments:
 ```yaml
 permissions:
   rules:
+    - type: alwaysAsk
+      pattern: Type(**)      # every Type call is confirmed by a human
     - type: alwaysAllow
       pattern: Click(*)
-    - type: alwaysAllow
-      pattern: Type(*)
-    - type: alwaysDeny
-      pattern: Type(* password*)   # never type into a password field
 ```
 
-Pattern arguments for browser tools match against the tool's input
-JSON; the runtime takes the first rule that matches, in declaration order.
+Two things decide whether a rule like this actually fires, and both
+bite here.
+
+**Order.** The engine takes the first rule that matches, in declaration
+order — there is no deny-beats-allow tier
+([Recipe 29](29-permissions-deep-dive.md#rule-kinds-and-declaration-order)).
+A gate written *below* a broad `alwaysAllow Type(*)` is dead code.
+
+**Which fields the argument glob sees.** For a tool in the matcher's
+operative-field table (`Bash` → `command`, `Read`/`Write`/`Edit` →
+`file_path`, `Fetch`/`WebFetch`/`Navigate` → `url`, …) the glob is
+tested against that field alone. Browser tools like `Type` and `Click`
+are **not** in that table, so the fallback applies: the glob must match
+**every** string in the input. That makes a content-keyed deny far
+weaker than it looks —
+
+```yaml
+- type: alwaysDeny
+  pattern: Type(**password**)   # does NOT do what you want
+```
+
+never fires on `Type({selector: "#login-password", text: "hunter2"})`,
+because `"hunter2"` doesn't match. Don't try to keep secrets out of a
+browser agent with an argument glob. Gate the whole tool with
+`alwaysAsk Type(**)` as above, or transform the input in a `pre-tool`
+hook ([Recipe 14](14-hooks.md)).
 
 For multi-tenant browser agents, see [Recipe 29](29-permissions-deep-dive.md)
 for the full rule grammar.

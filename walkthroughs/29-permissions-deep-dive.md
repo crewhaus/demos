@@ -163,11 +163,11 @@ Patterns are glob-like, with optional argument matchers:
 | Pattern                  | Matches                                                            |
 | ------------------------ | ------------------------------------------------------------------ |
 | `Read`                   | Any `Read` call regardless of arguments.                            |
-| `Read(*)`                | Any `Read` call (equivalent to `Read`).                              |
+| `Read(*)`                | `Read` whose path argument contains no `/` — **narrower** than bare `Read`. |
 | `Write(**/src/**)`       | `Write` whose path argument is under any `src/` directory.           |
-| `Bash(git *)`            | `Bash` whose command starts with `git ` (note the trailing space).   |
+| `Bash(git *)`            | `Bash` whose command starts with `git ` and has no `/` after it.     |
 | `Bash(**)`               | Any `Bash` call.                                                     |
-| `Bash(rm -rf *)`          | Any `Bash` whose command starts with `rm -rf `.                      |
+| `Bash(rm -rf**)`          | Any `Bash` whose command starts with `rm -rf`, slashes included.     |
 | `*__list_directory`      | Any tool whose name ends with `__list_directory` (MCP namespacing).  |
 
 The argument matcher is a small glob:
@@ -176,8 +176,28 @@ The argument matcher is a small glob:
 - `**` matches any sequence including `/`.
 - `?` matches a single character.
 
-The matcher is **string-glob**, not regex. So `Bash(rm -rf /)` only
-matches the literal command `rm -rf /`, not arbitrary `rm` invocations.
+**This is the single easiest way to write a deny that doesn't fire.**
+`Bash(rm -rf *)` matches `rm -rf node_modules` but **not**
+`rm -rf /tmp/foo` — the `/` stops a single `*` dead. Same for
+`Bash(git push --force*)`, which misses `git push --force origin/main`.
+A denial you actually want enforced needs `**`:
+
+```yaml
+- { type: alwaysDeny, pattern: Bash(rm -rf**) }          # not Bash(rm -rf *)
+- { type: alwaysDeny, pattern: Bash(git push --force**) }
+```
+
+The builtin layer already does this — `BUILTIN_DEFAULT_RULES` ships
+`alwaysAsk Bash(rm**)`, with a comment saying `**` is "necessary to
+catch `rm -rf /tmp/foo`".
+
+The asymmetry is what makes this worth care: a too-narrow **allow**
+fails safe (the call falls through and prompts), while a too-narrow
+**deny** fails open (the dangerous form sails past the rule you thought
+covered it). Audit your denies with `**`; leave your allows narrow.
+
+The matcher is **string-glob**, not regex, so `Bash(rm -rf /)` matches
+only the literal command `rm -rf /`.
 
 ## The `evaluate` contract
 
@@ -239,8 +259,8 @@ treatment):
 
 | Mode      | Behavior                                                                 |
 | --------- | ------------------------------------------------------------------------ |
-| `inherit` | Child gets exactly the parent's rules.                                    |
-| `scoped`  | Child gets only rules whose `toolGlob` matches a child tool. Default.     |
+| `inherit` | Child gets exactly the parent's rules. **This is what an absent `permissions:` key does.** |
+| `scoped`  | Child gets only rules whose `toolGlob` matches a child tool.               |
 | Explicit  | Child gets rules built from its definition's `permissions.allow` / `.deny` lists. |
 
 **`bypass` does not propagate.** A parent in bypass mode still
@@ -276,7 +296,7 @@ permissions:
   mode: default
   rules:
     - type: alwaysDeny
-      pattern: Bash(rm -rf *)
+      pattern: Bash(rm -rf**)
     - type: alwaysAllow
       pattern: Read
     - type: alwaysAllow
@@ -367,9 +387,10 @@ you don't want it to start changing files.
 2026-05-11T08:42:19.881Z [permission_decision]  tool=Python decision=deny mode=default reason=tool "Python" requires a sandbox but none is configured (CREWHAUS_SANDBOX must be set to docker or podman)
 ```
 
-That tells you **what** was decided, not **which rule** decided it —
-`reason` is only populated for the sandbox floor and the
-justification gate. When an outcome surprises you, the fastest answer
+That tells you **what** was decided, not **which rule** decided it. A
+`reason` is attached only by the sandbox floor, the justification gate,
+and the egress / prompt-injection classifiers — never by an ordinary
+rule match. When an outcome surprises you, the fastest answer
 is to evaluate the rule set directly with the one-liner from
 [Rule kinds and declaration order](#rule-kinds-and-declaration-order),
 feeding it your spec's own rules:

@@ -169,7 +169,7 @@ agent:
         locating > 2 files.
       instructions: |
         You are a read-only codebase explorer. …
-      tools: [Read, Glob, Grep, Task]
+      tools: [Read, Glob, Grep]
       permissions:
         allow: [Read, Glob, Grep]
         deny: []
@@ -193,8 +193,12 @@ of three sources:
 | `scoped`  | Filter parent's rules to only those whose `toolGlob` matches a child tool.   |
 | Explicit  | Replace them with `alwaysAllow`/`alwaysDeny` built from the definition's `permissions.allow` / `permissions.deny` lists. |
 
-`scoped` is the sensible default for most sub-agents: the child gets
-the parent's rules for tools it actually has, and no more.
+`scoped` is what you usually want: the child gets the parent's rules
+for tools it actually has, and no more. Note that it is **not** what
+you get by default — omitting `permissions:` resolves to `inherit`, so
+the child receives a verbatim copy of the parent's whole rule set,
+including rules for tools it was never given. Write `scoped` if you
+mean scoped.
 
 **Bypass mode does not propagate.** Even if the parent runs in
 `bypass` mode (which is only legal via the `--permission-mode` flag),
