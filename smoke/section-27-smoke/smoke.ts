@@ -35,7 +35,13 @@ import type {
 } from "@crewhaus/adapter-anthropic";
 import { type AuditRecord, openAuditLog } from "@crewhaus/audit-log";
 import { wrap as wrapCircuitBreaker } from "@crewhaus/circuit-breaker";
-import { createCostTracker, formatUsdMicros } from "@crewhaus/cost-tracker";
+import {
+  DEFAULT_PRICING,
+  computeCostMicros,
+  createCostTracker,
+  formatUsdMicros,
+  resolvePricing,
+} from "@crewhaus/cost-tracker";
 import { manage as manageCacheMarkers } from "@crewhaus/prompt-cache-manager";
 import { createRateLimiter } from "@crewhaus/rate-limiter";
 import { createFileBackend, createSecrets } from "@crewhaus/secrets-manager";
@@ -90,15 +96,26 @@ const main = async (): Promise<void> => {
         };
         bus.publish(evt);
       };
-      sendResponse("claude-opus-4-7", "anthropic", 1000, 500);
-      sendResponse("claude-opus-4-7", "anthropic", 200, 100);
-      sendResponse("claude-opus-4-7", "anthropic", 50, 25);
+      sendResponse("claude-opus-5", "anthropic", 1000, 500);
+      sendResponse("claude-opus-5", "anthropic", 200, 100);
+      sendResponse("claude-opus-5", "anthropic", 50, 25);
       if (accruals.length !== 3) fail(`expected 3 cost_accrual events, got ${accruals.length}`);
       const summary = tracker.getRunCost(bus.runId);
-      // (1250 input × 15 + 625 output × 75) micros = 18_750 + 46_875 = 65_625
-      if (summary.totalUsdMicros !== 65_625) {
-        fail(`expected totalUsdMicros 65625, got ${summary.totalUsdMicros}`);
+      // Derive the expectation from the pricing table rather than hard-coding a
+      // dollar figure: this smoke asserts that the tracker AGGREGATES correctly
+      // (1250 input + 625 output across 3 events), not what Anthropic charges.
+      // A hard-coded total silently couples this repo to factory's price list
+      // and breaks the moment a rate is corrected — which is exactly what
+      // happened when Opus dropped from $15/$75 to $5/$25.
+      const row = resolvePricing(DEFAULT_PRICING, "anthropic", "claude-opus-5");
+      if (!row) fail("no pricing row for claude-opus-5");
+      const expected = computeCostMicros(row, 1250, 625, 0);
+      if (summary.totalUsdMicros !== expected) {
+        fail(
+          `expected totalUsdMicros ${expected} (1250 in × $${row.inputPer1M}/1M + 625 out × $${row.outputPer1M}/1M), got ${summary.totalUsdMicros}`,
+        );
       }
+      if (expected <= 0) fail(`pricing table resolved claude-opus-5 to a zero cost (${expected})`);
       ok(`cost-tracker: ${formatUsdMicros(summary.totalUsdMicros)} total across 3 events`);
     }
 
