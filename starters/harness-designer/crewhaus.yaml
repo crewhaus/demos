@@ -297,9 +297,12 @@ permissions:
       pattern: Bash(bunx crewhaus optimize**)
     - type: alwaysAllow
       pattern: Bash(cd ** && bunx crewhaus optimize**)
-    # Everything else gates. Bare `Bash` (no arg glob) matches every Bash
-    # call; `Bash(**)` would NOT — a lone leading `**` compiles to
-    # `^(?:/.*)?$`, which matches only an empty or absolute-path command.
+    # Everything else gates, and this rule is LAST on purpose: the engine
+    # takes the first matching rule in declaration order, so a catch-all
+    # written higher up would shadow every allow above it. Bare `Bash` (no
+    # arg glob) matches every Bash call; so does `Bash(**)` as of 0.4.2
+    # (a lone `**` compiles to `.*` — the old `^(?:/.*)?$` behaviour that
+    # made `Bash(**)` useless here was issue #17, fixed).
     - type: alwaysAsk
       pattern: Bash
 

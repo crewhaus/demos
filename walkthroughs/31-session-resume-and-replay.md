@@ -230,8 +230,18 @@ The viewer renders:
 
 ## Working with sessions
 
-There's no `sessions` subcommand — sessions are just files under
-`.crewhaus/sessions/`, so the shell is the interface:
+There is a `sessions` subcommand, but it's deliberately narrow — three
+actions, none of them CRUD:
+
+```bash
+crewhaus sessions tail                     # tail -f the most-recently-updated session
+crewhaus sessions tail sess_<id>           # …or a named one; --no-follow dumps and exits
+crewhaus sessions summarize                # fold sessions into .crewhaus/sessions-index/ before the 30-day TTL
+crewhaus sessions export --format trajectories   # one JSONL line per (state, action, observation, reward) step
+```
+
+There's no `list`, `show`, or `rm`, because sessions are just files
+under `.crewhaus/sessions/` and the shell is the better interface:
 
 ```bash
 ls -t .crewhaus/sessions/sess_*.json            # list, newest first

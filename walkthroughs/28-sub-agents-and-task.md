@@ -31,9 +31,9 @@ use [crew](04-multi-agent-crew.md) instead. Sub-agents are
 
 Sub-agents are wired into every showcase demo. The richest live
 example is [`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml)
-(lines 63–119): two sub-agents (`code-explorer` read-only mapper and
-`test-runner` allow-listed bash) with their own `tools:` and
-`permissions:` blocks. Compile and run with
+(lines 185–421): eight sub-agents under `agent.sub_agents:`, led by
+`code-explorer` (read-only mapper) and `test-runner` (allow-listed
+bash), each with its own `tools:` and `permissions:`. Compile and run with
 `bun run compile starters/showcases/procode && bun run run starters/showcases/procode`; ask
 "what does this project do?" and the `Task` dispatch fires immediately.
 Both [`starters/showcases/prochat`](../starters/showcases/prochat/crewhaus.yaml) and
@@ -109,18 +109,15 @@ child-2.
 name: code-reviewer
 description: Review changes for safety and correctness.
 tools:
-  - read
-  - grep
-  - bash
+  - Read
+  - Grep
+  - Bash
 permissions:
-  mode: scoped
-  rules:
-    - type: alwaysAllow
-      pattern: Read
-    - type: alwaysAllow
-      pattern: Grep
-    - type: alwaysAsk
-      pattern: Bash(**)
+  allow:
+    - Read
+    - Grep
+  deny:
+    - Bash(**)
 ---
 
 # Code reviewer
@@ -143,10 +140,47 @@ Frontmatter fields:
 | ------------- | -------------------------------------------------------- |
 | `name`        | The sub-agent type. Referenced from `Task({subagent_type})`. |
 | `description` | Short hint, used in `/help`-style listings.              |
-| `tools`       | The child's tool whitelist (subset of catalog).          |
-| `permissions` | Permission inheritance mode (next section).              |
+| `tools`       | The child's tool whitelist. **Registered** (PascalCase) names — `Read`, not the spec key `read`; the child catalog is filtered by `tool.name`, so lowercase silently yields no tools. |
+| `permissions` | `inherit`, `scoped`, or an explicit `{allow, deny}` pair. |
+
+`permissions` takes exactly those three shapes — the two bare strings,
+or a block with **both** an `allow:` and a `deny:` list of patterns.
+It is *not* the `{mode, rules}` shape a spec's top-level `permissions:`
+block uses; that one is rejected with `sub-agent frontmatter
+permissions: Invalid input`.
 
 Discovery order (same as skills): project → user → plugin.
+
+### Declaring sub-agents in the spec instead
+
+The file above is the route for a sub-agent you want to share across
+specs. The other route — the one every showcase uses — is
+`sub_agents:`, **nested under `agent:`** and keyed by name:
+
+```yaml
+agent:
+  model: claude-sonnet-5
+  instructions: |
+    …
+  sub_agents:
+    code-explorer:
+      description: |
+        Read-only codebase mapper. Use when a question requires
+        locating > 2 files.
+      instructions: |
+        You are a read-only codebase explorer. …
+      tools: [Read, Glob, Grep]
+      permissions:
+        allow: [Read, Glob, Grep]
+        deny: []
+```
+
+Note the snake_case, and note that it hangs off `agent:`. There is no
+top-level `subAgents:` key; the spec schema is `.strict()`, so a
+misplaced or camelCase one fails `crewhaus lint` outright. The fields
+are the same as the frontmatter's, with `instructions` standing in for
+the markdown body. `starters/showcases/procode/crewhaus.yaml` lines
+185–421 is eight of these in a row.
 
 ## Permission inheritance modes
 
@@ -157,10 +191,14 @@ of three sources:
 | --------- | ---------------------------------------------------------------------------- |
 | `inherit` | Verbatim copy of parent's rules.                                              |
 | `scoped`  | Filter parent's rules to only those whose `toolGlob` matches a child tool.   |
-| Explicit  | Use the rules in the sub-agent definition's `permissions.rules:` block.       |
+| Explicit  | Replace them with `alwaysAllow`/`alwaysDeny` built from the definition's `permissions.allow` / `permissions.deny` lists. |
 
-`scoped` is the sensible default for most sub-agents: the child gets
-the parent's rules for tools it actually has, and no more.
+`scoped` is what you usually want: the child gets the parent's rules
+for tools it actually has, and no more. Note that it is **not** what
+you get by default — omitting `permissions:` resolves to `inherit`, so
+the child receives a verbatim copy of the parent's whole rule set,
+including rules for tools it was never given. Write `scoped` if you
+mean scoped.
 
 **Bypass mode does not propagate.** Even if the parent runs in
 `bypass` mode (which is only legal via the `--permission-mode` flag),

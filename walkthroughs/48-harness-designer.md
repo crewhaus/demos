@@ -131,9 +131,11 @@ Below the instructions are the structural fields:
 | `permissions` | `mode: default` plus a tiered rule list (see [Recipe 29](29-permissions-deep-dive.md)). |
 | `compaction`  | `model: claude-haiku-4-5-20251001` — the interview reads several recipes and the spec schema, so Haiku-summarized snapshots keep cost manageable. |
 
-The permission rules are the part most worth studying. They follow the
-**tier order** from Recipe 29 — `alwaysDeny` beats `alwaysAllow` beats
-`alwaysAsk`:
+The permission rules are the part most worth studying, and the first
+thing to notice is the **order**. The engine takes the first rule whose
+pattern matches, in declaration order — there is no tier that rescues a
+deny written underneath a matching allow ([Recipe 29](29-permissions-deep-dive.md#rule-kinds-and-declaration-order)).
+So the denies lead, and the catch-all comes last:
 
 - `alwaysAllow` for `Read`, `Glob`, `Grep` — pure reads, cheap to
   greenlight.
@@ -141,16 +143,20 @@ The permission rules are the part most worth studying. They follow the
   the exact files the designer produces (`crewhaus.yaml`,
   `.env.example`, `README.md`, `dataset.jsonl`, `graders.yaml`). Any
   other write path triggers `ask`.
-- `alwaysAllow` for `git fetch`, `git pull --ff-only`, `git status`,
-  `git log`, `git clone https://github.com/crewhaus/*`,
-  `mkdir -p ~/.crewhaus/*`, and `bunx crewhaus
-  {compile,doctor,optimize}` — the exact subcommands the methodology
-  invokes.
-- `alwaysAsk` for any other `Bash(**)` — the safety net. The
-  designer's instructions tell it to use only allowlisted commands,
-  but a model is not a contract; the rule list is.
-- `alwaysDeny` for `Bash(rm -rf *)` and `Bash(sudo *)` — defense in
-  depth.
+- `alwaysAllow` for the exact commands the methodology invokes:
+  `printenv CREWHAUS_{DEMOS,FACTORY}_PATH`, `test -f/-d **`,
+  `cat **/walkthroughs/**.md`, `git fetch**`, `git pull --ff-only**`,
+  the `git -C ** {fetch,pull --ff-only,status,log}` forms,
+  `git clone https://github.com/crewhaus/**`, `cp **`, `mkdir -p **`,
+  and `bunx crewhaus {compile,doctor,optimize}**`. Note `mkdir -p **`
+  is unscoped — it is not limited to `~/.crewhaus/`.
+- `alwaysAsk` for bare `Bash` — the safety net, and last in the list so
+  it catches everything the allows above didn't. The designer's
+  instructions tell it to use only allowlisted commands, but a model is
+  not a contract; the rule list is.
+- `alwaysDeny` for `Bash(**rm -rf **)` and `Bash(**sudo **)`, written
+  first — defense in depth. The leading `**` matters: it catches these
+  forms anywhere in the command line, not just at the start.
 
 This is the practical face of Pillar 3 (security as fabric) for a CLI
 agent: empower the model on the work it's meant to do, and gate
@@ -216,8 +222,8 @@ you ask for something CrewHaus can't do.
 > `channels.slack`, `tools: [read, bash]`,
 > `permissions.mode: default` (channel target — the rule in my
 > instructions forbids `auto` for non-interactive shapes),
-> `alwaysAllow Bash(gh *)`, `alwaysAsk Bash(**)`,
-> `alwaysDeny Bash(rm -rf *)`. Header cites recipes 03, 14, 29, 41.
+> `alwaysDeny Bash(**rm -rf **)` first, then `alwaysAllow Bash(gh *)`,
+> then `alwaysAsk Bash(**)`. Header cites recipes 03, 14, 29, 41.
 > Also writes `.env.example` listing `SLACK_BOT_TOKEN`,
 > `SLACK_APP_TOKEN`, `GITHUB_TOKEN`, `ANTHROPIC_AUTH_TOKEN`, and a
 > `README.md` whose run instructions are standalone. Validates from
