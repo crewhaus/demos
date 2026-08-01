@@ -143,6 +143,12 @@ The shape that makes this feel "safe by default while productive":
 permissions:
   mode: default
   rules:
+    # Destructive patterns: denied, and written FIRST.
+    - { type: alwaysDeny,  pattern: Bash(rm -rf *) }
+    - { type: alwaysDeny,  pattern: Bash(sudo *) }
+    - { type: alwaysDeny,  pattern: Bash(git push --force*) }
+    - { type: alwaysDeny,  pattern: Bash(git reset --hard*) }
+
     # Reads: always-on.
     - { type: alwaysAllow, pattern: Read }
     - { type: alwaysAllow, pattern: Glob }
@@ -156,20 +162,17 @@ permissions:
     - { type: alwaysAllow, pattern: Bash(git commit *) }
     # ... 20 more dev patterns
 
-    # Other bash: ask once per pattern.
+    # Other bash: ask. Last, so it can't shadow anything above.
     - { type: alwaysAsk,   pattern: Bash(**) }
-
-    # Destructive patterns: deny tier ALWAYS wins.
-    - { type: alwaysDeny,  pattern: Bash(rm -rf *) }
-    - { type: alwaysDeny,  pattern: Bash(sudo *) }
-    - { type: alwaysDeny,  pattern: Bash(git push --force*) }
-    - { type: alwaysDeny,  pattern: Bash(git reset --hard*) }
 ```
 
-The tier order is non-obvious until you've read [recipe 29](29-permissions-deep-dive.md):
-`alwaysDeny` > `alwaysAsk` > `alwaysAllow`, regardless of which one
-matches first. A broad `Bash(**)` allow-then-deny-rm-rf is structurally
-safe, not "the deny is shadowed by the allow."
+Rule order **is** the policy, and it's the thing to get right before
+anything else here — see [recipe 29](29-permissions-deep-dive.md). The
+engine takes the first rule whose pattern matches, in declaration
+order; there is no `alwaysDeny` > `alwaysAsk` > `alwaysAllow` tier that
+rescues a deny written underneath a matching allow or ask. Put the
+denials at the top and the catch-all `Bash(**)` at the bottom, exactly
+as the committed spec does.
 
 ## Step 4 — Slash commands and skills
 

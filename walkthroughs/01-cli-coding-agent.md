@@ -291,8 +291,8 @@ an optional argument matcher:
 - `Bash(**)` — matches any Bash invocation.
 - `Bash(rm *)` — matches any `rm` command.
 
-Tier order is **deny > ask > allow**, so an `alwaysDeny` rule beats an
-`alwaysAllow` rule for the same call even if they're both declared.
+Rules are matched **in declaration order** — the first pattern that
+matches wins — so put narrow `alwaysDeny` rules above broad allows.
 
 Add `permissions:` to `my-agent.yaml`, recompile, and try a Bash
 command — only the calls matching `alwaysAllow` skip the prompt.

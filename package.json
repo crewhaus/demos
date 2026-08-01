@@ -19,7 +19,6 @@
     "walkthroughs:test": "bun scripts/test-walkthroughs.ts",
     "walkthroughs:smoke": "bun scripts/smoke-walkthroughs.ts",
     "smoke:section-12": "bun smoke/section-12-smoke/smoke.ts",
-    "smoke:section-18": "bun smoke/section-18-smoke/smoke.ts",
     "smoke:section-19": "bun smoke/section-19-smoke/smoke.ts",
     "smoke:section-20": "bun smoke/section-20-smoke/smoke.ts",
     "smoke:section-21": "bun smoke/section-21-smoke/smoke.ts",

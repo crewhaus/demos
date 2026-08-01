@@ -463,6 +463,17 @@ feedback:
 permissions:
   mode: default
   rules:
+    # --- Hard denials, FIRST. Order matters: within a layer the engine
+    #     takes the first rule whose pattern matches, in declaration
+    #     order — there is no deny > ask > allow tier precedence. A deny
+    #     written below the catch-all `alwaysAsk Bash(**)` never fires. ---
+    - { type: alwaysDeny,  pattern: Bash(rm -rf *) }
+    - { type: alwaysDeny,  pattern: Bash(rm -fr *) }
+    - { type: alwaysDeny,  pattern: Bash(sudo *) }
+    - { type: alwaysDeny,  pattern: Bash(git push --force*) }
+    - { type: alwaysDeny,  pattern: Bash(git push -f*) }
+    - { type: alwaysDeny,  pattern: Bash(git reset --hard*) }
+
     # --- Reads: always-on. Coding requires reading freely. ---
     - { type: alwaysAllow, pattern: Read }
     - { type: alwaysAllow, pattern: Glob }
@@ -529,16 +540,9 @@ permissions:
     # --- Sub-agent dispatch: open. ---
     - { type: alwaysAllow, pattern: Task }
 
-    # --- Everything else: ask. ---
+    # --- Everything else: ask. Last, because it matches every Bash call
+    #     that no rule above already decided. ---
     - { type: alwaysAsk,   pattern: Bash(**) }
-
-    # --- Hard denials. Order doesn't matter; deny tier beats allow tier. ---
-    - { type: alwaysDeny,  pattern: Bash(rm -rf *) }
-    - { type: alwaysDeny,  pattern: Bash(rm -fr *) }
-    - { type: alwaysDeny,  pattern: Bash(sudo *) }
-    - { type: alwaysDeny,  pattern: Bash(git push --force*) }
-    - { type: alwaysDeny,  pattern: Bash(git push -f*) }
-    - { type: alwaysDeny,  pattern: Bash(git reset --hard*) }
 
 # Picks the model that summarizes older turns during auto-compaction —
 # a cheap model here keeps a long coding session's running cost down

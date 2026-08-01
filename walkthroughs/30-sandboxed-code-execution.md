@@ -134,11 +134,10 @@ the deployment opted into sandboxing.
 ### Calling
 
 ```yaml
-agent:
-  tools:
-    - python      # the model-facing name is Python
-    - javascript
-    - shell
+tools:
+  - python      # the model-facing name is Python
+  - javascript
+  - shell
 permissions:
   rules:
     - type: alwaysAllow
@@ -148,6 +147,14 @@ permissions:
     - type: alwaysAllow
       pattern: Shell
 ```
+
+`tools:` is **top-level** — a sibling of `agent:`, not a key inside it.
+The `agent` block is `.strict()`, so nesting it there fails the parse
+with `agent: Unrecognized key(s) in object: 'tools'`. Note the case
+too: the spec key is camelCase (`javascript`), the permission pattern
+is the registered PascalCase tool name (`JavaScript`).
+[`smoke/section-18-smoke/crewhaus.yaml`](../smoke/section-18-smoke/crewhaus.yaml)
+is this exact block as a committed, lint-clean spec.
 
 The model invokes `Python({ code: "..." })`. The tool delegates to
 the sandbox, running `python3 -c <code>` (argv `["python3", "-c",
@@ -312,13 +319,22 @@ deliberately disable it.
 ## Running the smokes
 
 ```bash
-bun run smoke:section-18        # core sandbox + tool-code-execution
-bun run smoke:section-36-registry  # polyglot registry
-crewhaus sandbox doctor --probe    # full pull + healthcheck across all images
+bun smoke/section-30-smoke/smoke.ts   # backend adapter family (offline, stubbed)
+bun run smoke:section-36-registry     # polyglot registry (offline)
+crewhaus sandbox doctor --probe       # full pull + healthcheck across all images
 ```
 
-`smoke:section-18` runs Python and JavaScript through the sandbox and
-asserts on hardening (network=none → outbound calls fail).
+The first two need neither Docker nor an API key. `sandbox doctor
+--probe` is the one that actually pulls each image and runs its
+healthcheck argv, so it needs a reachable daemon.
+
+There is currently **no** end-to-end "run Python in a container against
+the live model" smoke — the one that existed was dropped in the
+factory→demos split and hasn't been re-homed; `packages/tool-code-execution`'s
+own unit tests are what cover the tool today. To do the end-to-end check
+by hand, compile
+[`smoke/section-18-smoke/crewhaus.yaml`](../smoke/section-18-smoke/crewhaus.yaml)
+and ask the agent for a `Python` call with `CREWHAUS_SANDBOX=docker` set.
 
 ## Things that look like sandboxing but aren't
 

@@ -78,7 +78,6 @@ const ASPIRATIONAL_SCRIPTS = new Set<string>([
   "play:jetbrains", // recipe 25 (vscode-and-jetbrains)
   "run:section-09-mcp-smoke", // recipe 13 (mcp-servers)
   "smoke:section-13", // recipe 28 (sub-agents-and-task)
-  "smoke:section-18", // recipe 30 (sandboxed-code-execution)
   "smoke:section-29", // recipe 12 (eval-harness)
   "smoke:section-32", // recipes 24, 36
   "smoke:section-33-discord", // recipe 38

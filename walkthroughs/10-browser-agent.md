@@ -302,7 +302,7 @@ permissions:
 ```
 
 Pattern arguments for browser tools match against the tool's input
-JSON; the runtime checks each rule in deny > ask > allow order.
+JSON; the runtime takes the first rule that matches, in declaration order.
 
 For multi-tenant browser agents, see [Recipe 29](29-permissions-deep-dive.md)
 for the full rule grammar.
