@@ -44,7 +44,7 @@
     {
       "title": "Beat 4 · what the parent's log actually keeps",
       "beats": [
-        {"id": "log-type", "label": "Type the boundary events", "cue": "“A fifty-action child shows up in the parent's log as exactly this: one start, one end. The full transcript lives in the child's own session file.”", "action": "type", "source": "../../28-sub-agents-and-task.md", "sourceLines": [194, 195], "target": "live/parent-session.jsonl", "replace": true},
+        {"id": "log-type", "label": "Type the boundary events", "cue": "“A fifty-action child shows up in the parent's log as exactly this: one start, one end. The full transcript lives in the child's own session file.”", "action": "type", "source": "../../28-sub-agents-and-task.md", "sourceLines": [232, 233], "target": "live/parent-session.jsonl", "replace": true},
         { "id": "log-validate", "label": "Prove it is one boundary pair", "cue": "“Same childRunId on both lines — that's the handle you follow into .crewhaus/sessions to read the child.”", "action": "command", "command": "bun -e 'const ls=require(\"fs\").readFileSync(\"live/parent-session.jsonl\",\"utf8\").trim().split(\"\\n\").map(l=>JSON.parse(l)); if(ls.length!==2) throw new Error(\"want one boundary pair, got \"+ls.length); const [a,b]=ls; if(a.kind!==\"sub_agent_start\"||b.kind!==\"sub_agent_end\") throw new Error(\"not a start/end pair\"); if(a.childRunId!==b.childRunId) throw new Error(\"childRunId mismatch\"); console.log(\"parent log: 2 events, one child (\"+a.childRunId+\"), description: \"+a.description)'", "verify": { "mode": "offline", "expectedExit": 0, "note": "parent log: 2 events, one child (run_def)" } }
       ]
     },
