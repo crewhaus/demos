@@ -23,48 +23,60 @@ covers the basics.
 
 The richest live permissions block in the demos is
 [`starters/showcases/procode/crewhaus.yaml`](../starters/showcases/procode/crewhaus.yaml) lines
-131–188: a complete `mode: default` setup with `alwaysAllow`,
+463–545: a complete `mode: default` setup with `alwaysAllow`,
 `alwaysAsk`, and `alwaysDeny` patterns covering reads, edits, web,
 allow-listed bash, and hard-denied destructive commands. Compile and
 run with
 `bun run compile starters/showcases/procode && bun run run starters/showcases/procode`, then try
-`git push --force` to watch the deny tier fire. Every other `hello-*`
+`git push --force` to watch the deny fire. Every other `hello-*`
 demo ships its own minimal permissions block.
+
+Read that block top to bottom and note where the denials sit: **first**,
+above every allow and above the catch-all ask. That ordering is load-
+bearing, for the reason the next two sections spell out.
 
 ## The five rule sources
 
-The permission engine evaluates rules from five layers, in order.
-**Later layers override earlier ones.**
+The permission engine evaluates rules from five layers, in priority
+order. **Earlier layers win.** The table is highest-priority first; a
+lower layer can never override a decision an earlier one already made.
 
 | Layer        | Source                                                | Example                                          |
 | ------------ | ----------------------------------------------------- | ------------------------------------------------ |
-| 1. Flag      | `--permission-mode <mode>` on the CLI.                | `bun run … -- --permission-mode auto`            |
-| 2. Settings  | `<cwd>/.crewhaus/settings.json` → `~/.crewhaus/settings.json`. | `{"permissions":{"mode":"auto","rules":[...]}}` |
+| 1. Flag      | `--permission-mode <mode>` on the CLI.                | `crewhaus run spec.yaml --permission-mode auto`   |
+| 2. Settings  | `permissions` block of `<cwd>/.crewhaus/settings.json`. | `{"permissions":{"mode":"auto","rules":[...]}}` |
 | 3. YAML      | `permissions:` block in the spec.                     | Default authoring layer.                          |
-| 4. Hooks     | `pre-tool` hook decisions.                             | Shell-time policy.                                |
-| 5. Builtin   | Per-tool defaults baked into the tool definition.      | `Read.readOnly = true` ⇒ default allow.           |
+| 4. Hooks     | Reserved for hook-supplied rules.                     | Empty in the 0.4.2 CLI.                           |
+| 5. Builtin   | `BUILTIN_DEFAULT_RULES` in the engine.                 | `alwaysAllow Read`, `alwaysAsk Bash(sudo**)`.     |
 
-Within a layer, rules apply tier-first: **deny > ask > allow**.
-Across layers, later layers override.
-
-So if the YAML says `alwaysAllow Bash(*)` but a hook returns
-`{decision: deny}`, the hook wins.
+The first and fourth layers carry no authored rules. The **flag** layer
+supplies the *mode* the evaluation runs under — `--permission-mode` sets
+no rules — and the **hooks** layer is a reserved slot the CLI leaves
+empty. Settings and YAML are where your rules come from, and settings
+beats YAML: a project-local `.crewhaus/settings.json` is how you
+override a spec you don't want to edit.
 
 The complete evaluation:
 
 ```
-flag.mode → settings.rules + settings.mode → yaml.rules → hook.decision → builtin
+flag → settings → yaml → hooks → builtin
 ```
 
-The first non-default outcome wins.
+The first rule that matches decides, and the walk stops there.
+
+Hooks *can* still veto a call, just not through this table: a
+`pre-tool` hook returning `{decision: deny}` (or `block`) short-circuits
+in runtime-core **before** the engine is consulted at all. So a hook
+effectively outranks every layer in the table: the call never gets
+there.
 
 ## The four modes
 
 | Mode      | Defaults                                                                  |
 | --------- | ------------------------------------------------------------------------- |
-| `default` | Allow `readOnly` tools (Read, Grep, Glob); ask for `destructive` tools.   |
-| `plan`    | Strictest. Deny all writes; the agent plans then asks before acting.       |
-| `auto`    | Allow what `rules` declares; ask for the rest.                            |
+| `default` | Rules decide; unmatched calls ask. `Read`/`Grep`/`Glob` are allowed by the builtin layer. |
+| `plan`    | Strictest. Deny every non-`readOnly` tool; no rule is consulted at all.    |
+| `auto`    | Rules decide; unmatched calls allow `readOnly`, ask `destructive`, allow the rest. |
 | `bypass`  | Allow everything. **CLI-flag-only.**                                       |
 
 ### The `bypass` security guard
@@ -81,23 +93,25 @@ permissions:
   mode: bypass
 ```
 
-Fails at parse with:
+Fails at parse. `crewhaus lint` prints, verbatim:
 
 ```
-permissions.mode = "bypass" is not legal in spec or settings; only via --permission-mode flag
+✗ [parse] <spec>: permissions.mode: bypass is rejected — bypass mode is only available via the --permission-mode CLI flag, never from a spec file
 ```
 
-Same for settings.json and hook output. The only legal source is:
+Same for settings.json, where `parsePermissionsConfig` throws its own
+`bypass mode cannot be set from settings` before Zod even runs. The
+only legal source is:
 
 ```bash
-bun apps/cli/src/index.ts run spec.yaml --permission-mode bypass
+crewhaus run spec.yaml --permission-mode bypass
 ```
 
 This is **a security-critical invariant**. There's a dedicated unit
-test in `packages/permission-engine/src/permission-engine.test.ts`
-that asserts the rejection — don't relax it.
+test in `packages/permission-engine/src/index.test.ts` that asserts
+the rejection — don't relax it.
 
-## Rule kinds and tier order
+## Rule kinds and declaration order
 
 | Kind          | Effect                                       |
 | ------------- | -------------------------------------------- |
@@ -105,8 +119,12 @@ that asserts the rejection — don't relax it.
 | `alwaysAsk`   | User prompted for each call.                  |
 | `alwaysDeny`  | Tool call refused; the model sees a denial.   |
 
-For a given tool call, the engine matches every rule and picks the
-tier in **deny > ask > allow** order. So:
+Read this section twice — it's the one thing about the engine that
+surprises everybody.
+
+**There is no tier precedence.** Within a layer the engine walks the
+rules top to bottom and takes the **first** one whose pattern matches.
+A `deny` written below a matching `allow` or `ask` is dead code.
 
 ```yaml
 permissions:
@@ -117,8 +135,26 @@ permissions:
       pattern: Bash(rm -rf *)
 ```
 
-A `Bash(rm -rf /)` call hits both. The `alwaysDeny` wins (deny beats
-allow). A `Bash(ls)` call hits only the first; it's allowed.
+A `Bash(rm -rf tmp)` call matches both rules. `alwaysAllow Bash(*)` is
+declared first, so the call is **allowed** — the deny never runs. Don't
+take the recipe's word for it; ask the engine, from any bundle you've
+compiled with `crewhaus compile <spec> -o dist --check`:
+
+```bash
+bun -e 'const {evaluate} = await import("./dist/node_modules/@crewhaus/permission-engine/dist/index.js");
+const rules = { flag: [], settings: [], hooks: [], builtin: [], yaml: [
+  { type: "alwaysAllow", pattern: "Bash(*)",        source: "yaml" },
+  { type: "alwaysDeny",  pattern: "Bash(rm -rf *)", source: "yaml" },
+]};
+console.log(evaluate({ toolName: "Bash", input: { command: "rm -rf tmp" },
+  readOnly: false, destructive: true }, "default", rules));'
+# → allow
+```
+
+Swap the two entries and the same call returns `deny`. The rule that
+follows from this is short: **narrow denies above broad allows, and the
+catch-all last.** A `Bash(ls)` call matches only `Bash(*)` either way,
+so it's allowed regardless.
 
 ## The pattern grammar
 
@@ -127,11 +163,11 @@ Patterns are glob-like, with optional argument matchers:
 | Pattern                  | Matches                                                            |
 | ------------------------ | ------------------------------------------------------------------ |
 | `Read`                   | Any `Read` call regardless of arguments.                            |
-| `Read(*)`                | Any `Read` call (equivalent to `Read`).                              |
+| `Read(*)`                | `Read` whose path argument contains no `/` — **narrower** than bare `Read`. |
 | `Write(**/src/**)`       | `Write` whose path argument is under any `src/` directory.           |
-| `Bash(git *)`            | `Bash` whose command starts with `git ` (note the trailing space).   |
+| `Bash(git *)`            | `Bash` whose command starts with `git ` and has no `/` after it.     |
 | `Bash(**)`               | Any `Bash` call.                                                     |
-| `Bash(rm -rf *)`          | Any `Bash` whose command starts with `rm -rf `.                      |
+| `Bash(rm -rf**)`          | Any `Bash` whose command starts with `rm -rf`, slashes included.     |
 | `*__list_directory`      | Any tool whose name ends with `__list_directory` (MCP namespacing).  |
 
 The argument matcher is a small glob:
@@ -140,38 +176,81 @@ The argument matcher is a small glob:
 - `**` matches any sequence including `/`.
 - `?` matches a single character.
 
-The matcher is **string-glob**, not regex. So `Bash(rm -rf /)` only
-matches the literal command `rm -rf /`, not arbitrary `rm` invocations.
+**This is the single easiest way to write a deny that doesn't fire.**
+`Bash(rm -rf *)` matches `rm -rf node_modules` but **not**
+`rm -rf /tmp/foo` — the `/` stops a single `*` dead. Same for
+`Bash(git push --force*)`, which misses `git push --force origin/main`.
+A denial you actually want enforced needs `**`:
+
+```yaml
+- { type: alwaysDeny, pattern: Bash(rm -rf**) }          # not Bash(rm -rf *)
+- { type: alwaysDeny, pattern: Bash(git push --force**) }
+```
+
+The builtin layer already does this — `BUILTIN_DEFAULT_RULES` ships
+`alwaysAsk Bash(rm**)`, with a comment saying `**` is "necessary to
+catch `rm -rf /tmp/foo`".
+
+The asymmetry is what makes this worth care: a too-narrow **allow**
+fails safe (the call falls through and prompts), while a too-narrow
+**deny** fails open (the dangerous form sails past the rule you thought
+covered it). Audit your denies with `**`; leave your allows narrow.
+
+The matcher is **string-glob**, not regex, so `Bash(rm -rf /)` matches
+only the literal command `rm -rf /`.
 
 ## The `evaluate` contract
 
 ```typescript
 evaluate(
-  call: { tool: string, input: unknown },
+  call: {
+    toolName: string,
+    input: unknown,
+    readOnly: boolean,
+    destructive: boolean,
+    requiresSandbox?: boolean,
+  },
   mode: PermissionMode,
-  rules: PermissionRule[]
+  rules: RuleSet,                    // { flag, settings, yaml, hooks, builtin }
+  opts?: { sandboxAvailable?: boolean },
 ): "allow" | "deny" | "ask"
 ```
 
+`rules` is the five-layer `RuleSet`, not a flat array — each key holds
+that layer's rules in declaration order.
+
 Implementation order:
 
-1. Find every rule whose pattern matches `(tool, input)`.
-2. If any `alwaysDeny` matches → `deny`.
-3. Else if any `alwaysAsk` matches → `ask`.
-4. Else if any `alwaysAllow` matches → `allow`.
-5. Else fall through to the mode's default for the tool's flags.
+1. `mode: bypass` → `allow`. `mode: plan` → `allow` if `readOnly`, else
+   `deny`. Neither consults a single rule.
+2. Walk the layers in priority order (`flag`, `settings`, `yaml`,
+   `hooks`, `builtin`); within each layer, walk its rules in
+   declaration order. **The first pattern that matches decides**, and
+   the walk stops.
+3. Nothing matched → the mode's fall-through.
+4. `requiresSandbox` tools get one last gate: unless a non-noop sandbox
+   backend is configured *and* step 2 or 3 produced `allow`, the call is
+   denied — with a `reason` naming whichever of the two is missing.
 
-The flags that drive the fall-through:
+The fall-through in step 3:
 
-| Tool flag         | Default in `default` mode                            |
-| ----------------- | ---------------------------------------------------- |
-| `readOnly: true`  | `allow`                                              |
-| `destructive: true` | `ask`                                                |
-| `requiresSandbox: true` | `deny` unless a sandbox is configured              |
-| Neither flag      | `ask` (fail-closed)                                  |
+| Mode      | No rule matched                                                |
+| --------- | -------------------------------------------------------------- |
+| `default` | `ask` — for every tool, whatever its flags.                     |
+| `auto`    | `allow` if `readOnly`; `ask` if `destructive`; else `allow`.    |
 
-So a tool author who declares neither flag gets the safest behavior
-by default — never silently permitted.
+Note what that means in `default` mode: the reason `Read`, `Glob` and
+`Grep` don't prompt is **not** the fall-through reading `readOnly` —
+it's `BUILTIN_DEFAULT_RULES`, which carries an `alwaysAllow` for those
+three by name. A custom tool that declares `readOnly: true` and nothing
+else still asks. That's the fail-closed default, and it's worth
+knowing it comes from the builtin layer rather than from the flags.
+
+`auto` is the mode that trades that away: there, a tool declaring
+neither flag is allowed outright.
+
+`evaluateWithReason` returns the same decision plus the `reason` string
+that runtime-core publishes on `permission_decision` trace events.
 
 ## Sub-agent permission inheritance
 
@@ -180,9 +259,9 @@ treatment):
 
 | Mode      | Behavior                                                                 |
 | --------- | ------------------------------------------------------------------------ |
-| `inherit` | Child gets exactly the parent's rules.                                    |
-| `scoped`  | Child gets only rules whose `toolGlob` matches a child tool. Default.     |
-| Explicit  | Child uses its sub-agent definition's `rules` directly.                   |
+| `inherit` | Child gets exactly the parent's rules. **This is what an absent `permissions:` key does.** |
+| `scoped`  | Child gets only rules whose `toolGlob` matches a child tool.               |
+| Explicit  | Child gets rules built from its definition's `permissions.allow` / `.deny` lists. |
 
 **`bypass` does not propagate.** A parent in bypass mode still
 produces children in `default` mode. This is the same property the
@@ -216,6 +295,8 @@ reach the policy engine at all.
 permissions:
   mode: default
   rules:
+    - type: alwaysDeny
+      pattern: Bash(rm -rf**)
     - type: alwaysAllow
       pattern: Read
     - type: alwaysAllow
@@ -234,13 +315,16 @@ permissions:
       pattern: Bash(git diff*)
     - type: alwaysAsk
       pattern: Bash(**)
-    - type: alwaysDeny
-      pattern: Bash(rm -rf *)
 ```
 
 What the agent can do without prompts: read anything, write into any
 `src/` dir, run `bun *`, `git status`, `git diff*`. Anything else
 that's Bash asks. `rm -rf *` is denied outright.
+
+The deny is first on purpose. Move it to the bottom — where it reads
+more naturally — and `rm -rf node_modules` resolves to **ask**, because
+`alwaysAsk Bash(**)` above it matches first. Same ten rules, different
+posture.
 
 ### 2. Slack bot — Read free, Bash always asks
 
@@ -296,15 +380,31 @@ you don't want it to start changing files.
 
 ## Debugging permission decisions
 
-`CREWHAUS_TRACE=pretty` prints permission decisions:
+`CREWHAUS_TRACE=pretty` prints one line per decision:
 
 ```
-[permission] Bash(rm -rf /) → deny (rule: alwaysDeny Bash(rm -rf *))
-[permission] Bash(ls -la) → allow (rule: alwaysAllow Bash(bun *) didn't match; fallthrough: destructive, mode=default → ask)
+2026-05-11T08:42:13.004Z [permission_decision]  tool=Bash decision=deny mode=default
+2026-05-11T08:42:19.881Z [permission_decision]  tool=Python decision=deny mode=default reason=tool "Python" requires a sandbox but none is configured (CREWHAUS_SANDBOX must be set to docker or podman)
 ```
 
-The fall-through reasoning makes it clear **why** the decision came
-out the way it did.
+That tells you **what** was decided, not **which rule** decided it. A
+`reason` is attached only by the sandbox floor, the justification gate,
+and the egress / prompt-injection classifiers — never by an ordinary
+rule match. When an outcome surprises you, the fastest answer
+is to evaluate the rule set directly with the one-liner from
+[Rule kinds and declaration order](#rule-kinds-and-declaration-order),
+feeding it your spec's own rules:
+
+```bash
+bun -e 'const y = Bun.YAML.parse(await Bun.file("crewhaus.yaml").text());
+const {evaluate} = await import("./dist/node_modules/@crewhaus/permission-engine/dist/index.js");
+const rules = { flag: [], settings: [], hooks: [], builtin: [],
+  yaml: y.permissions.rules.map(r => ({...r, source: "yaml"})) };
+console.log(evaluate({ toolName: "Bash", input: { command: "git push --force" },
+  readOnly: false, destructive: true }, y.permissions.mode, rules));'
+```
+
+Nine times out of ten the answer is rule order.
 
 ## Things that look like permissions but aren't
 

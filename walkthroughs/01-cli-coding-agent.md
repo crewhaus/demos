@@ -261,9 +261,9 @@ four permission modes:
 
 | Mode        | Behavior                                                              |
 | ----------- | --------------------------------------------------------------------- |
-| `default`   | Allow read-only operations; ask for destructive ones interactively.   |
-| `plan`      | Strictest. Deny all writes; the agent plans then asks before acting.  |
-| `auto`      | Allow what `permissions.rules` declares; ask for the rest.            |
+| `default`   | Rules decide; anything unmatched asks. `Read`/`Glob`/`Grep` are allowed by the builtin rules. |
+| `plan`      | Strictest. Deny every non-read-only tool; no rule is consulted.       |
+| `auto`      | Rules decide; unmatched calls allow read-only, ask destructive, allow the rest. |
 | `bypass`    | Allow everything. **Only legal from the `--permission-mode` flag.**    |
 
 Per-tool overrides via `permissions.rules`:
@@ -272,14 +272,14 @@ Per-tool overrides via `permissions.rules`:
 permissions:
   mode: default
   rules:
+    - type: alwaysDeny
+      pattern: Bash(rm**)
     - type: alwaysAllow
       pattern: Read
     - type: alwaysAllow
       pattern: Write(**/src/**)
     - type: alwaysAsk
       pattern: Bash(**)
-    - type: alwaysDeny
-      pattern: Bash(rm *)
 ```
 
 The pattern grammar is glob-like over the model-facing tool name plus
@@ -291,8 +291,8 @@ an optional argument matcher:
 - `Bash(**)` — matches any Bash invocation.
 - `Bash(rm *)` — matches any `rm` command.
 
-Tier order is **deny > ask > allow**, so an `alwaysDeny` rule beats an
-`alwaysAllow` rule for the same call even if they're both declared.
+Rules are matched **in declaration order** — the first pattern that
+matches wins — so put narrow `alwaysDeny` rules above broad allows.
 
 Add `permissions:` to `my-agent.yaml`, recompile, and try a Bash
 command — only the calls matching `alwaysAllow` skip the prompt.
@@ -518,6 +518,8 @@ tools:
 permissions:
   mode: default
   rules:
+    - type: alwaysDeny
+      pattern: Bash(rm -rf**)
     - type: alwaysAllow
       pattern: Read
     - type: alwaysAllow
@@ -538,8 +540,6 @@ permissions:
       pattern: Bash(git diff*)
     - type: alwaysAsk
       pattern: Bash(**)
-    - type: alwaysDeny
-      pattern: Bash(rm -rf *)
 mcp_servers:
   filesystem:
     transport: stdio

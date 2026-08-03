@@ -26,9 +26,12 @@ the right answer when the runtime needs **isolation guarantees**.
 
 ## Try it
 
-The Python/JS/Shell sandbox primitives are exercised by
-[`smoke/section-30-smoke/`](../smoke/section-30-smoke) (backend
-adapter family — queues, vectors, browser, telephony, sandboxes).
+The offline check that actually touches this machinery is
+[`smoke/section-36-sandbox-image-registry-smoke/`](../smoke/section-36-sandbox-image-registry-smoke)
+— it drives the image registry (register, look up, reject a bad id,
+run the healthchecks) without Docker. Despite the name,
+`smoke/section-30-smoke/` is the *backend adapter* family (queues,
+vectors, telephony, realtime, browser) and exercises no sandbox code.
 Seven polyglot sandbox images each have their own end-to-end smoke
 under
 [`smoke/section-36-sandbox-image-{dotnet,go,java,php,r,ruby,rust}-smoke/`](../smoke/) —
@@ -134,11 +137,10 @@ the deployment opted into sandboxing.
 ### Calling
 
 ```yaml
-agent:
-  tools:
-    - python      # the model-facing name is Python
-    - javascript
-    - shell
+tools:
+  - python      # the model-facing name is Python
+  - javascript
+  - shell
 permissions:
   rules:
     - type: alwaysAllow
@@ -148,6 +150,21 @@ permissions:
     - type: alwaysAllow
       pattern: Shell
 ```
+
+`tools:` is **top-level** — a sibling of `agent:`, not a key inside it.
+The `agent` block is `.strict()`, so nesting it there fails the parse
+with `agent: Unrecognized key(s) in object: 'tools'`.
+
+Watch the case, in both directions. The `tools:` entry is the spec key
+exactly as the tool table spells it — `javascript` is all lowercase,
+while others are camelCase (`webFetch`, `readImage`). The permission
+pattern is the **registered** PascalCase tool name (`JavaScript`,
+`WebFetch`). The lookup is exact-match and `lint` doesn't check it, so
+`javaScript` lints clean and then dies at compile with
+`unknown tool "javaScript"`.
+[`smoke/section-18-smoke/crewhaus.yaml`](../smoke/section-18-smoke/crewhaus.yaml)
+is a committed, lint-clean spec in this same top-level shape (it wires
+`python`, `shell` and `read`).
 
 The model invokes `Python({ code: "..." })`. The tool delegates to
 the sandbox, running `python3 -c <code>` (argv `["python3", "-c",
@@ -312,13 +329,22 @@ deliberately disable it.
 ## Running the smokes
 
 ```bash
-bun run smoke:section-18        # core sandbox + tool-code-execution
-bun run smoke:section-36-registry  # polyglot registry
-crewhaus sandbox doctor --probe    # full pull + healthcheck across all images
+bun run smoke:section-36-registry   # image registry (offline, no Docker)
+crewhaus sandbox doctor             # list registered images (offline)
+crewhaus sandbox doctor --probe     # full pull + healthcheck across all images
 ```
 
-`smoke:section-18` runs Python and JavaScript through the sandbox and
-asserts on hardening (network=none → outbound calls fail).
+The first two need neither Docker nor an API key. `--probe` is the one
+that actually pulls each image and runs its healthcheck argv, so it
+needs a reachable daemon.
+
+There is currently **no** end-to-end "run Python in a container against
+the live model" smoke — the one that existed was dropped in the
+factory→demos split and hasn't been re-homed; `packages/tool-code-execution`'s
+own unit tests are what cover the tool today. To do the end-to-end check
+by hand, compile
+[`smoke/section-18-smoke/crewhaus.yaml`](../smoke/section-18-smoke/crewhaus.yaml)
+and ask the agent for a `Python` call with `CREWHAUS_SANDBOX=docker` set.
 
 ## Things that look like sandboxing but aren't
 

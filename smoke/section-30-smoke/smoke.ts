@@ -65,7 +65,7 @@ const main = async (): Promise<void> => {
         region: "us-east-1",
         _client: stubClient,
       });
-      const jobs = await adapter.pull({ maxJobs: 5 });
+      const jobs = await adapter.pull({ maxBatch: 5, visibilityTimeoutMs: 30_000 });
       if (jobs.length !== 1) fail(`expected 1 job, got ${jobs.length}`);
       const job = jobs[0];
       if (!job) fail("expected job");
@@ -95,7 +95,7 @@ const main = async (): Promise<void> => {
         },
       };
       const adapter = createPostgresAdapter({ tableName: "jobs", _client: stubClient });
-      const jobs = await adapter.pull({});
+      const jobs = await adapter.pull({ maxBatch: 5, visibilityTimeoutMs: 30_000 });
       if (jobs.length !== 1) fail(`expected 1 job, got ${jobs.length}`);
       ok("queue/postgres: SELECT FOR UPDATE SKIP LOCKED + ack");
     }

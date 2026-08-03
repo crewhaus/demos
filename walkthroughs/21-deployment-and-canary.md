@@ -107,8 +107,16 @@ without changing semantics:
 | ------------------------------------ | ------------------------------------------------------------------ |
 | `deadToolElimination`                | Removes `tools:` entries no instructions actually reference.       |
 | `redundantMcpServerCollapse`         | Folds two MCP servers that declare the same `command + args` into one. |
-| `permissionRuleCanonicalization`     | Sorts permission rules (deny > ask > allow), dedupes.              |
+| `permissionRuleCanonicalize`         | Sorts permission rules (deny > ask > allow), dedupes. **Lint-only** — see below. |
 | `promptCachePrefixSort`              | Reorders cacheable prefix blocks so cache-hit rate is stable.       |
+
+**Not every pass runs on every path.** `crewhaus lint` runs the whole
+`DEFAULT_PIPELINE` above, but the compile path (`compile`, `run`) runs
+only the validating subset. `permissionRuleCanonicalize` is in the
+former and not the latter, so a compiled bundle keeps your permission
+rules in the order you wrote them — which is the order the engine
+evaluates them in ([Recipe 29](29-permissions-deep-dive.md)). Don't
+count on the sort to hoist a deny.
 
 **Idempotency.** Every pass is `apply(apply(x)) === apply(x)`. That
 means re-running the compiler on an already-canonicalized IR is a
