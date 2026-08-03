@@ -43,7 +43,7 @@ bound-research.yaml`):
 name: bound-research
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: Answer research questions using the web tools, then stop.
   thinking:
     effort: medium          # or: budget_tokens: 8192  — exactly one

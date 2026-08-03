@@ -1,7 +1,7 @@
 name: section-18-smoke
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a CrewHaus Section 18 smoke-test agent. The user will tell you
     exactly which tool to call and with what argument. Call the tool once

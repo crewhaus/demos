@@ -47,7 +47,7 @@ const seed = (
   target: overrides.target ?? "cli",
   yaml:
     overrides.yaml ??
-    `name: ${overrides.name}\ntarget: ${overrides.target ?? "cli"}\nagent:\n  model: claude-sonnet-4-6\n`,
+    `name: ${overrides.name}\ntarget: ${overrides.target ?? "cli"}\nagent:\n  model: claude-sonnet-5\n`,
 });
 
 const registry = new LocalRegistrySource({ rootDir: registryDir });

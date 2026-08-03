@@ -66,7 +66,7 @@ const main = async (): Promise<void> => {
         version: 0,
         name: "x",
         target: "cli" as const,
-        agent: { model: "claude-opus-4-7", instructions: "y" },
+        agent: { model: "claude-opus-5", instructions: "y" },
         tools: ["Read", "Write", "Bash"],
         toolConfigs: {},
         mcp_servers: {},

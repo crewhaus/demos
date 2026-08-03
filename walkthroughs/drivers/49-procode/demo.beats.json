@@ -1,0 +1,55 @@
+{
+  "title": "Recipe 49 — Pro-grade Coder (à la Claude Code), as a spec you own",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“A tier-1 coding agent — sub-agents, permission tiers, compaction — and none of it is hidden in a runtime.”", "action": "open", "file": "../../49-procode.md", "preview": true },
+        { "id": "setup-reset", "label": "Blank the scratch file", "cue": "live/ is scratch — the committed showcase is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — Step 1 says run it before you read it.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · Step 1 — run it first, read it after",
+      "beats": [
+        { "id": "spec-open", "label": "Open the committed spec", "cue": "“Nearly six hundred lines. You don't type this on camera — you read it, and the recipe walks you through it section by section.”", "action": "open", "file": "../../../starters/showcases/procode/crewhaus.yaml" },
+        { "id": "spec-lint", "label": "Lint it in place", "cue": "“Clean, at that size, with sub-agents and permission tiers. That's what a schema buys you.”", "action": "command", "command": "crewhaus lint ../../../starters/showcases/procode/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the model credential. Six hundred lines of spec, one emitted program.”", "action": "command", "command": "crewhaus compile ../../../starters/showcases/procode/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 2 · Steps 2–3 — the sections that make it tier-1",
+      "beats": [
+        {"id": "sec-subagents", "label": "Type the sub-agents block", "cue": "“Step 2: each sub-agent gets its own tool catalog, filtered from the parent's. Delegation with a smaller blast radius.”", "action": "type", "source": "../../49-procode.md", "sourceLines": [102, 125], "target": "live/sub-agents.yaml", "replace": true},
+        { "id": "sec-open-subagents", "label": "Read it", "cue": "“Note the tools list — the Task tool has to be in `tools`, not just permissions, or the child catalog comes back empty.”", "action": "open", "file": "live/sub-agents.yaml" },
+        {"id": "sec-permissions", "label": "Type the permission tiers", "cue": "“Step 3: allow, ask, deny. Deny always wins, and an allow rule can never widen a deny.”", "action": "type", "source": "../../49-procode.md", "sourceLines": [143, 166], "target": "live/permissions.yaml", "replace": true},
+        { "id": "sec-open-permissions", "label": "Read it", "cue": "“This is the tier the security fabric recipe points back at as the runnable example.”", "action": "open", "file": "live/permissions.yaml" },
+        {"id": "sec-compaction", "label": "Type the compaction block", "cue": "“Step 5: compaction is not optional at this size — a long coding session will blow the window without it.”", "action": "type", "source": "../../49-procode.md", "sourceLines": [197, 198], "target": "live/compaction.yaml", "replace": true},
+        { "id": "sec-grep", "label": "Find them in the emitted bundle", "cue": "“Every one of those sections turned into ordinary code you can read.”", "action": "command", "command": "grep -inE 'subAgent|permission|compact' live/dist/agent.ts > live/wired.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the three sections, as generated code", "produces": ["live/wired.txt"] } },
+        { "id": "sec-open-wired", "label": "Read what got wired", "cue": "“No framework indirection between the YAML and the behaviour.”", "action": "open", "file": "live/wired.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Step 1, for real",
+      "beats": [
+        { "id": "run-repl", "label": "Launch it", "cue": "[needs-key] “Point it at this repo and ask the recipe's own opening question.”", "action": "command", "command": "crewhaus run ../../../starters/showcases/procode/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs a live model credential" } },
+        { "id": "run-explore", "label": "Ask it to explore", "cue": "[needs-key] “Watch it delegate the wide reads to a sub-agent instead of filling its own context.”", "action": "input", "text": "explore this repo and tell me what it does in three sentences", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · Step 6 — swap the model",
+      "beats": [
+        { "id": "swap-open", "label": "Read the provider table", "cue": "“One line changes the provider. The rest of the six hundred is provider-agnostic.”", "action": "open", "file": "../../49-procode.md", "preview": true },
+        { "id": "swap-grep", "label": "Find the fallback chain", "cue": "“model_fallbacks is the long-unattended-run insurance: if the primary breaker opens, turns retry down the chain instead of dying mid-goal.”", "action": "command", "command": "grep -n -A 2 'model_fallbacks' ../../../starters/showcases/procode/crewhaus.yaml > live/fallbacks.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the committed failover chain", "produces": ["live/fallbacks.txt"] } },
+        { "id": "swap-read", "label": "Read it", "cue": "“Primary and fallback, both current-generation. That's the whole failover story.”", "action": "open", "file": "live/fallbacks.txt" }
+      ]
+    }
+  ]
+}

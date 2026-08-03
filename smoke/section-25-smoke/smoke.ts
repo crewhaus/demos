@@ -205,7 +205,7 @@ const main = async (): Promise<void> => {
     const floorYaml = `name: hello-browser-no-perms
 target: browser
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: Click the green Submit button on the page. Use Screenshot + FindElement to find it, then Click(x, y).
 driver:
   backend: chromium
@@ -213,7 +213,7 @@ driver:
     width: 1024
     height: 720
   startUrl: http://127.0.0.1:${PORT}/
-groundingModel: claude-sonnet-4-6
+groundingModel: claude-sonnet-5
 permissions:
   mode: default
 `;

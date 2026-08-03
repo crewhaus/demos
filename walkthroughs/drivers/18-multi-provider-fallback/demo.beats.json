@@ -1,0 +1,64 @@
+{
+  "title": "Recipe 18 — Multi-Provider Fallback (breakers, cascade, and the declarative path first)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Recipe 18 is availability, not cost or quality routing. And it opens by telling you to reach for the spec fields first — so that is where this drive starts too.”", "action": "open", "file": "../../18-multi-provider-fallback.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipes and starters are never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env. A live two-provider hop needs Anthropic and OpenAI credentials both.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the declarative path — model_fallbacks and circuit_breaker",
+      "beats": [
+        { "id": "spec-declarative", "label": "Type the spec-level failover block", "cue": "“Since 0.2.0 fallback is a spec field. An ordered candidate list, and breaker tuning whose field names mirror the package exactly — this is recipe 59's committed spec, which recipe 18 sends you to first.”", "action": "type", "source": "../../59-model-resilience-and-cost.md", "sourceLines": [46, 60], "replace": true },
+        { "id": "prove-lint", "label": "Lint it", "cue": "“Clean. model_fallbacks and circuit_breaker are first-class spec surface, not annotations the compiler tolerates.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“There they are, lowered: modelFallbacks as an ordered array, circuitBreaker with the three thresholds. Sugar in the YAML, data in the IR.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli — agent.modelFallbacks + agent.circuitBreaker present" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, no key. The only thing missing is a credential the spec itself declares.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts", "live/dist/package.json", ".crewhaus/specs/support-agent/manifest.json"] } },
+        { "id": "prove-open-bundle", "label": "Find the chain in the emitted agent", "cue": "“Two generated lines — the candidate array and the breaker options — wired into the loop. The compiled runtime does the cascade; you did not write it.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 2 · the prefix grammar",
+      "beats": [
+        { "id": "grammar-parse", "label": "Resolve five model strings", "cue": "“The router parses the prefix and lazy-loads only the matching adapter. A Claude-primary spec never imports the OpenAI SDK — cold start scales with what you actually use.”", "action": "command", "command": "bun --cwd live/dist -e 'import { parseModelString } from \"@crewhaus/model-router\"; for (const m of [\"claude-sonnet-5\", \"openai/gpt-4o\", \"gemini/gemini-2.5-flash\", \"bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0\", \"groq/llama-3.3-70b-versatile\"]) { const p = parseModelString(m); console.log(p.providerId.padEnd(10), p.modelId); }'", "verify": { "mode": "offline", "expectedExit": 0, "note": "anthropic / openai / gemini / bedrock / openai — the recipe's grammar table, resolved from live/dist/node_modules with no credentials. groq lands on the openai-compatible adapter, which is why GROQ_API_KEY never collides with OPENAI_API_KEY" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · the machinery underneath — the hand-wired cascade",
+      "beats": [
+        { "id": "cascade-type", "label": "Type the recipe's cascade loop", "cue": "“When you need per-call control the spec blocks do not expose — a custom isFailure, different tuning per candidate, your own ordering — this is the whole thing. Resolve, wrap, cascade.”", "action": "type", "source": "../../18-multi-provider-fallback.md", "sourceLines": [86, 123], "target": "live/fallback.ts", "replace": true },
+        { "id": "cascade-open", "label": "Open what we just wrote", "cue": "“One breaker per candidate, kept in a map — so a bad Anthropic trips the Anthropic breaker and leaves OpenAI healthy. And note it cascades at turn granularity, never mid-stream.”", "action": "open", "file": "live/fallback.ts" },
+        { "id": "cascade-valid", "label": "Prove it is real TypeScript", "cue": "“Transpiled, and the two imports it needs named back at us. The recipe's building blocks are two packages — nothing else.”", "action": "command", "command": "bun -e 'const src = require(\"fs\").readFileSync(\"live/fallback.ts\", \"utf8\"); const t = new Bun.Transpiler({ loader: \"ts\" }); t.transformSync(src); console.log(\"fallback.ts: valid TypeScript —\", t.scanImports(src).map((i) => i.path).join(\" + \"))'", "verify": { "mode": "offline", "expectedExit": 0, "note": "fallback.ts: valid TypeScript — @crewhaus/circuit-breaker + @crewhaus/model-router" } }
+      ]
+    },
+    {
+      "title": "Beat 4 · trip a breaker on camera",
+      "beats": [
+        { "id": "breaker-trip", "label": "Three failures against a threshold of three", "cue": "“A stub adapter that always throws, wrapped with failureThreshold 3. Three failed streams and the state goes open — from here calls fail fast with no network touched, and the cascade falls through to the next candidate.”", "action": "command", "command": "bun --cwd live/dist -e 'import { wrap } from \"@crewhaus/circuit-breaker\"; const stub = { providerId: \"anthropic\", features: {}, estimateTokens: () => 1, async *stream() { throw new Error(\"simulated upstream 503\"); } }; const b = wrap(stub, { adapterName: \"claude-sonnet-5\", failureThreshold: 3 }); for (let i = 0; i < 3; i++) { try { for await (const _ of b.stream({ model: \"x\", system: [], messages: [], maxTokens: 8 })) {} } catch {} } console.log(\"claude-sonnet-5 after 3 failures → state:\", b.state(), \"| stats:\", JSON.stringify(b.stats()))'", "verify": { "mode": "offline", "expectedExit": 0, "note": "state: open · stats {state:open, consecutiveFailures:0, transitions:1, lastTrippedAt:…} — the real @crewhaus/circuit-breaker out of the bundle --check installed, no credentials involved" } }
+      ]
+    },
+    {
+      "title": "Beat 5 · run the declarative chain",
+      "beats": [
+        { "id": "run-repl", "label": "Launch the REPL", "cue": "[needs-key] “Now the chain is live: Anthropic primary, GPT-4o second, Groq third. Healthy, every turn goes to the primary.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; a real cascade needs credentials for at least two providers" } },
+        { "id": "run-ask", "label": "Ask it something", "cue": "[needs-key] With CREWHAUS_TRACE=pretty on, a breaker transition would render in red right here.", "action": "input", "text": "In one sentence: what does a circuit breaker protect a caller from?", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · the whole state machine, asserted",
+      "beats": [
+        { "id": "smoke-27", "label": "Run the recipe's Try-it smoke", "cue": "“Probe 3 is recipe 18's own end-to-end: five injected failures trip the breaker, the cooldown elapses, a probe succeeds, and it closes. Three transitions on the bus, in order.”", "action": "command", "command": "bun ../../../smoke/section-27-smoke/smoke.ts > live/section-27.log 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "all probes passed — probe 3 asserts closed→open→half_open→closed and exactly 3 circuit_state_changed events. Redirected rather than piped so the exit code is the smoke's own", "produces": ["live/section-27.log"] } },
+        { "id": "smoke-open", "label": "Read the probe log", "cue": "“That is the recovery profile from the recipe's timeline: trip, cooldown, half-open probe, closed. Per process, in memory, each worker probing independently.”", "action": "open", "file": "live/section-27.log" }
+      ]
+    }
+  ]
+}

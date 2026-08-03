@@ -51,7 +51,7 @@ The smallest example, [`smoke/section-09-mcp-smoke/crewhaus.yaml`](../smoke/sect
 name: section-09-mcp-smoke
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     Tools prefixed with everything__ come from the reference MCP
     server. Use them when asked.

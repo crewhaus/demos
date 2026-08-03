@@ -1,0 +1,53 @@
+{
+  "title": "Recipe 66 — Evaluation inside the serving loop (grade the turn you're about to send)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Offline evals tell you yesterday was bad. This one grades the turn before the user ever sees it.”", "action": "open", "file": "../../66-eval-in-loop.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — an in-loop judge is a model call per graded turn.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · grading a chat turn",
+      "beats": [
+        { "id": "spec-support", "label": "Type the recipe's support agent", "cue": "“The graders block moves from the eval file into the spec — because now it runs on the serving path.”", "action": "type", "source": "../../66-eval-in-loop.md", "sourceLines": [50, 68], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean. An in-loop grader is a declared part of the harness, with the cost that implies.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the model credential.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/chat --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/chat/agent.ts"] } },
+        { "id": "spec-grep", "label": "Find the grader in the bundle", "cue": "“eval_graded is emitted as a structured event, so the score is observable rather than internal.”", "action": "command", "command": "grep -inE 'grade|judge|eval' live/chat/agent.ts > live/graded.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the in-loop grading, as generated code", "produces": ["live/graded.txt"] } },
+        { "id": "spec-open-grep", "label": "Read it", "cue": "“grader=llm_judge score=0.55 — a number attached to a turn you served, in the log, at the time.”", "action": "open", "file": "live/graded.txt" }
+      ]
+    },
+    {
+      "title": "Beat 2 · a gate inside a workflow",
+      "beats": [
+        { "id": "wf-reset", "label": "Blank the scratch spec", "cue": "“The stronger form: not just grading a turn, but refusing to advance past a bad one.”", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "wf-spec", "label": "Type the draft-and-check workflow", "cue": "“A draft step, then a quality gate. The gate is a step — it can fail, and failing means not shipping.”", "action": "type", "source": "../../66-eval-in-loop.md", "sourceLines": [170, 192], "replace": true },
+        { "id": "wf-lint", "label": "Lint it", "cue": "“Clean. The gate is ordinary workflow structure, not a plugin.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "wf-check", "label": "Compile it and check it", "cue": "“--check: GREEN. A workflow with a judge in the middle still compiles to one readable program.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/wf --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/wf/agent.ts"] } },
+        { "id": "wf-open", "label": "Open the emitted workflow", "cue": "“Read the gate step: judge_verdict at=quality-gate. A failed verdict short-circuits the rest.”", "action": "open", "file": "live/wf/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · what it costs",
+      "beats": [
+        { "id": "cost-diff", "label": "Diff the two bundles", "cue": "“Grading a turn versus gating a workflow — same idea, different blast radius.”", "action": "command", "command": "diff live/chat/agent.ts live/wf/agent.ts > live/shapes.diff; test -s live/shapes.diff", "verify": { "mode": "offline", "expectedExit": 0, "note": "the two in-loop shapes really do emit different programs", "produces": ["live/shapes.diff"] } },
+        { "id": "cost-open", "label": "Read the delta", "cue": "“Every judge call is latency and spend on the serving path. Declare it where you'll see it in review.”", "action": "open", "file": "live/shapes.diff" }
+      ]
+    },
+    {
+      "title": "One more thing · watch a verdict land",
+      "beats": [
+        { "id": "run-wf", "label": "Run the gated workflow", "cue": "[needs-key] “Give it a draft task and watch the gate either pass it or send it back.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "billed twice per graded step — once to draft, once to judge" } },
+        { "id": "extra-read", "label": "Read the tradeoff section", "cue": "“In-loop evaluation buys you a bad answer never shipping. It costs you a judge call every time.”", "action": "open", "file": "../../66-eval-in-loop.md", "preview": true }
+      ]
+    }
+  ]
+}

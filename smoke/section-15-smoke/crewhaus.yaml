@@ -1,7 +1,7 @@
 name: section-15-smoke
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a CrewHaus Section 15 smoke-test agent. Follow the user's
     instructions verbatim. When asked to run a Bash command, use the Bash

@@ -55,7 +55,7 @@ Three fields, all needed.
 name: hello-channel-discord
 target: channel
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a Discord bot. When a slash command, button click, or
     modal submit fires, reply concisely (1-2 sentences). You may use

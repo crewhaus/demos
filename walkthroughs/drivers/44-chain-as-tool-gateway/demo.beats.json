@@ -1,0 +1,50 @@
+{
+  "title": "Recipe 44 — Chain as typed-tool gateway (an ABI becomes tools at compile time)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“A contract ABI is already a typed interface. This recipe turns it into agent tools without you writing wrappers.”", "action": "open", "file": "../../44-chain-as-tool-gateway.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 1 · the compile-time surface",
+      "beats": [
+        { "id": "gen-type", "label": "Type the generator call", "cue": "“generateContractTools — the recipe's TL;DR. It runs at compile time, so the tool list is fixed before the agent ever boots.”", "action": "type", "source": "../../44-chain-as-tool-gateway.md", "sourceLines": [28, 49], "target": "live/generate.ts", "replace": true },
+        { "id": "gen-parse", "label": "Prove it parses", "cue": "“Real TypeScript, not pseudocode — the recipe's fence is a file you can keep.”", "action": "command", "command": "bun -e 'const s = require(\"fs\").readFileSync(\"live/generate.ts\",\"utf8\"); new Bun.Transpiler({ loader: \"ts\" }).transformSync(s); console.log(\"live/generate.ts: parses as TypeScript\");'", "verify": { "mode": "offline", "expectedExit": 0, "note": "the recipe's generator fence is syntactically valid TS" } },
+        { "id": "gen-open", "label": "Open it", "cue": "“One call per contract. The ABI is the schema — you don't write a JSON schema by hand.”", "action": "open", "file": "live/generate.ts" }
+      ]
+    },
+    {
+      "title": "Beat 2 · what a generated tool call looks like",
+      "beats": [
+        { "id": "call-type", "label": "Type the call site", "cue": "“usdc__balanceOf — contract, then double underscore, then the ABI method. The name is derived, so it can't drift.”", "action": "type", "source": "../../44-chain-as-tool-gateway.md", "sourceLines": [70, 79], "target": "live/call.ts", "replace": true },
+        { "id": "call-parse", "label": "Prove it parses", "cue": "“Typed arguments, typed return. A misspelled field is a compile error, not a failed transaction.”", "action": "command", "command": "bun -e 'const s = require(\"fs\").readFileSync(\"live/call.ts\",\"utf8\"); new Bun.Transpiler({ loader: \"ts\" }).transformSync(s); console.log(\"live/call.ts: parses as TypeScript\");'", "verify": { "mode": "offline", "expectedExit": 0, "note": "the recipe's call-site fence is syntactically valid TS" } },
+        { "id": "call-open", "label": "Open it", "cue": "“Read tools are free and idempotent. Write tools are the ones that need every gate recipe 43 puts up.”", "action": "open", "file": "live/call.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · a chain harness the gateway feeds",
+      "beats": [
+        { "id": "spec-onchain", "label": "Type recipe 47's treasury monitor", "cue": "“Recipe 44 is a mechanism; this is a spec that uses it. Chain tools, declared in YAML.”", "action": "type", "source": "../../47-onchain-daemon-and-game.md", "sourceLines": [31, 78], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Lint's §47 chain pass is what checks the ABI references resolve — this is the gate that catches a bad contract address.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — chain well-formedness included" } },
+        { "id": "spec-ir", "label": "Show the lowered IR", "cue": "“The chain tools are in the IR as ordinary typed tools. Nothing downstream knows they came from an ABI.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "IR written to live/ir.json", "produces": ["live/ir.json"] } },
+        { "id": "spec-open-ir", "label": "Open the IR", "cue": "“That uniformity is the payoff: permissions, justification gates, and egress checks all apply to chain tools for free.”", "action": "open", "file": "live/ir.json" }
+      ]
+    },
+    {
+      "title": "One more thing · proof-carrying calls",
+      "beats": [
+        { "id": "extra-check", "label": "Check the bundle", "cue": "“--check: GREEN, gated at the RPC credential. The generated tools survive a real install and boot.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the declared credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "extra-shapes", "label": "Read shapes 5 and 7", "cue": "“Multi-chain and proof-carrying — the two extensions that fall out once tools are typed rather than hand-written.”", "action": "open", "file": "../../44-chain-as-tool-gateway.md", "preview": true }
+      ]
+    }
+  ]
+}

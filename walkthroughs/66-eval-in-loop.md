@@ -51,7 +51,7 @@ one of three kinds — a model-scored `llm_judge`, or the deterministic `contain
 name: support-agent
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: >
     Answer the customer's billing question. Always cite the specific policy
     section, and never promise a refund you haven't confirmed.
@@ -170,7 +170,7 @@ decides whether the pipeline proceeds:
 # draft-and-check.yaml
 name: draft-and-check
 target: workflow
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 steps:
   - name: draft
     instructions: >

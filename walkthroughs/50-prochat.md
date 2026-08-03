@@ -195,7 +195,7 @@ get the page text.
 ## Step 6 — Swap the model
 
 Same recipe as 49 (Claude / OpenAI / Gemini / Bedrock / local). For
-this demo `claude-sonnet-4-6` is a good default — cheaper than Opus
+this demo `claude-sonnet-5` is a good default — cheaper than Opus
 without sacrificing the conversation quality.
 
 ## What makes it feel pro-grade (ChatGPT-style)

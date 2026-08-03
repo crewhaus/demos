@@ -38,7 +38,7 @@ learning:
   exam: { dataset: eval/dataset.jsonl, graders: eval/graders.yaml }
 
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   max_tokens: 16384
   model_fallbacks: [claude-haiku-4-5-20251001] # long study passes survive a provider hiccup
   instructions: |

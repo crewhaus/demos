@@ -22,7 +22,7 @@ name: hello-multichat
 target: channel
 
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are 🦞 — an always-on personal AI assistant.
     EXFOLIATE! EXFOLIATE!

@@ -245,7 +245,7 @@ baseUrl, key-env)` key**. So a spec using:
 ```yaml
 roles:
   researcher:
-    model: claude-sonnet-4-6
+    model: claude-sonnet-5
   extractor:
     model: local/llama3.2@http://localhost:11434/v1
   judge:

@@ -224,7 +224,7 @@ name: my-coding-agent
 target: cli
 
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   # DO NOT CHANGE THIS PROMPT WITHOUT TEAM REVIEW (incident 2026-03-04)
   instructions: |
     You help with TypeScript. Read files before editing.
@@ -254,7 +254,7 @@ name: my-coding-agent
 target: cli
 
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   # DO NOT CHANGE THIS PROMPT WITHOUT TEAM REVIEW (incident 2026-03-04)
   instructions: |
     Think step by step before answering.

@@ -102,7 +102,7 @@ spec shapes:
 name: hello
 target: cli
 agent:
-  model: claude-opus-4-7
+  model: claude-opus-5
   instructions: |
     Answer math questions with just the number.
 ```
@@ -120,7 +120,7 @@ compiles to a self-contained `agent.ts`:
 name: hello-eval
 target: eval
 agent:
-  model: claude-opus-4-7
+  model: claude-opus-5
   instructions: |
     Answer math questions with just the number.
 dataset:
@@ -415,7 +415,7 @@ no sibling `threshold`; the entry is `.strict()`, so a typo'd
 graders:
   - name: answer_quality
     type: llm_judge
-    model: claude-haiku-4-5-20251001   # default: --judge-model, else claude-sonnet-4-5
+    model: claude-haiku-4-5-20251001   # default: --judge-model, else claude-sonnet-5
     temperature: 0                     # judge decoding pin, 0..1 (DEFAULT 0)
     repeats: 3                         # odd panel; MEDIAN score wins (default 1)
     target: output                     # output (default) | transcript
@@ -737,7 +737,7 @@ significant at 0.05" verdict — on stdout, in `diff.json` under
 ### `--pairwise` — which run answered better?
 
 ```bash
-bunx crewhaus eval-report diff run-1 run-2 --pairwise --judge-model claude-sonnet-4-5
+bunx crewhaus eval-report diff run-1 run-2 --pairwise --judge-model claude-sonnet-5
 ```
 
 For every shared sample the judge compares the two runs' outputs
@@ -930,7 +930,7 @@ No model call, no credentials, no spend.
 - **Canary rollouts using the diff.** [Recipe 21 — Deployment and Canary](21-deployment-and-canary.md).
 - **Evaluating a non-cli shape.** [Recipe 61 — Self-building evals](61-self-building-evals.md) — `compile --with-eval-harness` drives the shape's real compiled runtime.
 - **Observability inside a single eval run.** [Recipe 17 — Observability](17-observability.md) — the per-sample transcript is a full trace event log.
-- **Multi-provider eval.** Run the same dataset against `claude-sonnet-4-6`, `openai/gpt-4o`, and `gemini/2.0-flash` by changing one line in the spec; see [Recipe 18 — Multi-Provider Fallback](18-multi-provider-fallback.md) for adapter mechanics.
+- **Multi-provider eval.** Run the same dataset against `claude-sonnet-5`, `openai/gpt-4o`, and `gemini/2.0-flash` by changing one line in the spec; see [Recipe 18 — Multi-Provider Fallback](18-multi-provider-fallback.md) for adapter mechanics.
 
 ## Pointers to source
 

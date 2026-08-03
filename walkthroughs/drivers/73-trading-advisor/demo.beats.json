@@ -1,0 +1,56 @@
+{
+  "title": "Recipe 73 — The trading advisor: when the market grades your agent",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“An advisor, not a trader — it never places an order. What it does is keep a journal the market grades for it.”", "action": "open", "file": "../../73-trading-advisor.md", "preview": true },
+        { "id": "setup-reset", "label": "Blank the scratch file", "cue": "live/ is scratch — the committed trader is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the credentials", "cue": "[needs-key] Sources demos/.env — THREDZ_API_KEY for the wiki store, plus the model credential.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the committed advisor",
+      "beats": [
+        { "id": "spec-open", "label": "Open the spec", "cue": "“A hundred and forty-seven lines: memory, a wiki, a curriculum, and a heartbeat that studies overnight.”", "action": "open", "file": "../../../starters/trader/crewhaus.yaml" },
+        { "id": "spec-lint", "label": "Lint it in place", "cue": "“Clean. Every part of the learning loop is a declared field.”", "action": "command", "command": "crewhaus lint ../../../starters/trader/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-store", "label": "Type the store line", "cue": "“The wiki store is where a lesson survives the session that taught it.”", "action": "type", "source": "../../73-trading-advisor.md", "sourceLines": [148, 155], "target": "live/store.yaml", "replace": true },
+        { "id": "spec-open-store", "label": "Read it", "cue": "“Hosted or local — the spec doesn't care which, and neither does the loop.”", "action": "open", "file": "live/store.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Read the memory and knowledge nodes — the studying apparatus, as IR.”", "action": "command", "command": "crewhaus compile ../../../starters/trader/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "IR written to live/ir.json", "produces": ["live/ir.json"] } },
+        { "id": "prove-open-ir", "label": "Open the IR", "cue": "“No trading primitives anywhere in here. It's an agent that writes things down.”", "action": "open", "file": "live/ir.json" },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check: GREEN, stopped at the MCP server credential the spec itself declares. A named gate, not a failure.”", "action": "command", "command": "crewhaus compile ../../../starters/trader/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — boot gated (boot reached its MCP server credentials gate: THREDZ_API_KEY)", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-heartbeat", "label": "Type the heartbeat", "cue": "“study/reflect on a schedule — the difference between an advisor and a search box.”", "action": "type", "source": "../../73-trading-advisor.md", "sourceLines": [293, 303], "target": "live/heartbeat.yaml", "replace": true },
+        { "id": "prove-open-hb", "label": "Read it", "cue": "“Overnight, unattended, and bounded. All three matter.”", "action": "open", "file": "live/heartbeat.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 3 · the journal is the dataset",
+      "beats": [
+        { "id": "journal-datasets", "label": "Look for the journal dataset", "cue": "“The market's grade arrives later than the advice does. Until then, the registry is empty — and says so.”", "action": "command", "command": "crewhaus datasets list > live/datasets.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "no datasets registered yet", "produces": ["live/datasets.txt"] } },
+        { "id": "journal-open", "label": "Read it", "cue": "“That lag is the honest, hard part of this recipe: you cannot grade today's call today.”", "action": "open", "file": "live/datasets.txt" },
+        { "id": "journal-daemon", "label": "Compile the study daemon", "cue": "“The daemon is a second spec — the thing that studies while nobody's watching.”", "action": "command", "command": "crewhaus compile ../../../starters/trader/daemon.yaml -o live/daemon > live/daemon.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "emits the study daemon bundle", "produces": ["live/daemon.txt"] } },
+        { "id": "journal-open-daemon", "label": "Read the output", "cue": "“Two bundles: the advisor you talk to, and the student that reads overnight.”", "action": "open", "file": "live/daemon.txt" }
+      ]
+    },
+    {
+      "title": "One more thing · ask it something real",
+      "beats": [
+        { "id": "run-advisor", "label": "Run the advisor", "cue": "[needs-key] “Ask the recipe's own question. Note what it does with the numbers it isn't sure about.”", "action": "command", "command": "crewhaus run ../../../starters/trader/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "needs THREDZ_API_KEY and a model credential" } },
+        { "id": "run-ask", "label": "Ask about a round trip", "cue": "[needs-key] “It writes the reasoning to the journal — which is what makes it gradeable next month.”", "action": "input", "text": "What would a round trip on 50 shares cost me, and what am I actually betting on?", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } },
+        { "id": "run-distill", "label": "Distill the journal", "cue": "[needs-key] “Once outcomes are known, the journal becomes a dataset and the flywheel has something true to optimize against.”", "action": "command", "command": "crewhaus distill --all-sessions --judge --register trader-journal", "verify": { "mode": "needs-key", "note": "billed judge pass; only meaningful once outcomes are known" } }
+      ]
+    }
+  ]
+}

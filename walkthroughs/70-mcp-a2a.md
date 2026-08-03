@@ -80,7 +80,7 @@ object:
 name: support
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are the support agent. Answer product questions concisely.
 expose:
@@ -166,7 +166,7 @@ Card lives at `<url>/.well-known/agent-card.json`):
 name: orchestrator
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: You coordinate research and code review across teams.
   sub_agents:
     researcher:

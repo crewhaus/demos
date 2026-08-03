@@ -28,7 +28,7 @@ name: hello-prochat
 target: cli
 
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a helpful, knowledgeable conversational assistant in a
     terminal REPL. You can:

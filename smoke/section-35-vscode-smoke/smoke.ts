@@ -93,7 +93,7 @@ log("probe D: buildRunSpecArgv argv shape");
   const argv = buildRunSpecArgv({
     cliPath: "crewhaus",
     specPath: "/path/to/crewhaus.yaml",
-    modelOverride: "claude-opus-4-7",
+    modelOverride: "claude-opus-5",
   });
   check("argv head is crewhaus run <spec>", argv[0] === "crewhaus" && argv[1] === "run");
   check("argv carries --model override", argv.includes("--model"));

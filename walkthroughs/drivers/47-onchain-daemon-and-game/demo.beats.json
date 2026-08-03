@@ -1,0 +1,47 @@
+{
+  "title": "Recipe 47 — Onchain event daemon & game-playing agent (two IR variants)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Two shapes here, not one: a daemon that reacts to chain events, and an agent that plays an onchain game.”", "action": "open", "file": "../../47-onchain-daemon-and-game.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the credentials", "cue": "[needs-key] Sources demos/.env — an RPC endpoint on top of the model credential.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the onchain daemon",
+      "beats": [
+        { "id": "spec-treasury", "label": "Type the treasury monitor", "cue": "“target: onchain. It subscribes to contract events and wakes the agent per event — no polling loop you have to write.”", "action": "type", "source": "../../47-onchain-daemon-and-game.md", "sourceLines": [31, 78], "replace": true },
+        { "id": "daemon-lint", "label": "Lint it", "cue": "“The chain well-formedness pass checks the ABI references resolve before anything is emitted.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — chain well-formedness included" } },
+        { "id": "daemon-ir", "label": "Show the lowered IR", "cue": "“This is the first of the two new IR variants the recipe is really about.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir-daemon.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "the onchain IR variant", "produces": ["live/ir-daemon.json"] } },
+        { "id": "daemon-open-ir", "label": "Open it", "cue": "“Event subscriptions as first-class IR nodes — that's why this needed a variant rather than a config flag.”", "action": "open", "file": "live/ir-daemon.json" },
+        { "id": "daemon-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the RPC and signer credentials the spec declares.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/daemon --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the declared credentials gate", "produces": ["live/daemon/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 2 · the game-playing agent",
+      "beats": [
+        { "id": "game-reset", "label": "Blank the scratch spec", "cue": "“Now the other variant — same compiler, different shape.”", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "spec-game", "label": "Type the dark-forest agent", "cue": "“target: onchain-game. The move loop and the state read are the shape; the strategy is the instructions.”", "action": "type", "source": "../../47-onchain-daemon-and-game.md", "sourceLines": [86, 125], "replace": true },
+        { "id": "game-lint", "label": "Lint it", "cue": "“Clean — a second variant, and lint already knows about it.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "game-check", "label": "Compile it and check it", "cue": "“--check: GREEN. Two IR variants, one compile path, no special cases in your build.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/game --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the declared credentials gate", "produces": ["live/game/agent.ts"] } },
+        { "id": "game-diff", "label": "Diff the two bundles", "cue": "“Everything the variant change bought — as a diff, not a description.”", "action": "command", "command": "diff live/daemon/agent.ts live/game/agent.ts > live/variants.diff; test -s live/variants.diff", "verify": { "mode": "offline", "expectedExit": 0, "note": "the two variants really do emit different programs", "produces": ["live/variants.diff"] } },
+        { "id": "game-open-diff", "label": "Read the delta", "cue": "“Event subscription on one side, a move loop on the other. Same runtime imports underneath.”", "action": "open", "file": "live/variants.diff" }
+      ]
+    },
+    {
+      "title": "One more thing · chain content is untrusted",
+      "beats": [
+        { "id": "run-game", "label": "Play it against a testnet", "cue": "[needs-key] “A game contract on a testnet, a funded signer, and a strategy. Watch it take a turn.”", "action": "command", "command": "bun live/game/agent.ts", "verify": { "mode": "needs-key", "note": "needs an RPC endpoint and a funded signer; submits real transactions" } },
+        { "id": "extra-pillar3", "label": "Read the Pillar 3 section", "cue": "“Anyone can write to a public chain. Everything read back through it crosses a trust boundary and gets classified.”", "action": "open", "file": "../../47-onchain-daemon-and-game.md", "preview": true }
+      ]
+    }
+  ]
+}

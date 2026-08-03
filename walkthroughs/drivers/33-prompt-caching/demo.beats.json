@@ -1,0 +1,55 @@
+{
+  "title": "Recipe 33 — Prompt Caching (rotate the marker before the TTL rotates you)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“A big stable system prompt re-sent all day is the case caching was built for — about a nine-times cut on the input bill.”", "action": "open", "file": "../../33-prompt-caching.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the cost-trace beat at the end.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the harness caching is worth having",
+      "beats": [
+        { "id": "spec-cli", "label": "Type recipe 01's harness", "cue": "“Caching is per-deployment runtime wiring, not spec surface — so start from the plainest agent, unchanged.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        {"id": "spec-compaction", "label": "Add the showcase's compaction block", "cue": "“The pairing the recipe names: compaction keeps the cacheable prefix stable across a long session, so the marker keeps getting hit.”", "action": "type", "source": "../../../starters/showcases/procode/crewhaus.yaml", "sourceLines": [543, 549]},
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Clean — and notice there is nothing cache-shaped in the file. That is the point.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“No cache_control, no rotateAfterMs, no marker anywhere in the IR. The adapter receives already-marked blocks; the spec never mentions it.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli — compaction lands, caching is absent by design" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, boots it: GREEN, gated only on the credential the spec itself declares.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "“runChatLoop is the only cache-aware step in the whole path, and it is one call inside a package you can read.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 2 · rotate a stale marker",
+      "beats": [
+        { "id": "rotate-harness", "label": "Set up three system blocks", "cue": "“Two stable blocks carrying old markers, one dynamic block last — and a marker that was last refreshed eight days ago.”", "action": "type", "target": "live/rotate.ts", "replace": true, "text": "import { AnthropicAdapter } from \"@crewhaus/adapter-anthropic\";\n\nconst day = 24 * 3600 * 1000;\nconst adapter = new AnthropicAdapter({ client: {} as any, isOAuth: false });\nconst lastRotatedAt = Date.now() - 8 * day;\nconst systemBlocks = [\n  { type: \"text\", text: \"instructions (stable)\", cache_control: { type: \"ephemeral\" } },\n  { type: \"text\", text: \"skills registry (stable)\", cache_control: { type: \"ephemeral\" } },\n  { type: \"text\", text: \"today is 2026-07-29 (dynamic)\" },\n];\n\n" },
+        { "id": "rotate-manage", "label": "Type the recipe's manage() call", "cue": "“The whole API: blocks in, blocks out, plus the timestamp the caller persists. The manager holds no state of its own.”", "action": "type", "source": "../../33-prompt-caching.md", "sourceLines": [75, 84], "target": "live/rotate.ts" },
+        { "id": "rotate-tail", "label": "Print the verdict", "cue": "“One line to show which block ends up carrying the marker.”", "action": "type", "target": "live/rotate.ts", "text": "\nconsole.log(\"rotated:\", result.rotated);\nconsole.log(\"markers:\", result.blocks.map((b: any) => (b.cache_control ? \"●\" : \"·\")).join(\" \"));\n" },
+        { "id": "rotate-run", "label": "Run it", "cue": "“rotated: true, and the markers read dot dot dot-filled — the old ones stripped, one fresh marker on the last block. Eight days is past the seven-day default, and nowhere near Anthropic's thirty-day TTL.”", "action": "command", "command": "bun live/rotate.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints “rotated: true” and “markers: · · ●” — intermediates stripped, fresh marker on the last block" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · the provider gate",
+      "beats": [
+        { "id": "features-table", "label": "Ask the adapters their caching policy", "cue": "“The adapter declares it, not the manager: Anthropic is explicit, OpenAI is automatic. That one string is the whole gate.”", "action": "command", "command": "bun -e 'import { AnthropicAdapter } from \"@crewhaus/adapter-anthropic\"; import { OpenAIAdapter } from \"@crewhaus/adapter-openai\"; console.log(\"anthropic:\", new AnthropicAdapter({ client: {} as any, isOAuth: false }).features.caching); console.log(\"openai:\", new OpenAIAdapter({ client: {} as any } as any).features.caching);'", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints “anthropic: explicit” and “openai: automatic” — read off the real adapter classes" } },
+        { "id": "skip-automatic", "label": "Run manage() against OpenAI features", "cue": "“Same call, same blocks, and it does nothing at all — OpenAI caches server-side, so marking would just cost you a write.”", "action": "command", "command": "bun -e 'import { OpenAIAdapter } from \"@crewhaus/adapter-openai\"; import { manage } from \"@crewhaus/prompt-cache-manager\"; const o = new OpenAIAdapter({ client: {} as any } as any); const r = manage([{ type: \"text\", text: \"instructions\" }, { type: \"text\", text: \"skills\" }], { features: o.features, lastRotatedAt: 0 }); console.log(\"caching:\", o.features.caching, \"· rotated:\", r.rotated, \"· markers written:\", r.blocks.filter((b: any) => b.cache_control).length);'", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints “caching: automatic · rotated: false · markers written: 0” — the skip branch, with lastRotatedAt: 0 which would otherwise force a rotation" } },
+        { "id": "smoke-27", "label": "Run the recipe's own smoke", "cue": "“Probe four is this recipe: backdate by eight days, assert a fresh marker went in and the old ones came out. Credential-free, and it is in CI.”", "action": "command", "command": "bun ../../../smoke/section-27-smoke/smoke.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "five probes pass; probe 4 is prompt-cache-manager's rotation assertion" } }
+      ]
+    },
+    {
+      "title": "One more thing · prove it on the bill",
+      "beats": [
+        { "id": "obs-json", "label": "Type the recipe's cost_accrual event", "cue": "“The two token counts are disjoint: inputTokens is the fresh, full-price prefix; cachedReadTokens is what came out of cache at a tenth of the rate.”", "action": "type", "source": "../../33-prompt-caching.md", "sourceLines": [221, 229], "target": "live/cost-accrual.json", "replace": true },
+        { "id": "obs-ratio", "label": "Compute the cache-hit ratio", "cue": "“cachedReadTokens over the total — 0.966. A healthy long-prompt agent climbs toward one; a low number means the marker is ageing out or the prompt is churning.”", "action": "command", "command": "bun -e 'const a = JSON.parse(require(\"fs\").readFileSync(\"live/cost-accrual.json\", \"utf8\")); const r = a.cachedReadTokens / (a.inputTokens + a.cachedReadTokens); console.log(\"fresh:\", a.inputTokens, \"· cached:\", a.cachedReadTokens, \"· cache-hit ratio:\", r.toFixed(3));'", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints “fresh: 348 · cached: 9892 · cache-hit ratio: 0.966” — and doubles as a parse check on the typed JSON" } },
+        { "id": "trace-cost", "label": "Watch the real per-call costs", "cue": "[needs-key] “CREWHAUS_TRACE_COST=1 echoes every cost_accrual to stderr — on a warm cache the first call pays the write and the rest ride the prefix.”", "action": "command", "command": "CREWHAUS_TRACE_COST=1 crewhaus optimize live/crewhaus.yaml 2>&1 | grep cost-call", "verify": { "mode": "needs-key", "note": "the recipe's own worked observation; optimize makes real model calls, so this needs Anthropic credentials" } }
+      ]
+    }
+  ]
+}

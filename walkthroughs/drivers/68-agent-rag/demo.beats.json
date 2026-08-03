@@ -1,0 +1,54 @@
+{
+  "title": "Recipe 68 — Retrieval-augmented agents with knowledge and memory",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Two different things people both call RAG: knowledge you curated, and memory the agent accumulated.”", "action": "open", "file": "../../68-agent-rag.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — embedding a corpus is billed.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · knowledge — the corpus you curated",
+      "beats": [
+        { "id": "spec-docs", "label": "Type the docs agent", "cue": "“A knowledge block naming a real directory. Citations come back with ids, so an answer can be audited.”", "action": "type", "source": "../../68-agent-rag.md", "sourceLines": [50, 68], "replace": true },
+        { "id": "docs-lint", "label": "Lint it", "cue": "“Clean — retrieval is declared surface, so a reviewer can see exactly what the agent can read.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "docs-compile", "label": "Compile it", "cue": "“It compiles. Booting it is a different question — this spec points at a ./docs corpus that only exists in your project.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/docs > live/docs-compile.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "emits the bundle; --check would stop at the missing local corpus, which is the recipe's own precondition", "produces": ["live/docs/agent.ts", "live/docs-compile.txt"] } },
+        { "id": "docs-open", "label": "Open the emitted agent", "cue": "“The retrieve tool is generated. You don't write a chunker, an embedder, or a vector-store client.”", "action": "open", "file": "live/docs/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 2 · memory — what the agent accumulated",
+      "beats": [
+        { "id": "mem-reset", "label": "Blank the scratch spec", "cue": "“Now the other half. Same retrieval machinery, different source of truth.”", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "mem-spec", "label": "Type the support bot", "cue": "“A channel bot with memory — it remembers this user, not the manual.”", "action": "type", "source": "../../68-agent-rag.md", "sourceLines": [158, 172], "replace": true },
+        { "id": "mem-lint", "label": "Lint it", "cue": "“Clean. Memory is a block, not a bolt-on.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "mem-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the declared credentials. Memory needs no local corpus, so this one boots.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/mem --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the declared credentials gate", "produces": ["live/mem/gateway.ts"] } },
+        { "id": "mem-config", "label": "Type the memory config variants", "cue": "“`memory: {}` takes the defaults. The recipe shows what each knob is actually for before you touch one.”", "action": "type", "source": "../../68-agent-rag.md", "sourceLines": [196, 198], "target": "live/memory.yaml", "replace": true },
+        { "id": "mem-open", "label": "Read it", "cue": "“Defaults that work are worth more than knobs you have to learn.”", "action": "open", "file": "live/memory.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 3 · one embedder, two consumers",
+      "beats": [
+        { "id": "embed-diff", "label": "Diff the two bundles", "cue": "“knowledge.embedder → memory.embedder: the same component, wired to two different stores.”", "action": "command", "command": "diff live/docs/agent.ts live/mem/gateway.ts > live/rag.diff; test -s live/rag.diff", "verify": { "mode": "offline", "expectedExit": 0, "note": "the two RAG shapes emit different programs from shared machinery", "produces": ["live/rag.diff"] } },
+        { "id": "embed-open", "label": "Read the delta", "cue": "“Curated knowledge and accumulated memory are different problems. Sharing an embedder doesn't make them the same one.”", "action": "open", "file": "live/rag.diff" }
+      ]
+    },
+    {
+      "title": "One more thing · ask it something cited",
+      "beats": [
+        { "id": "run-docs", "label": "Run the docs agent", "cue": "[needs-key] “Point it at a real corpus first — the recipe's ./docs. Then ask something only the docs know.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "needs a local corpus to index and a model credential" } },
+        { "id": "run-ask", "label": "Ask a corpus question", "cue": "[needs-key] “The answer comes back with [1] id=manual.md#4 — a citation you can go read.”", "action": "input", "text": "What does the manual say about refund windows?", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    }
+  ]
+}

@@ -90,7 +90,7 @@ name: ghostwriter
 target: cli
 
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You draft replies, emails, and short posts in the operator's voice.
     The voice samples in voice/ are the ground truth for tone — study them

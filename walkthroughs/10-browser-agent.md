@@ -86,7 +86,7 @@ The bundled example [`starters/browser/crewhaus.yaml`](../starters/browser/crewh
 name: hello-browser
 target: browser
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You drive a chromium browser. Take ONE screenshot, find the
     target element, click its center coordinates, take ONE more
@@ -98,7 +98,7 @@ driver:
     width: 1024
     height: 720
   startUrl: http://127.0.0.1:7325/
-groundingModel: claude-sonnet-4-6
+groundingModel: claude-sonnet-5
 permissions:
   mode: default
   rules:

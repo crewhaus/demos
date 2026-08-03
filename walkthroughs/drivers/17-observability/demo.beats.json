@@ -1,0 +1,67 @@
+{
+  "title": "Recipe 17 — Observability (six layers, every one of them opt-in)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Recipe 17 is six layers, ordered from ‘what is my agent doing right now’ to ‘every event in Datadog with gen_ai semantic conventions.’ The bus has no subscribers until you ask for one.”", "action": "open", "file": "../../17-observability.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe and starters are never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the layers only have events to carry once a real turn runs.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the harness the six layers point at",
+      "beats": [
+        { "id": "spec-cli", "label": "Type recipe 01's harness", "cue": "“Observability is per-deployment, not per-spec — so start from the plainest recipe-01 agent, unchanged. Nothing in these seven lines mentions tracing.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "prove-lint", "label": "Lint it", "cue": "“Clean before we turn a single layer on — so anything that shows up later is the env vars' doing, not the spec's.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“No trace block, no metrics block, no exporter block. Observability is runtime wiring — the IR is exactly what recipe 01 lowers to.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli — no observability surface in it" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN with no key. The trace bus is in that bundle with zero subscribers, costing nothing.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts", "live/dist/package.json", ".crewhaus/specs/hello/manifest.json"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "“The bus is constructed here and handed to the chat loop. Every layer after this is a subscriber you opt into by env var.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Layers 1–2 — the JSONL and the live printer",
+      "beats": [
+        { "id": "layer2-pretty", "label": "Layer 2 — watch the turn unfold", "cue": "[needs-key] “CREWHAUS_TRACE=pretty and the events stream to stderr, colour-coded, with token deltas collapsed into one rolling line.”", "action": "command", "command": "CREWHAUS_TRACE=pretty crewhaus run live/crewhaus.yaml --prompt 'In one sentence: what is a trace event bus?'", "verify": { "mode": "needs-key", "note": "one turn with the pretty printer attached; needs Anthropic credentials" } },
+        { "id": "layer2-json", "label": "Layer 2 — the machine format", "cue": "[needs-key] “Same events, one JSON object per line on stdout. This is the format meant for your own tooling.”", "action": "command", "command": "CREWHAUS_TRACE=json crewhaus run live/crewhaus.yaml --prompt 'Name one thing you can do.' > live/trace.jsonl", "verify": { "mode": "needs-key", "note": "writes the JSON-Lines event stream to live/trace.jsonl; needs Anthropic credentials", "produces": ["live/trace.jsonl"] } },
+        { "id": "layer1-jsonl", "label": "Layer 1 — the always-on session log", "cue": "[needs-key] “Nobody opted into this one. Every run writes its own JSONL at mode 0600, and this is what --resume reads back.”", "action": "command", "command": "tail -n 50 .crewhaus/sessions/*.jsonl | jq -r .kind | sort | uniq -c", "verify": { "mode": "needs-key", "note": "the recipe's own line — the session JSONL only exists after a keyed run" } }
+      ]
+    },
+    {
+      "title": "Beat 4 · Layer 3 — metrics",
+      "beats": [
+        { "id": "layer3-sinks", "label": "Prove the three sink forms parse", "cue": "“stdout, textfile, http — the exact three strings the recipe prints, resolved by the collector out of the bundle we just checked. No key, no network.”", "action": "command", "command": "bun --cwd live/dist -e 'import { parseEnv } from \"@crewhaus/metrics-collector\"; for (const v of [\"stdout\", \"textfile:/var/lib/node_exporter/crewhaus.prom\", \"http:9464\"]) console.log(\"CREWHAUS_METRICS=\" + v.padEnd(44), JSON.stringify(parseEnv(v)))'", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints {kind:stdout} · {kind:textfile,path} · {kind:http,port:9464} — the sink grammar of Layer 3, resolved from live/dist/node_modules" } },
+        { "id": "layer3-http", "label": "Expose a Prometheus endpoint", "cue": "[needs-key] “http:9464 and the run serves /metrics for a scrape — turns, tool calls, tokens, errors, and the three histograms including time-to-first-token.”", "action": "command", "command": "CREWHAUS_METRICS=http:9464 crewhaus run live/crewhaus.yaml --prompt 'Say hello.'", "verify": { "mode": "needs-key", "note": "GET http://localhost:9464/metrics while the run is alive; needs Anthropic credentials" } }
+      ]
+    },
+    {
+      "title": "Beat 5 · Layers 4–5 — OpenTelemetry and cost",
+      "beats": [
+        { "id": "layer4-otel", "label": "Ship OTLP spans to a collector", "cue": "[needs-key] “One endpoint variable and the lifecycle events pair into spans — chat, tool, mcp — with gen_ai.* attributes. Token deltas ride as span events, not sub-spans, because sub-spans-per-token explodes an APM bill.”", "action": "command", "command": "OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 OTEL_SERVICE_NAME=my-agent crewhaus run live/crewhaus.yaml --prompt 'Say hello.'", "verify": { "mode": "needs-key", "note": "needs a local OTLP collector on :4318 and Anthropic credentials" } },
+        { "id": "layer5-cost", "label": "Turn cost tracking on", "cue": "[needs-key] “The tracker subscribes to model_response, prices it from the table, and emits cost_accrual in microdollars — integers, so a long-running sum never drifts.”", "action": "command", "command": "CREWHAUS_COST_TRACKING=1 crewhaus run live/crewhaus.yaml --prompt 'Summarize what you just cost me.'", "verify": { "mode": "needs-key", "note": "cost_accrual events need a real model_response; needs Anthropic credentials" } },
+        { "id": "layer5-summary", "label": "Read the dollar total back", "cue": "[needs-key] “Broken down by model, input versus output tokens, and total USD. A model id the pricing table has never seen increments a counter instead of throwing — a new release does not crash production.”", "action": "command", "command": "crewhaus cost-summary --session $(basename $(ls -t .crewhaus/sessions/*.jsonl | head -1) .jsonl)", "verify": { "mode": "needs-key", "note": "reads the cost_accrual events the previous beat wrote" } }
+      ]
+    },
+    {
+      "title": "One more thing · Layer 6 — the vendor exporters, proven end to end",
+      "beats": [
+        { "id": "prod-type", "label": "Type the recipe's production block", "cue": "“All six layers at once, as a real deploy would set them: JSON events for the aggregator, metrics for the scrape, OTel to the collector, cost attributed per tenant, Datadog for the operations team.”", "action": "type", "source": "../../17-observability.md", "sourceLines": [249, 257], "target": "live/production-observability.sh", "replace": true },
+        { "id": "prod-open", "label": "Open what we just wrote", "cue": "“Six exports and one boot. Total runtime overhead is low — the bus is in-process and the network sends are batched.”", "action": "open", "file": "live/production-observability.sh" },
+        { "id": "smoke-datadog", "label": "Run the Datadog exporter smoke", "cue": "“The recipe's own Try-it: spans, metrics and logs through a stub collector, asserted against the gen_ai conventions — and the credential-leak guard proving DD_API_KEY never reaches a log line.”", "action": "command", "command": "bun ../../../smoke/section-37-exporter-datadog-smoke/smoke.ts > live/datadog-smoke.log 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "ALL PROBES PASSED — 5 model spans flushed, [REDACTED:DD_API_KEY] present, attach gated on DD_API_KEY / DD_TRACE_ENABLED. Redirected rather than piped so the exit code is the smoke's own", "produces": ["live/datadog-smoke.log"] } },
+        { "id": "smoke-open", "label": "Read the probe log", "cue": "“Probe D is the one to point at: no env var, no exporter. That is what ‘auto-attaching’ actually means.”", "action": "open", "file": "live/datadog-smoke.log" },
+        { "id": "smoke-honeycomb", "label": "And the Honeycomb one", "cue": "“Same pipeline, second vendor, side by side — each consumes the same bus, so spans go to every configured destination.”", "action": "command", "command": "bun ../../../smoke/section-37-exporter-honeycomb-smoke/smoke.ts > live/honeycomb-smoke.log 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "ALL PROBES PASSED — dataset header + api.eu1 host routing + the same scrubApiKey guard", "produces": ["live/honeycomb-smoke.log"] } }
+      ]
+    }
+  ]
+}

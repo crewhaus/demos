@@ -180,7 +180,7 @@ separate eval run instead.
 
 ```bash
 crewhaus distill --all-sessions -o eval/ratings.jsonl \
-  --graders-out eval/graders.yaml --judge --judge-model claude-sonnet-4-6
+  --graders-out eval/graders.yaml --judge --judge-model claude-sonnet-5
 ```
 
 `--judge` replaces the deterministic grader with a single `llm_judge`
@@ -254,7 +254,7 @@ bot's replies into ratings:
 name: hello-channel-rated
 target: channel
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a Slack bot. Reply concisely in 1-2 sentences.
 channels:

@@ -211,7 +211,7 @@ The `model:` field is provider-agnostic. Edit
 
 | Provider | `model:` | Env |
 |---|---|---|
-| Anthropic (default) | `claude-opus-4-7` | `ANTHROPIC_API_KEY` |
+| Anthropic (default) | `claude-opus-5` | `ANTHROPIC_API_KEY` |
 | OpenAI | `openai/gpt-4o` | `OPENAI_API_KEY` |
 | Google | `gemini/gemini-2.5-flash` | `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) |
 | Bedrock | `bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0` | AWS credential chain or `AWS_BEARER_TOKEN_BEDROCK`, plus `AWS_REGION` |

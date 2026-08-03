@@ -158,7 +158,7 @@ Two ways to switch the judge on without editing code:
 name: support-agent
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: Acknowledge support tickets the user points you at.
 security:
   justification:

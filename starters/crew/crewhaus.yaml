@@ -1,6 +1,6 @@
 name: hello-crew
 target: crew
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 entry: researcher
 permissions:
   mode: default

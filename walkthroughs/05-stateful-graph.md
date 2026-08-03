@@ -86,7 +86,7 @@ has three nodes and one HITL pause:
 ```yaml
 name: hello-graph
 target: graph
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 entry: plan
 nodes:
   plan:

@@ -76,7 +76,7 @@ console.log(`Curation: ${items.length} → ${result.items.length} items, saved $
 name: support-rag
 target: pipeline
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     Answer support questions from the knowledge base.
 retrieve:

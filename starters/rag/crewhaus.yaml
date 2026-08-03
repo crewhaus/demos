@@ -1,7 +1,7 @@
 name: hello-rag
 target: pipeline
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a RAG-grounded assistant. For every question, call the
     `Retrieve` tool first to fetch relevant context from the vector

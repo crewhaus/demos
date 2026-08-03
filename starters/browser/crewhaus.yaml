@@ -1,7 +1,7 @@
 name: hello-browser
 target: browser
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You drive a chromium browser. Use the available tools to complete the
     user's task:
@@ -24,7 +24,7 @@ driver:
   # DNS-pinning SSRF proxy that 403s loopback and RFC1918 targets, so a
   # http://127.0.0.1/ startUrl renders the proxy's error body, not a page.
   startUrl: https://example.com/
-groundingModel: claude-sonnet-4-6
+groundingModel: claude-sonnet-5
 permissions:
   mode: default
   rules:

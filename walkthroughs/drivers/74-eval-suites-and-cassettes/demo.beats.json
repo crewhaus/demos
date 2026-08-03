@@ -1,0 +1,58 @@
+{
+  "title": "Recipe 74 — Eval suites, tool cassettes, red-team probes, and the review queue",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Eval practice at scale: tiers so CI stays fast, cassettes so it stays deterministic, and a queue for what the judge couldn't call.”", "action": "open", "file": "../../74-eval-suites-and-cassettes.md", "preview": true },
+        { "id": "setup-reset", "label": "Blank the scratch file", "cue": "live/ is scratch — the committed eval starter is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the graded tiers make real calls.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the harness under test",
+      "beats": [
+        { "id": "spec-eval", "label": "Type the eval starter", "cue": "“Thirteen lines. The interesting part isn't the agent — it's everything measuring it.”", "action": "type", "source": "../../../starters/eval/crewhaus.yaml", "sourceLines": [1, 13], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean. Suites and cassettes live beside the spec, not inside it.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the model credential.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "spec-suite", "label": "Type the recipe's suite", "cue": "“Tiers: a fast one every commit, a slow one nightly. One verdict per tier, so CI has something to gate on.”", "action": "type", "source": "../../74-eval-suites-and-cassettes.md", "sourceLines": [112, 145], "target": "live/eval-suite.yaml", "replace": true },
+        { "id": "spec-open-suite", "label": "Read it", "cue": "“The tier boundary is a cost decision written down where a reviewer can argue with it.”", "action": "open", "file": "live/eval-suite.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 2 · the surfaces, offline",
+      "beats": [
+        { "id": "surf-suite", "label": "Read the suite contract", "cue": "“eval suite --tier is what CI calls. Everything else in this recipe feeds it.”", "action": "command", "command": "crewhaus eval suite --help > live/suite.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped eval-suite flags", "produces": ["live/suite.txt"] } },
+        { "id": "surf-open-suite", "label": "Read it", "cue": "“One verdict per tier. A suite that returns a spreadsheet can't gate a merge.”", "action": "open", "file": "live/suite.txt" },
+        { "id": "surf-redteam", "label": "Read the red-team contract", "cue": "“redteam generate builds adversarial probes from the spec — the prompts you'd never think to write.”", "action": "command", "command": "crewhaus redteam generate --help > live/redteam.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped redteam-generate flags", "produces": ["live/redteam.txt"] } },
+        { "id": "surf-open-redteam", "label": "Read it", "cue": "“Generated from your own spec, so the probes target your actual tools and rules.”", "action": "open", "file": "live/redteam.txt" },
+        { "id": "surf-review", "label": "Open the review queue", "cue": "“Empty — the queue holds what the judge abstained on. Abstentions are the honest output of a good judge.”", "action": "command", "command": "crewhaus review list > live/review.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "`review queue is empty — eval abstentions land here`", "produces": ["live/review.txt"] } },
+        { "id": "surf-open-review", "label": "Read it", "cue": "“A judge that never abstains is a judge that's guessing. This queue is where the guesses would have been.”", "action": "open", "file": "live/review.txt" },
+        { "id": "surf-schedule", "label": "Read the schedule generator", "cue": "“And the last mile: a cron for the nightly tier, generated rather than hand-written.”", "action": "command", "command": "crewhaus schedule generate --help > live/schedule.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped schedule-generate flags", "produces": ["live/schedule.txt"] } },
+        { "id": "surf-open-schedule", "label": "Read it", "cue": "“Fast tier on every commit, full tier overnight, sentinel weekly.”", "action": "open", "file": "live/schedule.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · determinism",
+      "beats": [
+        { "id": "cassette-read", "label": "Read the cassette section", "cue": "“A tool cassette records real tool calls and replays them — so an eval measures the agent, not the flaky API behind it.”", "action": "open", "file": "../../74-eval-suites-and-cassettes.md", "preview": true },
+        { "id": "cassette-resume", "label": "Read the resume flag", "cue": "“--resume matters at this scale: a two-hour eval that dies at 90% shouldn't start over.”", "action": "command", "command": "crewhaus eval --help > live/eval-help.txt 2>&1; grep -n 'resume' live/eval-help.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped resume flag on eval", "produces": ["live/eval-help.txt"] } },
+        { "id": "cassette-open", "label": "Read it", "cue": "“Resumable, tiered, and deterministic. That's what makes evals something a team keeps running.”", "action": "open", "file": "live/eval-help.txt" }
+      ]
+    },
+    {
+      "title": "One more thing · run the ladder",
+      "beats": [
+        { "id": "run-suite", "label": "Run the fast tier", "cue": "[needs-key] “The tier CI runs on every commit — seconds, not minutes.”", "action": "command", "command": "crewhaus eval suite live/eval-suite.yaml --tier fast", "verify": { "mode": "needs-key", "note": "billed graded run; needs a dataset and a model credential" } },
+        { "id": "run-redteam", "label": "Generate and run probes", "cue": "[needs-key] “Adversarial probes against the committed CLI agent — the eval that tries to break it.”", "action": "command", "command": "crewhaus redteam generate --spec ../../../starters/eval/agent.cli.yaml --register hello-redteam", "verify": { "mode": "needs-key", "note": "billed generation; registers a red-team dataset" } },
+        { "id": "run-ci", "label": "Wire the ladder into CI", "cue": "[manual] “init --ci writes the workflow. Read it before it lands — it decides what blocks a merge.”", "action": "command", "command": "crewhaus init --ci --suite live/eval-suite.yaml", "verify": { "mode": "manual", "note": "writes CI config; review before committing" } }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "title": "Recipe 06 — RAG Pipeline (retrieval is configuration, not code)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Recipe 06 is the shape you reach for when the boundary of what the agent knows is the corpus you indexed.”", "action": "open", "file": "../../06-rag-pipeline.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beats. Note the corpus itself needs no key — mock/det embeds offline.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec — four blocks, no code",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“target: pipeline” — chunk → embed → store → retrieve → answer, as an explicit DAG.", "action": "type", "source": "../../06-rag-pipeline.md", "sourceLines": [87, 88], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent block", "cue": "“Two non-negotiables in the prompt: call Retrieve first, and refuse what the chunks don't cover.”", "action": "type", "source": "../../06-rag-pipeline.md", "sourceLines": [89, 94] },
+        { "id": "spec-retrieve", "label": "Wire the retriever", "cue": "“A deterministic embedder into an in-memory store. Swap either one and only one IR node changes — the prompt above is untouched.”", "action": "type", "source": "../../06-rag-pipeline.md", "sourceLines": [95, 98] },
+        { "id": "spec-permissions", "label": "Let it call Retrieve", "cue": "“Without the alwaysAllow rule every retrieval prompts — which is never what you want in a RAG loop.”", "action": "type", "source": "../../06-rag-pipeline.md", "sourceLines": [99, 103] },
+        { "id": "spec-indexing", "label": "Add the chunker and the corpus", "cue": "“Fixed 400-character windows over two inline documents. The corpus is spec surface, so what you indexed is reviewable in the same diff.”", "action": "type", "source": "../../06-rag-pipeline.md", "sourceLines": [104, 118] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The spec is sugar; this JSON is the component DAG the compiler actually sees.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "39 lines of IR for target pipeline, redirected to scratch — the next beat opens it", "produces": ["live/ir.json"] } },
+        { "id": "prove-open-ir", "label": "Open the IR", "cue": "“Embedder, backend, chunk knobs and the documents, lowered to one flat record.”", "action": "open", "file": "live/ir.json" },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps and boots it: GREEN, no key needed.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (4 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts", "live/dist/package.json"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "“The corpus is baked in as a literal, right next to the chunker. That is why editing documents means a recompile.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-reject", "label": "Try crewhaus run first", "cue": "“Deliberate rejection, exit 1: only cli and browser run straight from the spec. Pipeline is compile-first.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "measured: `crewhaus run supports target: cli or browser (got \"pipeline\")`" } },
+        { "id": "run-bundle", "label": "Boot the bundle", "cue": "[needs-key] “Indexing runs once at process start, then the chat loop serves Retrieve calls against that store.”", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "indexes offline (prints `[pipeline] indexed 2 chunks`), then needs Anthropic credentials for the loop" } },
+        { "id": "run-ask", "label": "Ask something the corpus covers", "cue": "[needs-key] “Retrieve first, then two sentences with [N] citations — the numbering is the position in the retrieval result.”", "action": "input", "text": "What target shapes does crewhaus support?", "verify": { "mode": "needs-key" } },
+        { "id": "run-refuse", "label": "Ask something it can't know", "cue": "[needs-key] “Retrieve has no relevance floor — it still hands back the two nearest chunks. The refusal is the prompt's job, and this is where you find out whether it holds.”", "action": "input", "text": "What's the capital of France?", "verify": { "mode": "needs-key", "note": "expect \"I can only answer questions about the indexed docs.\"" } },
+        { "id": "run-exit", "label": "Exit the loop", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · N is the denominator for k",
+      "beats": [
+        { "id": "extra-boot-nokey", "label": "Boot with the key scrubbed", "cue": "“Same bundle, no credentials at all — chunk, embed and store still run to completion before anything asks the model for anything.”", "action": "command", "command": "env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN bun live/dist/agent.ts > live/boot.log 2>&1", "verify": { "mode": "offline", "expectedExit": 1, "note": "measured exit 1: the pipeline indexes, then the loop hits the provider credentials gate. Scrubbed explicitly because the Setup group already sourced .env into this shell.", "produces": ["live/boot.log"] } },
+        { "id": "extra-indexed", "label": "Read the chunk count", "cue": "“`indexed 2 chunks` is the denominator. defaultK: 2 against N=2 hands the model the whole store on every question — grow the corpus before you grow k.”", "action": "command", "command": "grep -n \"indexed\" live/boot.log", "verify": { "mode": "offline", "expectedExit": 0, "note": "the boot line `[pipeline] indexed 2 chunks` — the recipe's Tuning-chunks section is about this number" } }
+      ]
+    }
+  ]
+}

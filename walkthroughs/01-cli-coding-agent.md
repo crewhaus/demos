@@ -38,7 +38,7 @@ This is the smallest possible illustration. Five lines of YAML in:
 name: hello
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a helpful, concise assistant. Reply in two sentences or fewer
     unless the user asks for more detail.
@@ -68,7 +68,7 @@ const [__hooks, __skills, __slashCommands] = await Promise.all([
 if (__skills.length > 0) defaultCatalog.register(createSkillTool(__skills));
 
 await runChatLoop({
-  model: "claude-sonnet-4-6",
+  model: "claude-sonnet-5",
   instructions: "You are a helpful, concise assistant. Reply in two sentences or fewer\nunless the user asks for more detail.\n",
   sessionName: "hello",
   sessionTarget: "cli",
@@ -138,7 +138,7 @@ The whole file is five lines:
 name: hello
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a helpful, concise assistant. Reply in two sentences or fewer
     unless the user asks for more detail.
@@ -199,7 +199,7 @@ Create a copy at `starters/cli/my-agent.yaml`:
 name: my-agent
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a TypeScript expert. When asked to change code, always
     read the relevant files first, then make the smallest possible
@@ -502,7 +502,7 @@ A production-shaped CLI spec might look like this:
 name: my-coding-agent
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You help with TypeScript. Read files before editing. Run tests
     after non-trivial changes. Refuse to delete files without

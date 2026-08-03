@@ -1,19 +1,23 @@
 #!/usr/bin/env bun
 /**
- * verify-drivers — replay every starter's `demo.beats.json` the way the Demo
- * Driver would, and prove it green before anyone points a camera at it.
+ * verify-drivers — replay every `demo.beats.json` the way the Demo Driver
+ * would, and prove it green before anyone points a camera at it.
  *
- * For each `starters/**\/demo.beats.json`:
+ * Two manifest roots, one contract (see DEMO-DRIVERS.md):
+ *   - `starters/**\/demo.beats.json`            one per starter
+ *   - `walkthroughs/drivers/**\/demo.beats.json`  one per walkthrough
+ *
+ * For each of them:
  *
  *   1. Schema — ids unique, actions known, per-action required fields present,
  *      every `command` beat classified (`verify.mode`), pacing sane.
  *   2. Materialize — replay `reset` / `type` beats with the driver's exact
  *      semantics (replace · append · anchor+position · sourceLines slice ·
  *      appendNewline) into the real scratch files the drive writes.
- *   3. Ladder integrity — when a manifest types a starter's own spec back in
+ *   3. Ladder integrity — when a manifest types one committed source back in
  *      contiguous `sourceLines` slices, assert the materialized scratch file is
- *      byte-identical to the committed source. A driver can never drift from
- *      the starter it demos.
+ *      byte-identical to that source. A driver can never drift from the starter
+ *      (or the walkthrough) it demos.
  *   4. Offline commands — run every `verify.mode: offline` command beat, in
  *      order, from the manifest's `cwd`, at the file state that beat will see,
  *      and assert its exit code matches `expectedExit`.
@@ -554,13 +558,18 @@ async function verifyManifest(manifestPath: string): Promise<void> {
 }
 
 // ── main ────────────────────────────────────────────────────────────────────
-const found = [...new Glob("starters/**/demo.beats.json").scanSync(REPO)].sort();
+/** Both manifest roots. Same schema, same contract — see DEMO-DRIVERS.md. */
+const MANIFEST_GLOBS = ["starters/**/demo.beats.json", "walkthroughs/drivers/**/demo.beats.json"];
+
+const found = [
+  ...new Set(MANIFEST_GLOBS.flatMap((g) => [...new Glob(g).scanSync(REPO)])),
+].sort();
 const targets = found.filter((f) => !filters.length || filters.some((s) => f.includes(s)));
 if (!targets.length) {
   console.error(
     filters.length
       ? `verify-drivers: no demo.beats.json matched ${filters.join(", ")}`
-      : "verify-drivers: no starters/**/demo.beats.json found",
+      : `verify-drivers: no demo.beats.json found under ${MANIFEST_GLOBS.join(" or ")}`,
   );
   process.exit(1);
 }

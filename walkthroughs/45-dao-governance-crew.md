@@ -26,7 +26,7 @@ The §47 contribution is the *vote tx* phase. The crew converges to a recommenda
 ```yaml
 name: dao-voter
 target: crew
-model: claude-opus-4-7
+model: claude-opus-5
 entry: triage
 
 chains:

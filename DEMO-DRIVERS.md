@@ -1,21 +1,28 @@
-# Demo drivers — every starter, on camera, beat by beat
+# Demo drivers — every starter and every recipe, on camera, beat by beat
 
-Every starter under [`starters/`](./starters/) ships a **`demo.beats.json`** — a
-manifest for the **[Demo Driver](https://github.com/crewhaus/demo-driver)** VS Code
-extension. The manifests are plain JSON, so any comparable driver can consume them.
+Two things in this repo ship a **`demo.beats.json`** — a manifest for the
+**[Demo Driver](https://github.com/crewhaus/demo-driver)** VS Code extension:
 
-Click a beat (or tap **⌘⌥N**) and the driver **types** that
-starter's real spec into a scratch file keystroke by keystroke, **runs** real
-`crewhaus` commands in a managed terminal, **opens** the datasets and reports,
-and **feeds** the REPL the questions the starter is built to answer.
+| Root | One per | Types |
+|---|---|---|
+| [`starters/<path>/demo.beats.json`](./starters/) | starter | that starter's committed `crewhaus.yaml` |
+| [`walkthroughs/drivers/<recipe>/demo.beats.json`](./walkthroughs/drivers/) | recipe | that recipe's own committed fenced blocks |
 
-The point: you can record a screencast of any starter without rehearsing a
-single keystroke, and the thing on screen is the starter that's committed here —
+The manifests are plain JSON, so any comparable driver can consume them.
+
+Click a beat (or tap **⌘⌥N**) and the driver **types** real committed bytes into
+a scratch file keystroke by keystroke, **runs** real `crewhaus` commands in a
+managed terminal, **opens** the datasets and reports, and **feeds** the REPL the
+questions the thing being demoed is built to answer.
+
+The point: you can record a screencast of any starter or any recipe without
+rehearsing a single keystroke, and the thing on screen is what's committed here —
 not a slide about it.
 
 ```bash
 bun run drivers:verify              # replay every driver; assert it's green
 bun run drivers:verify cli rag      # just these
+bun run drivers:verify 05-stateful  # a recipe's driver
 bun run drivers:verify --report r.json
 ```
 
@@ -39,11 +46,11 @@ the exact bytes the driver typed.
 
 | Rule | Why |
 |---|---|
-| Lives at `starters/<path>/demo.beats.json` | Paths stay short on camera; the driver sits next to what it demos. |
-| `"cwd": "."` — the starter's own directory | A starter is a self-contained harness: the CLI resolves its spec, local sources, MCP servers, and `.crewhaus/` store from the working directory. No beat ever `cd`s. |
+| Lives at `starters/<path>/demo.beats.json` or `walkthroughs/drivers/<recipe>/demo.beats.json` | Paths stay short on camera; the driver sits next to what it demos. |
+| `"cwd": "."` — the manifest's own directory | A starter is a self-contained harness, and a walkthrough driver dir is a scratch one: the CLI resolves the spec, local sources, MCP servers, and `.crewhaus/` store from the working directory. No beat ever `cd`s — reach further out by relative path (`. ../../../.env`), the way the Setup group already does. |
 | Types into `live/crewhaus.yaml` (gitignored) | The committed `crewhaus.yaml` is never mutated by a take, so a half-finished recording leaves no diff. |
 | The Setup group `reset`s the scratch file before any spec beat | Creates `live/` and blanks it, so re-takes are idempotent. (`starters/federation` has no spec, so it has no reset.) |
-| Spec beats are contiguous `sourceLines` slices of the **committed** spec | The bytes on screen are the real starter's bytes, and `drivers:verify` asserts the typed result is byte-identical to `crewhaus.yaml`. A driver cannot drift from its starter. |
+| Spec beats are contiguous `sourceLines` slices of a **committed** file | The bytes on screen are the real bytes — a starter's `crewhaus.yaml`, or a recipe's own fenced block. When the slices tile one whole file, `drivers:verify` asserts the typed result is byte-identical to it. A driver cannot drift from what it demos. |
 | One command per `command` beat | The viewer reads one thing. |
 | Every `command` / `input` beat carries a `verify` block | So the whole drive is machine-checkable (below). |
 | `[needs-key]` / `[manual]` prefixes the `cue` of any non-offline beat | The operator knows, at a glance, which beats need a key or a human. |
@@ -99,11 +106,56 @@ proved by `crewhaus run` / a `needs-key` beat instead. `--check` is still *not*
 unconditionally green — a structural break (SyntaxError, unresolved import,
 anything matching no gate) stays RED and exits 1.
 
+**One port-binding boot per suite.** `--check`'s liveness boot runs the real
+daemon, and a `managed` bundle binds `:3000`. Because `--check` scrubs the
+environment, `PORT=… crewhaus compile … --check` does *not* reach the boot — the
+override is dropped and the daemon still takes 3000. So a second driver whose
+`--check` boots a daemon will intermittently fail with `Failed to start server.
+Is port 3000 in use?` when the suite runs them back to back. Exactly one driver
+may prove that boot — for the managed target that is
+[`drivers/11-managed-multitenant`](./walkthroughs/drivers/11-managed-multitenant/demo.beats.json).
+A driver that only needs a managed harness as scaffolding (rate limits,
+compliance, PII) should stop at `crewhaus compile <spec> -o live/dist`, which is
+still `offline` / `expectedExit: 0`, and say in its `note` why it isn't `--check`.
+
 Only `cli` and `browser` targets can `crewhaus run`; `eval`, `optimize`, and
 `flywheel` are `cli`-only. Everything else demos by compiling and booting the
 bundle (`bun live/dist/agent.ts`). A deliberate rejection — running a
 compile-only shape to show the error — is a fine beat: set `expectedExit` to the
 real code and say so in the cue.
+
+## Walkthrough drivers
+
+Every recipe under [`walkthroughs/`](./walkthroughs/) has a driver at
+`walkthroughs/drivers/<recipe>/demo.beats.json`, where `<recipe>` is exactly the
+recipe's filename minus `.md` (`05-stateful-graph.md` → `drivers/05-stateful-graph/`).
+Same schema, same `verify` blocks, same gate — three differences:
+
+| | Starter driver | Walkthrough driver |
+|---|---|---|
+| Types from | the starter's `crewhaus.yaml` | the recipe's own fenced blocks (`source: "../../<recipe>.md"`) |
+| Ladder | `exact` — the slices tile the whole spec | usually `partial` — the slices are separate fences, which is not a failure |
+| Its directory | ships the starter (spec, README, `.env.example`) | ships **only** the `demo.beats.json`; everything a take writes there is scratch |
+
+A recipe's spec fences are the ones `bun run walkthroughs:test` already
+compile-validates (a ```` ```yaml ```` fence with both `name:` and `target:`), so a
+slice of one is a spec the repo has already proved parses. Typing the recipe's own
+bytes is what keeps the two in lockstep: edit the fence, and a driver whose slice
+boundaries no longer line up fails the gate.
+
+Paths out of a driver dir: the recipe is `../../<recipe>.md`, the repo root is
+`../../../`, so `../../../.env`, `../../../starters/cli/crewhaus.yaml`,
+`bun ../../../smoke/section-27-smoke/smoke.ts`.
+
+A recipe with no spec fence of its own — the concept recipes (hooks, permissions,
+observability) — still gets a real driver: it types the committed starter its
+*Prerequisites* section points at, then types the recipe's own concept payload
+(its hooks JSON, its graders file, its permissions block) into the file the recipe
+says it lives in, and proves the result offline.
+[`drivers/14-hooks`](./walkthroughs/drivers/14-hooks/demo.beats.json) is the
+reference for that shape;
+[`drivers/01-cli-coding-agent`](./walkthroughs/drivers/01-cli-coding-agent/demo.beats.json)
+is the reference for a recipe that carries its own specs.
 
 ## What `drivers:verify` proves
 

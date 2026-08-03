@@ -1,0 +1,55 @@
+{
+  "title": "Recipe 32 — Local Models (one line of YAML, no key, no cloud)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Air-gapped, or just tired of paying per token — this recipe changes one line of YAML and nothing else.”", "action": "open", "file": "../../32-local-models.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — on purpose, so the keyless beat later has a real key to scrub.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env; nothing in this drive needs it" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the model id grammar",
+      "beats": [
+        { "id": "grammar-local", "label": "Parse a local model string", "cue": "“local/<model>@<base-url> — and the router hands it to the OpenAI adapter with the baseUrl overridden in flight.”", "action": "command", "command": "bun -e 'import { parseModelString } from \"@crewhaus/model-router\"; for (const s of [\"local/llama3.2@http://localhost:11434/v1\", \"local/llama3.2\"]) console.log(s, \"→\", JSON.stringify(parseModelString(s)));'", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the recipe's own parse output: providerId openai, baseUrl http://localhost:11434/v1, localUrl true — and the bare form resolves to the same Ollama default" } },
+        { "id": "grammar-hosted", "label": "Parse a hosted OpenAI-compatible id", "cue": "“Same adapter, someone else's GPU — and its own key env var, so hosts never fight over OPENAI_API_KEY.”", "action": "command", "command": "bun -e 'import { parseModelString } from \"@crewhaus/model-router\"; for (const s of [\"groq/llama-3.3-70b-versatile\", \"deepseek/deepseek-chat\"]) console.log(s, \"→\", JSON.stringify(parseModelString(s)));'", "verify": { "mode": "offline", "expectedExit": 0, "note": "hostId + apiKeyEnv (GROQ_API_KEY / DEEPSEEK_API_KEY), never OPENAI_API_KEY" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · the recipe's single-turn spec",
+      "beats": [
+        { "id": "spec-local-test", "label": "Type the recipe's tool-use test spec", "cue": "“Nine lines. The only local-specific byte in the whole file is the model string.”", "action": "type", "source": "../../32-local-models.md", "sourceLines": [178, 186], "replace": true },
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“A local model id is a first-class model id — the linter has no special case for it.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The URL rides through lowering untouched — it is parsed once at runtime, not per turn.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli with agent.model = local/llama3.2@http://localhost:11434/v1" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it. GREEN — and note what it did NOT say: no credentials gate.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot ok (booted and exited cleanly). A local/ model reaches no credential gate at all", "produces": ["live/dist/agent.ts", "live/dist/package.json"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "“Same bundle recipe 01 emits. The provider switch happened in the router, not in your code.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · no API key needed",
+      "beats": [
+        { "id": "keyless-boot", "label": "Boot it with the keys scrubbed", "cue": "“Anthropic key unset, OPENAI_API_KEY empty, and it still comes up: the adapter sends the literal string \"local\" as the bearer token.”", "action": "command", "command": "env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN OPENAI_API_KEY=\"\" bun live/dist/agent.ts < /dev/null", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints “agent ready (model: local/llama3.2@http://localhost:11434/v1) [openai]” then exits 0 at EOF — the recipe's `OPENAI_API_KEY=\"\"` claim, executed. Scrubs explicitly because the Setup group sourced .env into this same shell" } },
+        { "id": "run-repl", "label": "Launch the REPL against Ollama", "cue": "[manual] “ollama serve on 11434 in the other pane — now the same spec is a live chat loop.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "manual", "note": "needs a local OpenAI-compatible server (ollama serve + ollama pull llama3.2) on 11434" } },
+        { "id": "run-probe", "label": "Let the spec run its tool-use test", "cue": "[manual] “Watch for the tool call itself — that is what this spec exists to measure. A 7B model that cannot emit one is not production-ready.”", "action": "input", "text": "Go — follow your instructions exactly.", "verify": { "mode": "manual", "note": "the driver dir has no README.md, so the Read call returns an error — the thing being tested is whether the local model emits a VALID single tool call at all" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[manual] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "manual" } }
+      ]
+    },
+    {
+      "title": "One more thing · local isn't free, it's unpriced",
+      "beats": [
+        { "id": "cost-miss", "label": "Show the pricing miss", "cue": "“No row in the pricing table matches llama3.2 — so the tracker charges zero and counts a miss. Zero dollars is not the same as free.”", "action": "command", "command": "bun -e 'import { TraceEventBus } from \"@crewhaus/trace-event-bus\"; import { createCostTracker } from \"@crewhaus/cost-tracker\"; const bus = new TraceEventBus({ runId: \"run_local_0001\", sessionId: \"sess_local_0001\" }); const t = createCostTracker(bus); bus.publish({ ...bus.envelope(), kind: \"model_response\", model: \"llama3.2\", provider: \"openai\", stopReason: \"end_turn\", usage: { input: 4000, output: 600 }, durationMs: 100 }); console.log(\"pricingMisses:\", t.pricingMisses(), \"· charged micros:\", t.getRunCost(\"run_local_0001\").totalUsdMicros);'", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints “pricingMisses: 1 · charged micros: 0” — the miss counter is how you notice an unpriced model" } },
+        { "id": "cost-harness", "label": "Open a bus to watch", "cue": "“Two lines of harness, so the recipe's override snippet has something to publish into.”", "action": "type", "target": "live/pricing-override.ts", "replace": true, "text": "import { TraceEventBus } from \"@crewhaus/trace-event-bus\";\n\nconst bus = new TraceEventBus({ runId: \"run_local_0002\", sessionId: \"sess_local_0002\" });\n\n" },
+        { "id": "cost-override", "label": "Type the recipe's pricing override", "cue": "“Impute a price for your own electricity: local/* responses report under the openai provider, keyed by the bare model id.”", "action": "type", "source": "../../32-local-models.md", "sourceLines": [276, 289], "target": "live/pricing-override.ts" },
+        { "id": "cost-assert", "label": "Publish the same response again", "cue": "“Identical event, identical model string — only the pricing table changed.”", "action": "type", "target": "live/pricing-override.ts", "text": "\nbus.publish({\n  ...bus.envelope(),\n  kind: \"model_response\",\n  model: \"llama3.2\",\n  provider: \"openai\",\n  stopReason: \"end_turn\",\n  usage: { input: 4000, output: 600 },\n  durationMs: 100,\n});\nconsole.log(\"pricingMisses:\", tracker.pricingMisses(), \"· charged micros:\", tracker.getRunCost(\"run_local_0002\").totalUsdMicros);\n" },
+        { "id": "cost-run", "label": "Run it", "cue": "“Zero misses, 520 microdollars: 4000 in at $0.10 per million, 600 out at $0.20. Now your GPU shows up on the same bill as Anthropic.”", "action": "command", "command": "bun live/pricing-override.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints “pricingMisses: 0 · charged micros: 520” — the override turns the miss into an attributed spend" } }
+      ]
+    }
+  ]
+}

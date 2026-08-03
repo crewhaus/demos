@@ -45,7 +45,7 @@ function makeSampleResult(id: string, passed: boolean, score: number): SampleRes
     latencyMs: 100,
     turns: 1,
     tokens: { input: 10, output: 10 },
-    model: "claude-opus-4-7",
+    model: "claude-opus-5",
     agentOutput: `output ${id}`,
     grades: {
       overall: { passed, score, rationale: passed ? "ok" : "fail" },
@@ -75,7 +75,7 @@ function makeSummary(samples: SampleResult[]): EvalRunSummary {
       specHash: "h",
       datasetName: "smoke",
       graderNames: ["g"],
-      model: "claude-opus-4-7",
+      model: "claude-opus-5",
       concurrency: 1,
     },
     outDir: "/tmp",

@@ -1,0 +1,48 @@
+{
+  "title": "Recipe 43 — Wallet-gated action (sign-and-broadcast behind three gates)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Moving real money is the hardest thing to let an agent do. Watch how many gates it has to pass.”", "action": "open", "file": "../../43-wallet-gated-action.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the credentials", "cue": "[needs-key] Sources demos/.env — a signer key and an RPC endpoint on top of the model credential.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the spec",
+      "beats": [
+        { "id": "spec-payout", "label": "Type the USDC payout spec", "cue": "“A workflow, not a chat loop — because the steps that move money must be ordered and reviewable.”", "action": "type", "source": "../../43-wallet-gated-action.md", "sourceLines": [28, 74], "replace": true }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Lint runs the §47 chain well-formedness pass the compile path skips — the one that catches a malformed gate.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — chain well-formedness included" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Every gate is a node. Nothing about this is implicit.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "IR written to live/ir.json", "produces": ["live/ir.json"] } },
+        { "id": "prove-open-ir", "label": "Open the IR", "cue": "“Read the gate chain top to bottom — that's the order they fire in.”", "action": "open", "file": "live/ir.json" },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts, installs, boots: GREEN, gated exactly at the signer credential the spec declares.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the declared credentials gate", "produces": ["live/dist/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 3 · what a failed gate looks like",
+      "beats": [
+        { "id": "gate-scrub", "label": "Boot with no signer", "cue": "“Fail-closed: no key, no broadcast, and it says which gate stopped it rather than retrying.”", "action": "command", "command": "env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN bun live/dist/agent.ts > live/gate.log 2>&1", "verify": { "mode": "offline", "expectedExit": 1, "note": "refuses at the first missing gate; nothing is signed and nothing is sent", "produces": ["live/gate.log"] } },
+        { "id": "gate-open", "label": "Read the refusal", "cue": "“A named gate, not a stack trace. That distinction is the whole recipe.”", "action": "open", "file": "live/gate.log" }
+      ]
+    },
+    {
+      "title": "One more thing · run it against a testnet",
+      "beats": [
+        { "id": "run-bundle", "label": "Boot the workflow", "cue": "[needs-key] “Point it at a testnet RPC first. Always a testnet first.”", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "needs a signer key and an RPC endpoint; broadcasts a real transaction on whatever chain it is pointed at" } },
+        { "id": "extra-layers", "label": "Read how the layers compose", "cue": "“Permissions, then the justification gate, then the egress check — each one can only narrow, never widen.”", "action": "open", "file": "../../43-wallet-gated-action.md", "preview": true }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "title": "Recipe 42 — Active eval optimization (Pillar 2): the loop that rewrites the spec",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Evals that only report are a dashboard. Pillar 2 is the loop that closes: score, mutate, re-score, keep the winner.”", "action": "open", "file": "../../42-active-optimization.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed starter is never mutated by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — optimize makes real model calls on both sides of the loop.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the spec before optimization",
+      "beats": [
+        { "id": "spec-before", "label": "Type the recipe's starting spec", "cue": "“A perfectly reasonable hand-written coding agent. This is the thing about to get beaten by a machine.”", "action": "type", "source": "../../42-active-optimization.md", "sourceLines": [221, 239], "replace": true },
+        { "id": "before-lint", "label": "Lint it", "cue": "“Clean. Nothing wrong with it — that's the point.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "before-check", "label": "Check the bundle", "cue": "“--check: GREEN. A working harness, before a single mutation.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/before --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/before/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 2 · what the loop needs",
+      "beats": [
+        { "id": "inputs-dataset", "label": "Open the dataset", "cue": "“The optimizer can only be as honest as the dataset — every row is a real turn with a gradeable answer.”", "action": "open", "file": "../../../starters/optimize/dataset.jsonl" },
+        { "id": "inputs-graders", "label": "Open the graders", "cue": "“Deterministic graders first, LLM-as-judge only where determinism can't reach. This is the fitness function.”", "action": "open", "file": "../../../starters/optimize/graders.yaml" },
+        { "id": "inputs-help", "label": "Read the optimize contract", "cue": "“--mutator, --iterations, --budget-usd. The budget is the one that stops a runaway loop.”", "action": "command", "command": "crewhaus optimize --help > live/optimize-help.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped optimize flags", "produces": ["live/optimize-help.txt"] } },
+        { "id": "inputs-open-help", "label": "Open it", "cue": "“Note --budget-usd: it runs until the last full iteration that fits, then stops. It never half-spends.”", "action": "open", "file": "live/optimize-help.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · close the loop",
+      "beats": [
+        { "id": "run-optimize", "label": "Run the optimizer", "cue": "[needs-key] “The recipe's TL;DR, against the committed starter: mutate the prompt, re-grade, keep what scores.”", "action": "command", "command": "crewhaus optimize ../../../starters/optimize/crewhaus.yaml --dataset ../../../starters/optimize/dataset.jsonl --graders ../../../starters/optimize/graders.yaml --mutator claude --budget-usd 2.0", "verify": { "mode": "needs-key", "note": "billed model calls on both the candidate and the judge; bounded by --budget-usd" } },
+        { "id": "run-delta", "label": "Watch the score move", "cue": "[needs-key] “[optimize] score: 0.450 → 0.780 (Δ +0.330) — and the winning prompt is written back as a patch, not a rewrite.”", "action": "input", "text": "", "verify": { "mode": "needs-key", "note": "no input needed; the beat marks the moment the delta prints" } }
+      ]
+    },
+    {
+      "title": "One more thing · the spec the loop produced",
+      "beats": [
+        { "id": "after-reset", "label": "Blank the scratch spec", "cue": "“Now the other end of the run — the recipe's committed after-spec, runId and all.”", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "after-spec", "label": "Type the optimized spec", "cue": "“Longer, more specific, and provably better on the dataset. A human didn't write these instructions.”", "action": "type", "source": "../../42-active-optimization.md", "sourceLines": [245, 271], "replace": true },
+        { "id": "after-lint", "label": "Lint the optimized spec", "cue": "“Still a legal spec — the mutator patches paths, it does not free-write YAML.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "after-check", "label": "Check the optimized bundle", "cue": "“GREEN, same as before. The loop can't hand you something that doesn't compile.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/after --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/after/agent.ts"] } },
+        { "id": "after-diff", "label": "Diff the two bundles", "cue": "“Everything the optimizer bought you, as a diff you can read and reject.”", "action": "command", "command": "diff live/before/agent.ts live/after/agent.ts > live/optimizer.diff; test -s live/optimizer.diff", "verify": { "mode": "offline", "expectedExit": 0, "note": "the diff is non-empty — the mutation reached the emitted code", "produces": ["live/optimizer.diff"] } },
+        { "id": "after-open-diff", "label": "Read the diff", "cue": "“This is the artifact to review in a PR. Not a score — the actual change.”", "action": "open", "file": "live/optimizer.diff" }
+      ]
+    }
+  ]
+}

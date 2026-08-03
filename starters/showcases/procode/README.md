@@ -140,7 +140,7 @@ The `model:` field is a provider-prefixed string. Edit
 
 | Provider | `model:` value | Env var |
 |---|---|---|
-| Anthropic (default) | `claude-opus-4-7` | `ANTHROPIC_API_KEY` |
+| Anthropic (default) | `claude-opus-5` | `ANTHROPIC_API_KEY` |
 | Anthropic (cheap) | `claude-haiku-4-5-20251001` | `ANTHROPIC_API_KEY` |
 | OpenAI | `gpt-4o-2024-11-20` | `OPENAI_API_KEY` |
 | Google | `gemini-2.0-flash` | `GOOGLE_API_KEY` |

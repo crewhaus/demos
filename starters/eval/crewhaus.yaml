@@ -1,7 +1,7 @@
 name: hello-eval
 target: eval
 agent:
-  model: claude-opus-4-7
+  model: claude-opus-5
   instructions: |
     Answer math questions with just the number.
 dataset:

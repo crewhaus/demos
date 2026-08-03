@@ -70,14 +70,14 @@ log("probe A: write a 10-record audit corpus (multi-kind)");
 const audit: AuditRecord[] = [
   makeRecord("h1", "policy_decision", { tenantId: "tenant-a", verdict: "allow" }),
   makeRecord("h2", "policy_decision", { tenantId: "tenant-b", verdict: "deny" }),
-  makeRecord("h3", "model_call", { model: "claude-opus-4-7" }),
+  makeRecord("h3", "model_call", { model: "claude-opus-5" }),
   makeRecord("h4", "tool_classification", { toolName: "Bash" }),
   makeRecord("h5", "secrets_rotation", { name: "OPENAI_API_KEY" }),
   makeRecord("h6", "secrets_access", { name: "OPENAI_API_KEY" }),
   makeRecord("h7", "gateway_request", { sessionId: "sess_1", route: "/agent" }),
   makeRecord("h8", "tenancy_context", { tenantId: "tenant-a" }),
   makeRecord("h9", "deployment_action", { action: "deploy", target: "prod" }),
-  makeRecord("h10", "model_call", { model: "claude-sonnet-4-6" }),
+  makeRecord("h10", "model_call", { model: "claude-sonnet-5" }),
 ];
 check("corpus has 10 records", audit.length === 10);
 

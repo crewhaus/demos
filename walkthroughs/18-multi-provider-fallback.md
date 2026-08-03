@@ -52,19 +52,19 @@ isn't expressive enough.
 ## The `model:` prefix grammar
 
 ```
-claude-sonnet-4-6                                    → Anthropic
-claude-opus-4-7                                      → Anthropic
+claude-sonnet-5                                    → Anthropic
+claude-opus-5                                      → Anthropic
 openai/gpt-4o                                        → OpenAI
 gemini/gemini-2.5-flash                              → Google (Gemini API or Vertex)
 bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0 → AWS Bedrock
 local/llama3.2@http://localhost:11434/v1             → Local OpenAI-compatible
 groq/llama-3.3-70b-versatile                         → Groq (OpenAI-compatible host)
 azure/<deployment>                                   → Azure OpenAI
-vertex/claude-sonnet-4-6                             → Claude on Vertex AI
+vertex/claude-sonnet-5                             → Claude on Vertex AI
 ```
 
 The model-router parses the prefix and lazy-loads only the matching
-adapter. A spec with `model: claude-sonnet-4-6` never imports the
+adapter. A spec with `model: claude-sonnet-5` never imports the
 OpenAI SDK; a spec with `model: openai/gpt-4o` never imports the
 Anthropic SDK. Cold start scales with what you actually use.
 
@@ -88,7 +88,7 @@ import { type WrappedAdapter, wrap } from "@crewhaus/circuit-breaker";
 import { resolveModel } from "@crewhaus/model-router";
 
 const CANDIDATES = [
-  "claude-sonnet-4-6",
+  "claude-sonnet-5",
   "openai/gpt-4o",
   "groq/llama-3.3-70b-versatile",
 ];
@@ -125,7 +125,7 @@ async function* streamWithFallback(
 
 Every model call:
 
-1. Tries `claude-sonnet-4-6` (unless its breaker is open).
+1. Tries `claude-sonnet-5` (unless its breaker is open).
 2. If the stream fails, the breaker counts it and the loop tries
    `openai/gpt-4o`.
 3. If that also fails or its breaker is open, tries the Groq host.
@@ -167,7 +167,7 @@ Per-model tuning is just per-call `wrap()` options — the secondary
 can be more lenient than the primary:
 
 ```typescript
-wrap(anthropicAdapter, { adapterName: "claude-sonnet-4-6", failureThreshold: 3 });
+wrap(anthropicAdapter, { adapterName: "claude-sonnet-5", failureThreshold: 3 });
 wrap(openaiAdapter, { adapterName: "openai/gpt-4o", failureThreshold: 10 });
 ```
 
@@ -220,7 +220,7 @@ When `wrap()` is given a `bus`, every breaker transition publishes a
 ```json
 {
   "kind": "circuit_state_changed",
-  "adapter": "claude-sonnet-4-6",
+  "adapter": "claude-sonnet-5",
   "fromState": "closed",
   "toState": "open",
   "reason": "5 failures in 4211ms"

@@ -58,7 +58,7 @@ name: support-agent
 target: cli
 version: 1
 agent:
-  model: claude-sonnet-4-5
+  model: claude-sonnet-5
   instructions: |
     Answer the user's support question. Cite the doc you used.
 tools: []

@@ -87,7 +87,7 @@ is one agent and six inline documents:
 name: hello-rag
 target: pipeline
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     For every question, call Retrieve first. Answer in 2-3 sentences
     citing chunks by [N]. If retrieved chunks don't cover the question,

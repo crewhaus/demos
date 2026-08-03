@@ -1,0 +1,57 @@
+{
+  "title": "Recipe 72 — Zero to self-improving: your usage becomes the benchmark",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“The whole arc in one sitting: an empty directory to an agent that measurably improves from your own usage.”", "action": "open", "file": "../../72-zero-to-improving.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed ghostwriter is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — every stage past the compile gate is billed.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the spec you start with",
+      "beats": [
+        { "id": "spec-ghost", "label": "Type the ghostwriter", "cue": "“Twenty-eight lines and no evals, no dataset, no ratings. Hour zero, honestly.”", "action": "type", "source": "../../72-zero-to-improving.md", "sourceLines": [89, 116], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean — and completely unmeasured. That's the gap the rest of the recipe closes.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the model credential. A working agent, with nothing to prove it's any good.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 2 · scaffold the measurement",
+      "beats": [
+        { "id": "scaffold-run", "label": "Scaffold the eval assets", "cue": "“Recipe 61's first verb, applied here: a dataset skeleton and graders, derived from the spec itself.”", "action": "command", "command": "crewhaus scaffold-evals live/crewhaus.yaml -o live/eval --samples 5 > live/scaffold.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "writes a starting dataset + graders pair", "produces": ["live/scaffold.txt"] } },
+        { "id": "scaffold-ls", "label": "List what it wrote", "cue": "“Two files, thirty seconds in. There is now something to regress against.”", "action": "command", "command": "ls -1 live/eval > live/eval-files.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the scaffolded asset list", "produces": ["live/eval-files.txt"] } },
+        { "id": "scaffold-open", "label": "Read the list", "cue": "“Scaffolded, not authored. You'll grow both from real usage — that's the next stage.”", "action": "open", "file": "live/eval-files.txt" },
+        { "id": "scaffold-datasets", "label": "Check the registry", "cue": "“Still empty. Scaffolding gives you the shape; only usage gives you the content.”", "action": "command", "command": "crewhaus datasets list > live/datasets.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "no datasets registered yet", "produces": ["live/datasets.txt"] } },
+        { "id": "scaffold-open-ds", "label": "Read it", "cue": "“The honest hour-one state, on camera.”", "action": "open", "file": "live/datasets.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · use it, rate it, distill it",
+      "beats": [
+        { "id": "run-agent", "label": "Run the ghostwriter", "cue": "[needs-key] “Use it for real. The benchmark is going to be made out of these turns.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs a model credential" } },
+        { "id": "run-ask", "label": "Give it the recipe's own task", "cue": "[needs-key] “A real task with a tone you have opinions about — that's what makes the rating meaningful.”", "action": "input", "text": "Draft a reply to Sam: I can't make Thursday, propose Monday or Tuesday instead.", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } },
+        { "id": "feedback", "label": "Say what was wrong with it", "cue": "[needs-key] “'never open with I hope this finds you well' — one sentence, and it becomes a grader.”", "action": "command", "command": "crewhaus feedback --session <session-id> --text \"never open with 'I hope this finds you well'\"", "verify": { "mode": "needs-key", "note": "needs a real session id from the run above" } },
+        { "id": "distill", "label": "Distill it into a dataset", "cue": "[needs-key] “--register names it. From here on, that name IS your benchmark.”", "action": "command", "command": "crewhaus distill --all-sessions --judge --register ghostwriter-ratings", "verify": { "mode": "needs-key", "note": "the --judge pass is billed" } }
+      ]
+    },
+    {
+      "title": "One more thing · close the loop and keep it closed",
+      "beats": [
+        { "id": "eval-run", "label": "Eval against your own taste", "cue": "[needs-key] “Not a public benchmark. Yours.”", "action": "command", "command": "crewhaus eval live/crewhaus.yaml --dataset registry:ghostwriter-ratings --graders live/eval/graders.yaml", "verify": { "mode": "needs-key", "note": "needs the registered dataset and a model credential" } },
+        { "id": "history", "label": "Read the run history", "cue": "“Empty now — but this is the command that later tells you whether last week's change helped.”", "action": "command", "command": "crewhaus eval-report history > live/history.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "no recorded runs yet — the honest empty state", "produces": ["live/history.txt"] } },
+        { "id": "history-open", "label": "Read it", "cue": "“A baseline you can regress against is the difference between improving and just changing.”", "action": "open", "file": "live/history.txt" },
+        { "id": "optimize", "label": "Optimize against the ratings", "cue": "[needs-key] “--ratings all --write: the loop closes, and only a measured win lands in the spec.”", "action": "command", "command": "crewhaus optimize live/crewhaus.yaml --ratings all --write", "verify": { "mode": "needs-key", "note": "billed on candidate and judge; --write patches the spec on a win" } },
+        { "id": "flywheel", "label": "Make it nightly", "cue": "[manual] “flywheel init writes the CI workflow. Review it before it lands — it will be running unattended.”", "action": "command", "command": "crewhaus flywheel init", "verify": { "mode": "manual", "note": "writes .github/workflows/; review before committing" } }
+      ]
+    }
+  ]
+}

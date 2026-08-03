@@ -1,0 +1,51 @@
+{
+  "title": "Recipe 54 — `tool-codegraph` (AST-aware code navigation as a tool)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Grep finds strings. A code graph finds callers, definitions, and references — and the agent stops guessing.”", "action": "open", "file": "../../54-codegraph-tool.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beat.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · wiring it into a spec",
+      "beats": [
+        { "id": "spec-crew", "label": "Type the recipe's spec", "cue": "“A crew, because navigation and editing are different jobs — and only one of them needs the graph.”", "action": "type", "source": "../../54-codegraph-tool.md", "sourceLines": [58, 76], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“The graph-crew well-formedness pass runs here — a role nobody routes to is caught before you pay for it.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — graph-crew well-formedness included" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The codegraph tool is an ordinary tool in the IR. Nothing downstream treats it specially.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "IR written to live/ir.json", "produces": ["live/ir.json"] } },
+        { "id": "prove-open-ir", "label": "Open the IR", "cue": "“Which means permissions, justification gates, and audit all apply to it for free.”", "action": "open", "file": "live/ir.json" },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check: GREEN, gated at the model credential.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/orchestrator.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 3 · the injection point",
+      "beats": [
+        { "id": "inject-type", "label": "Type the factory injection", "cue": "“_injectCodeGraphFactory — the seam for swapping the backing index without touching a spec.”", "action": "type", "source": "../../54-codegraph-tool.md", "sourceLines": [98, 109], "target": "live/inject.ts", "replace": true },
+        { "id": "inject-parse", "label": "Prove it parses", "cue": "“Real TypeScript from the recipe — a file you can keep, not an illustration.”", "action": "command", "command": "bun -e 'const s = require(\"fs\").readFileSync(\"live/inject.ts\",\"utf8\"); new Bun.Transpiler({ loader: \"ts\" }).transformSync(s); console.log(\"live/inject.ts: parses as TypeScript\");'", "verify": { "mode": "offline", "expectedExit": 0, "note": "the recipe's injection fence is syntactically valid TS" } },
+        { "id": "inject-open", "label": "Open it", "cue": "“Underscore-prefixed, because it's a test and integration seam — not the public surface.”", "action": "open", "file": "live/inject.ts" }
+      ]
+    },
+    {
+      "title": "One more thing · point it at a real repo",
+      "beats": [
+        { "id": "install", "label": "Install the graph package", "cue": "[manual] “The recipe's Installing step — a third-party package, added to your project, not vendored by the compiler.”", "action": "command", "command": "bun add @colbymchenry/codegraph", "verify": { "mode": "manual", "note": "mutates package.json; a human decides whether to take the dependency" } },
+        { "id": "run-agent", "label": "Run it against this repo", "cue": "[needs-key] “Ask it something grep would get wrong — 'who calls this?' — and watch it answer from the graph.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "needs the codegraph package installed and a model credential" } },
+        { "id": "run-ask", "label": "Ask a navigation question", "cue": "[needs-key] “A string search would return every mention. The graph returns the callers.”", "action": "input", "text": "Who calls runChatLoop, and what do they pass for tools?", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    }
+  ]
+}

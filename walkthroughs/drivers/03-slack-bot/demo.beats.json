@@ -1,0 +1,61 @@
+{
+  "title": "Recipe 03 — Slack Bot (one spec, a daemon, authenticate then classify)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Recipe 03 is the worked example for every channel: a long-running daemon, one session per Slack thread, and a trust boundary on the way in.” Its marked prerequisite is Recipe 00 — authenticate, then classify.", "action": "open", "file": "../../03-slack-bot.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the credentials", "cue": "[needs-key] Sources demos/.env — Anthropic plus the two Slack secrets from Step 1.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env; the live Slack beats want SLACK_BOT_TOKEN + SLACK_SIGNING_SECRET" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · Step 2 — the spec",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the daemon shape", "cue": "“target: channel — one spec compiles to a daemon, a gateway, a session router and a per-message agent.”", "action": "type", "source": "../../03-slack-bot.md", "sourceLines": [119, 120], "replace": true },
+        { "id": "spec-agent", "label": "The agent — model and instructions", "cue": "“You are a Slack bot. When mentioned in a thread, reply concisely in the same thread.”", "action": "type", "source": "../../03-slack-bot.md", "sourceLines": [121, 127] },
+        { "id": "spec-tools", "label": "Give it hands", "cue": "“tools: lives under agent: for channel specs — the one schema discrepancy between shapes the recipe calls out.”", "action": "type", "source": "../../03-slack-bot.md", "sourceLines": [128, 130] },
+        { "id": "spec-rest", "label": "Wire Slack, route threads, fence the shell", "cue": "“$SLACK_BOT_TOKEN is a reference, not a secret — the compiler emits a process.env read with a fail-loud startup check. sessionKey: thread gives every Slack thread its own session. Read is allow-listed; Bash asks every time.”", "action": "type", "source": "../../03-slack-bot.md", "sourceLines": [131, 142] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet, and no token needed to check the shape.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The channel IR: the slack adapter, the session key, and the secret references still unresolved — they stay references all the way to boot.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target channel (slack adapter, $VAR refs unresolved)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, with no Slack token in the room.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (4 anchors); install ok; boot gated at the spec env refs gate", "produces": ["live/dist/daemon.ts", "live/dist/gateway.ts", "live/dist/session-router.ts", "live/dist/agent.ts", "live/dist/node_modules/@crewhaus/channel-adapter-slack/dist/verify.js"] } },
+        { "id": "prove-open-gateway", "label": "Open the emitted gateway", "cue": "“Step 5's table, as files: the gateway verifies the signature, dedups by event_id, and only then hands off. Four files, about a hundred lines each.”", "action": "open", "file": "live/dist/gateway.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Step 6 — authenticate, then classify",
+      "beats": [
+        { "id": "seam-hmac", "label": "Prove the HMAC math offline", "cue": "“HMAC-SHA256 over v0:timestamp:body, compared constant-time. Sign a body with a demo secret: it verifies. Append one space: it doesn't. No Slack workspace involved.”", "action": "command", "command": "bun -e 'const v = await import(\"./live/dist/node_modules/@crewhaus/channel-adapter-slack/dist/verify.js\"); const body = \"{}\", ts = Math.floor(Date.now() / 1000), secret = \"demo-signing-secret\"; const headers = new Headers({ \"x-slack-request-timestamp\": String(ts), \"x-slack-signature\": v.signSlackBody({ body, timestamp: ts, signingSecret: secret }) }); console.log(\"as Slack signed it:\", v.verifySlackSignature({ headers, body, signingSecret: secret })); console.log(\"one byte appended:\", v.verifySlackSignature({ headers, body: body + \" \", signingSecret: secret }));'", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints `true` then `false` using the adapter the bundle installed (verifySlackSignature + signSlackBody from @crewhaus/channel-adapter-slack); the ±5 min replay window and the timingSafeEqual compare are in that same file" } },
+        { "id": "seam-classify", "label": "Find the classifier in the generated agent", "cue": "“And that signature says nothing about what's inside the body. So the codegen already classifies every inbound at TrustOrigin channel before it seeds a model turn — this is the line, in the file it ships in.”", "action": "command", "command": "grep -n 'classifyInbound' live/dist/agent.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "imports classifyInbound from @crewhaus/channel-adapter-base and calls it on args.message before runChatLoop — which is exactly why Step 6 tells you NOT to add a pre-model hook that classifies the same text again" } }
+      ]
+    },
+    {
+      "title": "Beat 4 · Steps 3–4 — run it",
+      "beats": [
+        { "id": "run-reject", "label": "Ask run to run it", "cue": "“run is the cli/browser REPL. A daemon isn't a chat — the CLI names the shapes it takes and exits 1.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection, exit 1 — `crewhaus run supports target: cli or browser (got \"channel\")`" } },
+        { "id": "run-gate", "label": "Boot the daemon with no secrets", "cue": "“Strip the four env vars back out and it names every one it needs before it opens a socket — exit 2. That's the $VAR_NAME lowering doing its job.”", "action": "command", "command": "env -u SLACK_BOT_TOKEN -u SLACK_SIGNING_SECRET -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY bun live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 2, "note": "designed refusal — `[daemon] missing required env vars: SLACK_BOT_TOKEN, SLACK_SIGNING_SECRET, ANTHROPIC_AUTH_TOKEN or ANTHROPIC_API_KEY`. `env -u` makes it deterministic: Setup already sourced .env into this same terminal, and with the four present the daemon would boot and listen instead" } },
+        { "id": "run-smoke", "label": "Run the recipe's smoke test", "cue": "[needs-key] “Five scenarios over synthetic signed webhooks: one mention answered, the same event replayed and deduped, a tampered signature rejected 401, a clean SIGINT. No Slack workspace — but it does spend credits on the model turn.”", "action": "command", "command": "bun ../../../smoke/section-12-smoke/smoke.ts", "verify": { "mode": "needs-key", "note": "the recipe's Step 3 (`bun run smoke:section-12`) reached from the driver dir; exits 2 without ANTHROPIC_AUTH_TOKEN / ANTHROPIC_API_KEY because scenario 2 is a real inbound→model→reply round-trip" } },
+        { "id": "run-tunnel", "label": "Give the webhook a public URL", "cue": "[manual] “Run this in your own terminal, not this one — then paste the https host plus /slack/events into the app's Event Subscriptions Request URL.”", "action": "command", "command": "ngrok http 3000", "verify": { "mode": "manual", "note": "needs a human and a tunnel account (ngrok or cloudflared); the first request Slack sends is the url_verification challenge, which the gateway answers automatically" } },
+        { "id": "run-boot", "label": "Boot it for real", "cue": "[needs-key] “Secrets present, it binds :3000 and serves /slack/events. Mention it in a thread and the session router derives the same id every time.”", "action": "command", "command": "bun live/dist/daemon.ts", "verify": { "mode": "needs-key", "note": "long-running; needs SLACK_BOT_TOKEN + SLACK_SIGNING_SECRET + Anthropic credentials. Ctrl-C exits cleanly" } }
+      ]
+    },
+    {
+      "title": "One more thing · Step 1 is a command too",
+      "beats": [
+        { "id": "extra-provision", "label": "Generate the Slack app manifest", "cue": "“Step 1's clicking, as one command: the manifest with the scopes and event subscriptions this spec implies, plus the install steps. --dry-run writes nothing.”", "action": "command", "command": "crewhaus channel provision live/crewhaus.yaml --base-url https://demo.example.com --dry-run", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the app manifest YAML it would write plus the install steps; no network, no files" } },
+        { "id": "extra-preflight", "label": "Pre-flight the env the daemon boots on", "cue": "“Before you own a Slack app at all: which env vars does this daemon need? Scrub them and the scope doctor lists all three and exits 1 — deterministic enough for CI.”", "action": "command", "command": "env -u SLACK_BOT_TOKEN -u SLACK_SIGNING_SECRET -u ANTHROPIC_AUTH_TOKEN -u ANTHROPIC_API_KEY crewhaus channel verify live/crewhaus.yaml --offline", "verify": { "mode": "offline", "expectedExit": 1, "note": "`--offline` is the env checks only, no network: 3 checks, 3 failed → exit 1. With .env sourced (as it is on camera) the same command exits 0, so the beat scrubs the vars to stay deterministic. Drop `--offline` and it becomes the live auth.test + granted-scopes doctor, which needs the token" } }
+      ]
+    }
+  ]
+}

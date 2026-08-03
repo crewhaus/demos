@@ -18,7 +18,7 @@
 target: cli
 name: hello-optimize
 agent:
-  model: claude-sonnet-4-5
+  model: claude-sonnet-5
   # Deliberately terse — the optimizer should expand this.
   instructions: Answer the user's question.
 tools: []

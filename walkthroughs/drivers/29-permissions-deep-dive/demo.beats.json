@@ -1,0 +1,61 @@
+{
+  "title": "Recipe 29 — Permissions Deep Dive (ask the engine, don't read the table)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Five rule sources, four modes, one glob grammar — and one security-critical invariant we are going to try to break.”", "action": "open", "file": "../../29-permissions-deep-dive.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — only the last two beats need it.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the authoring layer — worked example 1",
+      "beats": [
+        { "id": "spec-agent", "label": "Type the plainest agent", "cue": "“Layer 3 is the spec, and the spec is where you should author. Start with an agent that has no rules at all.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        {"id": "spec-perms", "label": "Type the recipe's coding-agent posture", "cue": "“Read free, writes scoped to src, bun and git allow-listed, everything else Bash asks, rm -rf denied. Ten rules — and note which one is written first.”", "action": "type", "source": "../../29-permissions-deep-dive.md", "sourceLines": [216, 238]}
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Clean. Note what lint does not do: it never decides a single tool call — it only checks the rules parse.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The rules survive lowering verbatim, in the order you wrote them. Hold that thought — the order IS the policy.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli, permissions block included" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, boots it: GREEN. It also installs the permission engine we're about to interrogate.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate. Also lands live/dist/node_modules/@crewhaus/permission-engine, which the decision beats import.", "produces": ["live/dist/agent.ts", "live/dist/node_modules/@crewhaus/permission-engine/dist/index.js"] } },
+        { "id": "prove-rules", "label": "Find the two gates in the emitted agent", "cue": "“Ten rules went in tagged source: yaml, and the builtin layer sits under them. This is the whole RuleSet the engine sees.”", "action": "command", "command": "grep -n \"alwaysAsk\\|alwaysDeny\\|BUILTIN_DEFAULT_RULES\" live/dist/agent.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "3 lines — the alwaysAsk Bash(**), the alwaysDeny Bash(rm -rf *), and the builtin layer import" } },
+        { "id": "prove-open", "label": "Open the emitted agent", "cue": "“Read the permissionRules object: five named layers, and yours is the yaml one.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · ask the engine, don't read the table",
+      "beats": [
+        {"id": "decide-rules", "label": "Decide seven real tool calls", "cue": "“Same engine the runtime uses, same rules we just typed. Read is free, bun and git status are free, a write inside src is free — and `rm -rf node_modules` comes back ASK, not deny. Look at the rule order: the recipe declares the catch-all `alwaysAsk Bash(**)` ABOVE `alwaysDeny Bash(rm -rf *)`, and within a layer the FIRST matching rule wins. There is no deny-beats-ask tier — so that deny never fires. This is the footgun, in a committed example.”", "action": "command", "command": "bun -e 'const y=Bun.YAML.parse(require(\"fs\").readFileSync(\"live/crewhaus.yaml\",\"utf8\")); const {evaluate}=await import(\"./live/dist/node_modules/@crewhaus/permission-engine/dist/index.js\"); const rs={flag:[],settings:[],yaml:y.permissions.rules.map(r=>({...r,source:\"yaml\"})),hooks:[],builtin:[]}; const want={\"Read x.ts\":\"allow\",\"Bash bun test\":\"allow\",\"Bash git status\":\"allow\",\"Bash curl example.com\":\"ask\",\"Bash rm -rf node_modules\":\"ask\",\"Write src/a.ts\":\"allow\",\"Write docs/a.md\":\"ask\"}; const t=(n,i,ro,de)=>({toolName:n,input:i,readOnly:ro,destructive:de}); const calls=[[\"Read x.ts\",t(\"Read\",{file_path:\"x.ts\"},true,false)],[\"Bash bun test\",t(\"Bash\",{command:\"bun test\"},false,true)],[\"Bash git status\",t(\"Bash\",{command:\"git status\"},false,true)],[\"Bash curl example.com\",t(\"Bash\",{command:\"curl example.com\"},false,true)],[\"Bash rm -rf node_modules\",t(\"Bash\",{command:\"rm -rf node_modules\"},false,true)],[\"Write src/a.ts\",t(\"Write\",{file_path:\"src/a.ts\"},false,true)],[\"Write docs/a.md\",t(\"Write\",{file_path:\"docs/a.md\"},false,true)]]; for(const [k,c] of calls){const got=evaluate(c,y.permissions.mode,rs); console.log(k.padEnd(26)+\" -> \"+got); if(got!==want[k]) throw new Error(k+\": got \"+got+\", want \"+want[k]);}'", "verify": {"mode": "offline", "expectedExit": 0, "note": "asserts all seven decisions against crewhaus 0.4.2's engine. The engine walks source layers in priority order and takes the FIRST matching rule inside a layer — there is no tier-first deny > ask > allow. Recipe 29's worked example puts `alwaysDeny Bash(rm -rf *)` BELOW the catch-all `alwaysAsk Bash(**)`, so it is shadowed and `rm -rf node_modules` resolves to ask. Move the deny above the catch-all and this beat fails with deny."}},
+        { "id": "decide-grammar", "label": "Hold the pattern grammar to its table", "cue": "“Nine rows straight out of the recipe's grammar table. The one to remember: a single star does not cross a slash, so Bash(rm -rf *) never matches rm -rf slash.”", "action": "command", "command": "bun -e 'const {compilePattern,matchesPattern}=await import(\"./live/dist/node_modules/@crewhaus/tool-permission-matcher/dist/index.js\"); const m=(p,t,i)=>matchesPattern(compilePattern(p),t,i); const rows=[[\"Read\",\"Read\",{file_path:\"anything\"},true],[\"Bash(git *)\",\"Bash\",{command:\"git status\"},true],[\"Bash(git *)\",\"Bash\",{command:\"npm i\"},false],[\"Write(**/src/**)\",\"Write\",{file_path:\"pkg/src/a.ts\"},true],[\"Write(**/src/**)\",\"Write\",{file_path:\"docs/a.md\"},false],[\"Bash(rm -rf *)\",\"Bash\",{command:\"rm -rf tmp\"},true],[\"Bash(rm -rf *)\",\"Bash\",{command:\"rm -rf /\"},false],[\"Bash(**)\",\"Bash\",{command:\"rm -rf /\"},true],[\"*__list_directory\",\"fs__list_directory\",{},true]]; for(const [p,tool,i,want] of rows){const got=m(p,tool,i); console.log(p.padEnd(18)+\" vs \"+tool+\" \"+JSON.stringify(i)+\" -> \"+got); if(got!==want) throw new Error(p+\" vs \"+tool+\": got \"+got);}'", "verify": { "mode": "offline", "expectedExit": 0, "note": "all nine rows of the recipe's pattern-grammar table hold, including `*` not crossing `/` and the MCP-namespace `*__list_directory` row" } }
+      ]
+    },
+    {
+      "title": "Beat 4 · the bypass guard — try to break it",
+      "beats": [
+        { "id": "bypass-base", "label": "Type the same agent again", "cue": "“Second scratch spec. Identical agent — one extra line is all it takes to try to switch the guard off.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "target": "live/bypass.yaml", "replace": true },
+        {"id": "bypass-mode", "label": "Ask for bypass in the spec", "cue": "“The escape hatch, declared in a file — exactly what a malicious or careless commit would do.”", "action": "type", "source": "../../29-permissions-deep-dive.md", "sourceLines": [80, 81], "target": "live/bypass.yaml"},
+        { "id": "bypass-lint", "label": "Watch the parser refuse it", "cue": "“Deliberate rejection, exit 1: bypass is rejected from a spec file, and the message names the only legal source.”", "action": "command", "command": "crewhaus lint live/bypass.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `✗ [parse] <spec>: permissions.mode: bypass is rejected — bypass mode is only available via the --permission-mode CLI flag, never from a spec file`; lint: 1 error(s)" } },
+        { "id": "bypass-flag", "label": "Use the one legal source", "cue": "[needs-key] “Same mode, typed by a human at the shell. That's the whole difference — and it's the difference that matters.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml --permission-mode bypass", "verify": { "mode": "needs-key", "note": "interactive REPL in bypass mode; needs Anthropic credentials" } },
+        { "id": "bypass-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · plan mode, and the sandbox floor under it",
+      "beats": [
+        { "id": "plan-base", "label": "Type the read-only investigator", "cue": "“The recipe's fourth worked example is two lines long, and it is the strictest posture there is.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "target": "live/plan.yaml", "replace": true },
+        {"id": "plan-mode", "label": "Set mode: plan", "cue": "“No rules at all. Plan mode is not a rule set — it is a blanket answer: reads yes, writes no.”", "action": "type", "source": "../../29-permissions-deep-dive.md", "sourceLines": [289, 290], "target": "live/plan.yaml"},
+        { "id": "plan-decide", "label": "Prove the two floors hold", "cue": "“Plan mode denies the write with zero rules configured — and separately, a tool that declares requiresSandbox is denied outright when no sandbox is wired. Fail-closed, both times.”", "action": "command", "command": "bun -e 'const y=Bun.YAML.parse(require(\"fs\").readFileSync(\"live/plan.yaml\",\"utf8\")); const {evaluateWithReason}=await import(\"./live/dist/node_modules/@crewhaus/permission-engine/dist/index.js\"); const e={flag:[],settings:[],yaml:[],hooks:[],builtin:[]}; const m=y.permissions.mode; const d=(n,f,mo)=>evaluateWithReason({toolName:n,input:{},...f},mo||m,e); const r=d(\"Read\",{readOnly:true,destructive:false}); const w=d(\"Write\",{readOnly:false,destructive:true}); if(r.decision!==\"allow\"||w.decision!==\"deny\") throw new Error(\"plan mode did not deny the write\"); console.log(m+\" mode: Read -> allow, Write -> deny\"); const p=d(\"Python\",{readOnly:false,destructive:true,requiresSandbox:true},\"default\"); if(p.decision!==\"deny\") throw new Error(\"the sandbox floor did not hold\"); console.log(\"default mode: Python -> deny — \"+p.reason)'", "verify": { "mode": "offline", "expectedExit": 0, "note": "plan mode: Read -> allow, Write -> deny; default mode: Python -> deny with the requiresSandbox reason (recipe 30 is what wires the sandbox that lifts it)" } }
+      ]
+    }
+  ]
+}

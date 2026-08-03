@@ -1,0 +1,58 @@
+{
+  "title": "Recipe 62 — Response ratings: rate → distill → eval → optimize",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“A thumbs-down is worth nothing on its own. This recipe is the path from one thumbs-down to a measured improvement.”", "action": "open", "file": "../../62-response-ratings.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — distilling with --judge is billed.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · a harness that collects ratings",
+      "beats": [
+        { "id": "spec-rated", "label": "Type the recipe's rated channel", "cue": "“A channel bot, because ratings need real users. The feedback block is the only unusual part.”", "action": "type", "source": "../../62-response-ratings.md", "sourceLines": [254, 267], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean. Rating capture is declared, so it shows up in review.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the declared credentials.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the declared credentials gate", "produces": ["live/dist/gateway.ts"] } },
+        { "id": "spec-feedback", "label": "Type the feedback block", "cue": "“Where the reaction lands, and how long it's kept. Ratings are user data — say so in the spec.”", "action": "type", "source": "../../62-response-ratings.md", "sourceLines": [351, 359], "target": "live/feedback.yaml", "replace": true },
+        { "id": "spec-open-feedback", "label": "Read it", "cue": "“Retention on a feedback store is a compliance question, not a tuning knob.”", "action": "open", "file": "live/feedback.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 2 · the two things a user can give you",
+      "beats": [
+        { "id": "verbs-rate", "label": "Read the rate contract", "cue": "“Thumbs and stars are cheap and coarse. --turn targets one turn instead of the last.”", "action": "command", "command": "crewhaus rate --help > live/rate.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped rate flags", "produces": ["live/rate.txt"] } },
+        { "id": "verbs-open-rate", "label": "Read it", "cue": "“The default target is the last assistant turn — the one the user just reacted to.”", "action": "open", "file": "live/rate.txt" },
+        { "id": "verbs-feedback", "label": "Read the feedback contract", "cue": "“And the expensive, valuable one: free text. 'always cite the file you read' is worth a hundred thumbs.”", "action": "command", "command": "crewhaus feedback --help > live/feedback-help.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped feedback flags", "produces": ["live/feedback-help.txt"] } },
+        { "id": "verbs-open-feedback", "label": "Read it", "cue": "“Text is what the distill step turns into a grader.”", "action": "open", "file": "live/feedback-help.txt" },
+        { "id": "verbs-distill", "label": "Read the distill contract", "cue": "“--graders-out is the part people miss: distilling writes the dataset AND the graders to score it with.”", "action": "command", "command": "crewhaus distill --help > live/distill.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped distill flags", "produces": ["live/distill.txt"] } },
+        { "id": "verbs-open-distill", "label": "Read it", "cue": "“Ratings in, an eval suite out. That's the conversion this recipe exists to explain.”", "action": "open", "file": "live/distill.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · the loop, live",
+      "beats": [
+        { "id": "run-agent", "label": "Run the agent", "cue": "[needs-key] “First you need a session with a turn worth reacting to.”", "action": "command", "command": "crewhaus run ../../../starters/cli/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs a model credential" } },
+        { "id": "run-ask", "label": "Ask it something", "cue": "[needs-key] “Then judge the answer honestly — the loop is only as good as the rating.”", "action": "input", "text": "Summarise what this repository is for.", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } },
+        { "id": "rate-down", "label": "Rate it down with a reason", "cue": "[needs-key] “A thumbs-down plus a sentence. The sentence is the part that becomes a grader.”", "action": "command", "command": "crewhaus feedback --session <session-id> --text \"always cite the file you read\"", "verify": { "mode": "needs-key", "note": "needs a real session id from the run above" } },
+        { "id": "distill-run", "label": "Distill it", "cue": "[needs-key] “3 rated turns → 3 samples, plus a graders file derived from what people actually complained about.”", "action": "command", "command": "crewhaus distill --all-sessions -o live/ratings.jsonl --graders-out live/graders.yaml --judge --judge-model claude-sonnet-5", "verify": { "mode": "needs-key", "note": "the --judge pass is billed model calls" } }
+      ]
+    },
+    {
+      "title": "One more thing · close it",
+      "beats": [
+        { "id": "eval-run", "label": "Eval against your own users' judgement", "cue": "[needs-key] “The dataset is your users. That's a better benchmark than any public one.”", "action": "command", "command": "crewhaus eval live/crewhaus.yaml --dataset live/ratings.jsonl --graders live/graders.yaml", "verify": { "mode": "needs-key", "note": "needs the distilled dataset and a model credential" } },
+        { "id": "optimize-run", "label": "Optimize against the ratings", "cue": "[needs-key] “--ratings all closes the loop the recipe opened with.”", "action": "command", "command": "crewhaus optimize live/crewhaus.yaml --ratings all", "verify": { "mode": "needs-key", "note": "billed on candidate and judge" } },
+        { "id": "extra-read", "label": "Read the whole loop", "cue": "“run → rate → distill → eval → optimize. Five verbs, and none of them is 'guess'.”", "action": "open", "file": "../../62-response-ratings.md", "preview": true }
+      ]
+    }
+  ]
+}

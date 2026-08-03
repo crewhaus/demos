@@ -64,7 +64,7 @@ Suppose the spec has a sub-agent that scans incoming emails, plus a `Fetch` tool
 # spec.yaml
 name: email-triage
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You triage support emails. For each one, decide if it needs human review.
 tools:

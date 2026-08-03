@@ -6,6 +6,11 @@ dist/
 # live/ so the committed crewhaus.yaml is never touched on camera.
 live/
 **/live/
+# A walkthrough driver under walkthroughs/drivers/<recipe>/ is a scratch
+# harness: its source of truth is the recipe's committed .md, so everything a
+# take writes there — including the .crewhaus/ a recipe tells you to author —
+# is scratch. Only the demo.beats.json itself is committed.
+walkthroughs/drivers/*/.crewhaus/
 .DS_Store
 *.log
 .env

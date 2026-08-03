@@ -1,0 +1,52 @@
+{
+  "title": "Recipe 58 — Safe production ops (eval-gated canaries and the SLO block)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Shipping an agent is shipping a model's behaviour. A percentage-based canary is not enough — the gate has to be an eval.”", "action": "open", "file": "../../58-safe-production-ops.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the sentinel eval makes real calls.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the spec that declares its own SLO",
+      "beats": [
+        { "id": "spec-support", "label": "Type the recipe's spec", "cue": "“An observability.slo block: time-to-first-token, error rate, cost per turn. Budgets, in the spec, in the diff.”", "action": "type", "source": "../../58-safe-production-ops.md", "sourceLines": [90, 108], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean. An SLO you declare is an SLO the tooling can check for you.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the model credential.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 2 · the ops verbs, offline",
+      "beats": [
+        { "id": "ops-slo", "label": "Check the SLO", "cue": "“doctor --slo exits 0 within budget. On a harness with no traffic yet it tells you which budgets are undeclared rather than passing silently.”", "action": "command", "command": "crewhaus doctor --slo > live/slo.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "reports per-budget status; undeclared budgets are named, not skipped", "produces": ["live/slo.txt"] } },
+        { "id": "ops-open-slo", "label": "Read it", "cue": "“This is the command a deploy pipeline calls. Exit code is the gate.”", "action": "open", "file": "live/slo.txt" },
+        { "id": "ops-mcp", "label": "Score the MCP servers", "cue": "“mcp doctor scores every server from real call history — the flaky one shows up before it takes a canary down.”", "action": "command", "command": "crewhaus mcp doctor > live/mcp.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "no MCP call history yet — reports that plainly", "produces": ["live/mcp.txt"] } },
+        { "id": "ops-open-mcp", "label": "Read it", "cue": "“Another diagnostic that admits when it has no data instead of guessing.”", "action": "open", "file": "live/mcp.txt" },
+        { "id": "ops-canary", "label": "Read the canary contract", "cue": "“--traffic 5,25,50,100 with an eval gate at each step. A step that regresses rolls back instead of advancing.”", "action": "command", "command": "crewhaus deploy canary --help > live/canary.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped canary flags", "produces": ["live/canary.txt"] } },
+        { "id": "ops-open-canary", "label": "Read it", "cue": "“The gate is the point. Traffic percentages without a gate are just a slower outage.”", "action": "open", "file": "live/canary.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · when it breaks",
+      "beats": [
+        { "id": "incident-help", "label": "Read the incident contract", "cue": "“incident collect bundles the session, the spec, and the eval deltas into one artifact — so the postmortem starts with evidence.”", "action": "command", "command": "crewhaus incident collect --help > live/incident.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped incident-collect flags", "produces": ["live/incident.txt"] } },
+        { "id": "incident-open", "label": "Read it", "cue": "“--kind regression --reason 'canary rollback at 25%'. Write the reason while you still remember it.”", "action": "open", "file": "live/incident.txt" }
+      ]
+    },
+    {
+      "title": "One more thing · the nightly loop",
+      "beats": [
+        { "id": "run-sentinel", "label": "Run the sentinel eval", "cue": "[needs-key] “Nightly: eval --sentinel catches the provider changing under you — the regression nobody deployed.”", "action": "command", "command": "crewhaus eval live/crewhaus.yaml --dataset registry:support-agent-ratings --sentinel", "verify": { "mode": "needs-key", "note": "needs a registered dataset and a model credential; billed" } },
+        { "id": "extra-schedule", "label": "Read the schedule", "cue": "“Nightly sentinel, per-deploy canary, on-call doctor. Three cadences, three different failures caught.”", "action": "open", "file": "../../58-safe-production-ops.md", "preview": true }
+      ]
+    }
+  ]
+}

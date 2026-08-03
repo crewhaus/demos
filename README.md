@@ -1,6 +1,6 @@
 # crewhaus-demos
 
-User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): copy-pasteable [starters](./starters/) covering every target shape, 73 task-oriented [walkthroughs](./walkthroughs/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
+User-facing demos for [CrewHaus](https://github.com/crewhaus/factory): copy-pasteable [starters](./starters/) covering every target shape, 74 task-oriented [walkthroughs](./walkthroughs/INDEX.md), and section-* example smokes under [smoke/](./smoke/). The Studio + IDE tooling that lives around the compiler is now in the sibling [crewhaus/utilities](https://github.com/crewhaus/utilities) repo. Start with [GETTING-STARTED.md](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md).
 
 ## Showcase demos
 
@@ -91,23 +91,28 @@ Adding a new starter: drop a directory under `starters/` with a `crewhaus.yaml`;
 
 ## Demo drivers
 
-Every starter also ships a **`demo.beats.json`** — a beat-by-beat screencast driver
-for that starter. Open this repo in VS Code with the
+Every starter **and every walkthrough** ships a **`demo.beats.json`** — a
+beat-by-beat screencast driver. Open this repo in VS Code with the
 **[Demo Driver](https://github.com/crewhaus/demo-driver)** extension
-and each tap of **⌘⌥N** types the starter's real spec into a scratch
+and each tap of **⌘⌥N** types real committed bytes into a scratch
 file keystroke by keystroke, runs the real `crewhaus` commands, and feeds the REPL
-the questions the starter is built to answer. The manifests are plain JSON, so any
-comparable tool can drive them.
+the questions the thing being demoed is built to answer. The manifests are plain
+JSON, so any comparable tool can drive them.
+
+- `starters/<name>/demo.beats.json` — types that starter's committed `crewhaus.yaml`.
+- `walkthroughs/drivers/<recipe>/demo.beats.json` — types that recipe's own
+  committed fenced blocks, so the drive follows the recipe's narrative.
 
 ```bash
 bun run drivers:verify              # replay every driver, assert it's green
 bun run drivers:verify rag          # just the matching ones
+bun run drivers:verify 05-stateful  # a recipe's driver
 ```
 
 `drivers:verify` replays each manifest with the driver's exact typing semantics,
-asserts the typed spec is **byte-identical** to the starter's committed
-`crewhaus.yaml`, and executes every command beat classified `offline` — so a
-driver can never drift from the starter it demos. See
+asserts a slice ladder that tiles a whole file reproduces it **byte-identically**,
+and executes every command beat classified `offline` — so a driver can never drift
+from the starter or recipe it demos. See
 [DEMO-DRIVERS.md](./DEMO-DRIVERS.md) for the convention.
 
 ## Layout
@@ -127,11 +132,12 @@ demos/
       discord/  imessage/  telegram/  whatsapp/
     showcases/                 "full power" tier-1 harness imitations
       procode/  prochat/  multichat/
-  walkthroughs/                     73 task-oriented walkthrough docs
+  walkthroughs/                     74 task-oriented walkthrough docs
     01-cli-coding-agent.md
     …
     55-egress-fabric.md
     56-self-improvement-flywheel.md … 61-self-building-evals.md  (0.2.0 automation)
+    drivers/<recipe>/          one demo.beats.json per recipe (screencast drivers)
     INDEX.md                   decision tree for picking a recipe
   smoke/                       contributor-facing per-section regression tests
     section-12-smoke/          single-file smokes (smoke.ts entry)
@@ -153,7 +159,7 @@ demos/
     list.ts                    enumerates starters with target + README status
     test-walkthroughs.ts       static walkthrough validator (links, scripts, specs)
     smoke-walkthroughs.ts      runtime walkthrough smoke (compile + optional run)
-    verify-drivers.ts          replays every starter's demo.beats.json (bun run drivers:verify)
+    verify-drivers.ts          replays every demo.beats.json (bun run drivers:verify)
   DEMO-DRIVERS.md              the screencast-driver convention
   .github/workflows/
   package.json
@@ -162,6 +168,8 @@ demos/
 ```
 
 Each starter directory has a `crewhaus.yaml` (the spec), `README.md`, a `demo.beats.json` (its screencast driver), and optionally `.env.example`. Compiled output lands in `<starter>/dist/` (gitignored); a driver's scratch spec and bundle land in `<starter>/live/` (also gitignored).
+
+Each `walkthroughs/drivers/<recipe>/` directory holds **only** a `demo.beats.json`: the recipe's committed `.md` is the source of truth, so everything a take writes there (`live/`, `.crewhaus/`) is gitignored scratch.
 
 ## Environment variables
 
