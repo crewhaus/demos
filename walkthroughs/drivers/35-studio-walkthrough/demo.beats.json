@@ -27,8 +27,8 @@
     {
       "title": "Beat 2 · the API under the UI",
       "beats": [
-        { "id": "api-smoke", "label": "Run the playground smoke", "cue": "“The recipe's Try it: every Playground probe, driven headlessly against the real backend contract.”", "action": "command", "command": "bun ../../../smoke/section-35-playground-smoke/smoke.ts > live/playground.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "OK — all probes passed", "produces": ["live/playground.txt"] } },
-        { "id": "api-open-smoke", "label": "Read the probe results", "cue": "“Run-a-spec, cost-summary, graph-layout — the three endpoints the tabs are built on.”", "action": "open", "file": "live/playground.txt" }
+        {"id": "api-smoke", "label": "Run the playground smoke", "cue": "[manual] “The recipe's Try it: every Playground probe, driven headlessly against the real backend contract.”", "action": "command", "command": "bun ../../../smoke/section-35-playground-smoke/smoke.ts", "verify": {"mode": "manual", "note": "needs the sibling factory workspace linked — the playground smoke resolves @crewhaus/* packages demos does not declare, so a bare `bun install --frozen-lockfile` checkout (CI) cannot run it. Passes on a dev machine with the workspace installed."}},
+        {"id": "api-open-smoke", "label": "Read the probe results", "cue": "“Run-a-spec, cost-summary, graph-layout — the three endpoints the tabs are built on.”", "action": "open", "file": "../../../smoke/section-35-playground-smoke/smoke.ts"}
       ]
     },
     {
