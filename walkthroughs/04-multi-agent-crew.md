@@ -85,7 +85,7 @@ is three roles, one entry point:
 ```yaml
 name: hello-crew
 target: crew
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 entry: researcher
 permissions:
   mode: default
@@ -287,7 +287,7 @@ roles:
     instructions: |
       Extract 5 risks from the topic. Use only the user-supplied input.
   writer:
-    model: claude-opus-4-7               # high-quality synthesis
+    model: claude-opus-5               # high-quality synthesis
     instructions: |
       Compose a brief from the researcher's risks.
   critic:

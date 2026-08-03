@@ -57,7 +57,7 @@ run. File permissions are `0o600` — only the owning user can read.
   "updatedAt": "2026-05-11T08:42:13Z",
   "name": "hello",
   "target": "cli",
-  "model": "claude-sonnet-4-6",
+  "model": "claude-sonnet-5",
   "lastTurnIndex": 7
 }
 ```

@@ -53,7 +53,7 @@ The bundled example
 name: hello-channel-telegram
 target: channel
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a Telegram bot. When mentioned in a chat or DM'd, reply
     concisely (1-2 sentences). You may use the Read filesystem tool to

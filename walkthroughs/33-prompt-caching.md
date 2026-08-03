@@ -221,7 +221,7 @@ that served most of its prefix from cache shows a **small**
 {
   "kind": "cost_accrual",
   "provider": "anthropic",
-  "modelId": "claude-sonnet-4-6",
+  "modelId": "claude-sonnet-5",
   "inputTokens": 348,
   "cachedReadTokens": 9892,
   "outputTokens": 412,
@@ -281,9 +281,9 @@ Each line carries the per-call provider, model, token counts, and the
 microdollar cost:
 
 ```
-[optimize] cost-call provider=anthropic model=claude-sonnet-4-6 in=4823 out=412 micros=...
-[optimize] cost-call provider=anthropic model=claude-sonnet-4-6 in=4892 out=280 micros=...
-[optimize] cost-call provider=anthropic model=claude-sonnet-4-6 in=4951 out=339 micros=...
+[optimize] cost-call provider=anthropic model=claude-sonnet-5 in=4823 out=412 micros=...
+[optimize] cost-call provider=anthropic model=claude-sonnet-5 in=4892 out=280 micros=...
+[optimize] cost-call provider=anthropic model=claude-sonnet-5 in=4951 out=339 micros=...
 ```
 
 For the cache-read breakdown (`cachedReadTokens`), subscribe to the

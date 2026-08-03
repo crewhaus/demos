@@ -1,0 +1,58 @@
+{
+  "title": "Recipe 60 — Fleet & teams (when one harness becomes forty)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Everything so far assumed one harness. This is the recipe for the day your team has forty.”", "action": "open", "file": "../../60-fleet-and-teams.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 1 · a fleet of one",
+      "beats": [
+        { "id": "spec-cli", "label": "Type a harness", "cue": "“Fleet discovery is just 'find every crewhaus.yaml under this root' — so let's give it one to find.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "fleet-list", "label": "List the fleet", "cue": "“Discovery by convention, not registration. Nothing had to be added to a central list.”", "action": "command", "command": "crewhaus fleet list --root . > live/fleet.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "discovers the scratch harness under this driver directory", "produces": ["live/fleet.txt"] } },
+        { "id": "fleet-open", "label": "Read it", "cue": "“One harness, found by walking the tree. Forty works the same way.”", "action": "open", "file": "live/fleet.txt" },
+        { "id": "fleet-status", "label": "Show fleet status", "cue": "“The status view is the one an on-call engineer opens first — health per harness, in one screen.”", "action": "command", "command": "crewhaus fleet status --root . > live/status.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "per-harness status across the discovered root", "produces": ["live/status.txt"] } },
+        { "id": "fleet-open-status", "label": "Read it", "cue": "“Same command whether it's one harness or the whole team's.”", "action": "open", "file": "live/status.txt" }
+      ]
+    },
+    {
+      "title": "Beat 2 · fan a verb across the fleet",
+      "beats": [
+        { "id": "fan-doctor", "label": "Run doctor across the root", "cue": "[needs-key] “fleet run takes an ordinary verb and applies it everywhere — the diagnostics you already know, at fleet scale.”", "action": "command", "command": "crewhaus fleet run doctor --root . > live/fleet-doctor.txt 2>&1", "verify": { "mode": "needs-key", "note": "doctor, fanned across every discovered harness. NOT offline: `crewhaus doctor` checks provider credentials, so with no ANTHROPIC_API_KEY every harness reports `unclassified failure` and `fleet run` exits 1. Verified: exit 1 without a key, exit 0 with one.", "produces": ["live/fleet-doctor.txt"] } },
+        { "id": "fan-open", "label": "Read the results", "cue": "[needs-key] “One row per harness. The failing one is the one you go look at.”", "action": "open", "file": "live/fleet-doctor.txt" },
+        { "id": "fan-upgrade", "label": "Read the upgrade contract", "cue": "“fleet run upgrade needs --allow-mutations, because a fleet-wide write is exactly the thing that should be hard to type by accident.”", "action": "command", "command": "crewhaus fleet run --help > live/fleet-run.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped fleet-run flags, including the mutation opt-in", "produces": ["live/fleet-run.txt"] } },
+        { "id": "fan-open-upgrade", "label": "Read it", "cue": "“Read-only by default, mutating only on request. That's the right default for forty repos.”", "action": "open", "file": "live/fleet-run.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · change management",
+      "beats": [
+        { "id": "propose-help", "label": "Read the propose contract", "cue": "“propose diffs a candidate spec against the current one and writes the change up — a PR description you didn't have to draft.”", "action": "command", "command": "crewhaus propose --help > live/propose.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped propose flags", "produces": ["live/propose.txt"] } },
+        { "id": "propose-open", "label": "Read it", "cue": "“Spec changes are behaviour changes. They deserve the same review a code change gets.”", "action": "open", "file": "live/propose.txt" },
+        { "id": "promote-help", "label": "Read the promotion contract", "cue": "“deploy promote --require-approval --check-pr. Staging to prod, gated on a human and a green PR.”", "action": "command", "command": "crewhaus deploy promote --help > live/promote.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped promotion flags", "produces": ["live/promote.txt"] } },
+        { "id": "promote-open", "label": "Read it", "cue": "“The approval is the feature. Everything else is plumbing.”", "action": "open", "file": "live/promote.txt" },
+        { "id": "retire-dry", "label": "Rehearse a retirement", "cue": "“--dry-run first, always. Retiring a harness someone still depends on is the fleet-scale version of deleting a table.”", "action": "command", "command": "crewhaus retire live/crewhaus.yaml --dry-run > live/retire.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "reports what retirement would do; changes nothing", "produces": ["live/retire.txt"] } },
+        { "id": "retire-open", "label": "Read it", "cue": "“Nothing was archived. That's what dry-run means, and it's why it's the default gesture.”", "action": "open", "file": "live/retire.txt" }
+      ]
+    },
+    {
+      "title": "One more thing · shared knowledge",
+      "beats": [
+        { "id": "knowledge-help", "label": "Read the knowledge-sync contract", "cue": "“What one harness learns, the fleet can pull. --push and --pull, deliberately separate verbs.”", "action": "command", "command": "crewhaus knowledge sync --help > live/knowledge.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped knowledge-sync flags", "produces": ["live/knowledge.txt"] } },
+        { "id": "knowledge-open", "label": "Read it", "cue": "“Automatic push would mean one harness's bad lesson becomes everyone's. Pull is the safe direction.”", "action": "open", "file": "live/knowledge.txt" },
+        { "id": "plugins-list", "label": "List the plugins", "cue": "[needs-key] “And the shared surface underneath it all — plugins the whole fleet can draw on. This one talks to a registry, so it needs one configured.”", "action": "command", "command": "crewhaus plugins list", "verify": { "mode": "needs-key", "note": "queries the configured plugin registry over the network; fails without a reachable registry base URL" } },
+        { "id": "plugins-search", "label": "Search the marketplace", "cue": "[needs-key] “Same registry, a query instead of a listing — recipe 26 is the whole story on that surface.”", "action": "command", "command": "crewhaus plugins search --query redact", "verify": { "mode": "needs-key", "note": "network call against the plugin registry" } },
+        { "id": "plugins-read", "label": "Read the one-view summary", "cue": "“fleet status, one view; fleet run, one verb everywhere; knowledge sync, one shared memory. That's the whole recipe.”", "action": "open", "file": "../../60-fleet-and-teams.md", "preview": true }
+      ]
+    }
+  ]
+}

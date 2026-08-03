@@ -1,0 +1,56 @@
+{
+  "title": "Recipe 07 — Autonomous Research (a goal, a budget, and cited snippets)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Recipe 07 is bounded autonomy: hand it a goal, cap the fan-out and the wall clock, and get a report whose every claim points at a verbatim snippet.”", "action": "open", "file": "../../07-autonomous-research.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the planner is a model call, so a real run needs Anthropic credentials.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The spec — a research contract",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“target: research” — plan, branch per sub-question, cite, write the report.", "action": "type", "source": "../../07-autonomous-research.md", "sourceLines": [74, 75], "replace": true },
+        { "id": "spec-agent", "label": "Teach the Source + CiteFact discipline", "cue": "“The two auto-injected tools are the whole contract: load a source, then cite verbatim from it. The prompt is where that discipline lives.”", "action": "type", "source": "../../07-autonomous-research.md", "sourceLines": [76, 85] },
+        { "id": "spec-goal", "label": "Give it the goal and the budget", "cue": "“One goal, three sub-questions, four minutes of wall clock. Autonomy without a ceiling is an outage waiting to happen.”", "action": "type", "source": "../../07-autonomous-research.md", "sourceLines": [86, 91] },
+        { "id": "spec-fence", "label": "Fence the sources", "cue": "“allowedFileRoots is the fence: a Source(file://…) outside it comes back as a tool error, not a file.”", "action": "type", "source": "../../07-autonomous-research.md", "sourceLines": [92, 96] },
+        { "id": "spec-reroot", "label": "Re-root the fence for this directory", "cue": "“One edit the recipe's own text calls for: that path is written repo-root-relative, and roots resolve against the process cwd — which here is the driver's own directory.”", "action": "type", "text": "    - ../../../starters/research/sources", "anchor": "    - starters/research/sources", "position": "replace" },
+        { "id": "spec-open-sources", "label": "Open the corpus it is fenced to", "cue": "“Three small markdown files. Every citation in the report has to be a substring of one of them.”", "action": "open", "file": "../../../starters/research/sources/target-shapes-roadmap.md" }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Goal, branching factor, duration cap and the file fence — 33 lines of IR, nothing else.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target research (33 lines)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps and boots it: GREEN, no key needed.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (7 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "“Planner, crawler, citation tracker, report writer — four imports and the loop that drives them. ALLOWED_FILE_ROOTS is the fence we just re-pointed, baked in as a literal.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-reject", "label": "Try crewhaus run first", "cue": "“Deliberate rejection, exit 1: only cli and browser run straight from the spec. Research is compile-first.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "measured: `crewhaus run supports target: cli or browser (got \"research\")`" } },
+        { "id": "run-nokey", "label": "Boot it with the key scrubbed", "cue": "“The run opens, the goal is already in it, the plan is about to fan out three ways — and then it stops at the credentials gate. Exit 1, on purpose.”", "action": "command", "command": "env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN bun live/dist/agent.ts > live/plan.log 2>&1", "verify": { "mode": "offline", "expectedExit": 1, "note": "measured exit 1: emits run_start (with the baked goal) and plan_start branchingFactor 3, then hits the provider credentials gate. Scrubbed explicitly because the Setup group already sourced .env into this shell.", "produces": ["live/plan.log"] } },
+        { "id": "run-open-plan", "label": "Read what it emitted before the gate", "cue": "“runId, the whole goal verbatim, and the fan-out. That is the contract, printed before a single token is spent.”", "action": "open", "file": "live/plan.log" },
+        { "id": "run-live", "label": "Run it for real", "cue": "[needs-key] “Planner spawns three sub-questions, each loads the fenced sources, each cites verbatim, then the report writer assembles one markdown file.”", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "plan → branch per sub-question → report; needs Anthropic credentials" } },
+        { "id": "run-report", "label": "Read the report", "cue": "[needs-key] “Goal, one section per sub-question, then the citation block. No preamble, no synthesis pass.”", "action": "command", "command": "cat \"$(ls -t .crewhaus/research/*/report.md | head -1)\"", "verify": { "mode": "needs-key", "note": "newest report only — a bare */report.md glob would cat every earlier run on a re-take. The directory only exists after the run beat above." } }
+      ]
+    },
+    {
+      "title": "One more thing · the goal is a flag",
+      "beats": [
+        { "id": "extra-override", "label": "Override the goal and the fan-out", "cue": "“Same bundle, new goal, sequential instead of three-wide — no recompile. Still exit 1 with no key, which is how you know the flags landed before anything was spent.”", "action": "command", "command": "env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN bun live/dist/agent.ts --goal \"Which target shapes are still planned, and what ships each one?\" --branching 1 > live/override.log 2>&1", "verify": { "mode": "offline", "expectedExit": 1, "note": "measured exit 1: run_start carries the flag goal, plan_start carries branchingFactor 1, then the credentials gate", "produces": ["live/override.log"] } },
+        { "id": "extra-branching", "label": "Prove the fan-out changed", "cue": "“branchingFactor: 1. Sequential and debuggable is the setting to iterate a prompt on; three-wide is what you record.”", "action": "command", "command": "grep -n \"plan_start\" live/override.log", "verify": { "mode": "offline", "expectedExit": 0, "note": "one match: {\"kind\":\"plan_start\",\"branchingFactor\":1}" } }
+      ]
+    }
+  ]
+}

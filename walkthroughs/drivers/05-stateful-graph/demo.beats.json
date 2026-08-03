@@ -1,0 +1,54 @@
+{
+  "title": "Recipe 05 — Stateful Graph (three nodes, two edges, one human gate)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Recipe 05 is the shape when what runs next depends on what came before — conditional edges, durable checkpoints, a human in the loop.”", "action": "open", "file": "../../05-stateful-graph.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the boot beats.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · The smallest spec — plan, execute, summarise",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape, pick the entry", "cue": "“Four lines: the name, the graph spine, the model — and which node the run starts at.”", "action": "type", "source": "../../05-stateful-graph.md", "sourceLines": [87, 90], "replace": true },
+        { "id": "spec-plan", "label": "Node 1 · plan", "cue": "“Read the user's input from upstream state and produce a 3-bullet plan. Return only the plan, no preamble.”", "action": "type", "source": "../../05-stateful-graph.md", "sourceLines": [91, 95] },
+        { "id": "spec-execute", "label": "Node 2 · execute", "cue": "“Read the plan from upstream state's plan field.” Each node's terminal text becomes the value under its own name — that is the whole state model.", "action": "type", "source": "../../05-stateful-graph.md", "sourceLines": [96, 99] },
+        { "id": "spec-hitl", "label": "Put a human in the loop", "cue": "“Two lines buy an approval gate: the runtime writes a checkpoint, prints hitl_pause, and exits cleanly. It never sits on a TTY waiting.”", "action": "type", "source": "../../05-stateful-graph.md", "sourceLines": [100, 101] },
+        { "id": "spec-tail", "label": "Node 3 · summarise, then wire the DAG", "cue": "“A 2-sentence executive summary.” And the edges — nodes are inert until you connect them: plan → execute → summarise.", "action": "type", "source": "../../05-stateful-graph.md", "sourceLines": [102, 110] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Graph well-formedness passes the compile path skips — dangling edges, unreachable nodes — plus a scope audit. Nothing emitted.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Three nodes, two edges, and the hitl prompt on execute — lowered to JSON. The edges carry from/to only: no when: predicate, so they're unconditional.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target graph (3 nodes, 2 edges, hitlPrompt on execute)" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, with no key in the room.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (3 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts", "live/dist/package.json"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted graph", "cue": "“addNode, addEdge, setEntry over a checkpoint store — and inside execute, a requestApproval call. The graph engine is a library, not a service.”", "action": "open", "file": "live/dist/agent.ts" },
+        { "id": "prove-worker", "label": "Try to ship it to the edge", "cue": "“Refused, and it says why: the human gate needs a host. The compiler won't drop the pause to make the spec fit a Worker.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-as cf-worker -o live/worker", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection, exit 1 — `cf-worker-graph does not support HITL in M2 (node \"execute\" has hitlPrompt); use the local graph target for HITL`" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Run it",
+      "beats": [
+        { "id": "run-reject", "label": "Ask run to run it", "cue": "“run is the cli/browser REPL. A graph is compile-only — the CLI names the shapes it takes and exits 1.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection, exit 1 — `crewhaus run supports target: cli or browser (got \"graph\")`" } },
+        { "id": "run-bundle", "label": "Boot the graph on a real question", "cue": "[needs-key] “The graph reads its input from stdin — that seeds the plan node. Plan prints, execute prints, then the run stops at the gate and prints its own resume line.”", "action": "command", "command": "echo \"Should we adopt a 4-day work week?\" | bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "the recipe's own input; needs Anthropic credentials. Deps were installed by the --check beat. The pause exits the process cleanly — it does not hold a TTY" } }
+      ]
+    },
+    {
+      "title": "One more thing · The pause is a checkpoint",
+      "beats": [
+        { "id": "extra-grep-gate", "label": "Find the gate in the emitted code", "cue": "“The recipe's HITL contract, as code you can read: a checkpoint store, and requestApproval with the prompt from the spec verbatim.”", "action": "command", "command": "grep -nE 'createCheckpointStore|requestApproval|__hitlRejected' live/dist/agent.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "the bundle imports createCheckpointStore, calls ctx.requestApproval(\"Approve the plan and continue to execute?\"), and branches on a rejection helper — the pause is generated code, not runtime magic" } },
+        { "id": "extra-checkpoints", "label": "Look at the run on disk", "cue": "[needs-key] “One directory per graph run, checkpoints inside it — state you can resume from or branch off.”", "action": "command", "command": "ls -t .crewhaus/graphs", "verify": { "mode": "needs-key", "note": "the grun_… dir only exists after the keyed run above; CREWHAUS_CHECKPOINT_DIR moves the store elsewhere" } },
+        { "id": "extra-resume", "label": "Approve, and let it finish", "cue": "[needs-key] “Resume reads the checkpoint, injects the decision, and continues to summarise. The decision string is opaque — the node's instructions decide what it means.”", "action": "command", "command": "bun live/dist/agent.ts --resume \"$(ls -t .crewhaus/graphs | head -1)\" approve", "verify": { "mode": "needs-key", "note": "resumes the newest graphRunId with decision `approve`; needs Anthropic credentials. Resume always lands on the most recent durable checkpoint, never partway through a node" } }
+      ]
+    }
+  ]
+}

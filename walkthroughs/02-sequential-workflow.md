@@ -75,7 +75,7 @@ is two steps: list files, then summarize. The whole file:
 ```yaml
 name: hello-workflow
 target: workflow
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 permissions:
   rules:
     - { type: alwaysAllow, pattern: Bash }
@@ -161,7 +161,7 @@ Each step inherits the workflow-level `model`, but you can override:
 ```yaml
 name: extract-then-write
 target: workflow
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 steps:
   - name: extract
     model: claude-haiku-4-5-20251001
@@ -184,7 +184,7 @@ Two reasons to override per-step:
    synthesis benefits from sonnet/opus. Per-step model swapping is the
    single biggest workflow cost lever.
 2. **Provider.** You can route different steps to different providers
-   — `openai/gpt-4o` for one step, `claude-sonnet-4-6` for the next,
+   — `openai/gpt-4o` for one step, `claude-sonnet-5` for the next,
    `local/llama3.2@http://localhost:11434/v1` for an offline
    sanity-check step. The model-router lazy-imports each adapter, so a
    workflow that uses one provider's model doesn't pay the cost of

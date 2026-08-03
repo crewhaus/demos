@@ -43,7 +43,7 @@ learning:
   # study/reflect tick per the built-in rotation.
 
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   model_fallbacks: [claude-haiku-4-5-20251001]
   instructions: |
     You are the resident specialty-coffee expert answering in Slack threads.

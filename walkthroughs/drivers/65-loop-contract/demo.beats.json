@@ -1,0 +1,54 @@
+{
+  "title": "Recipe 65 — Bounding an agent loop: limits, continuity, and honest warnings",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“An unbounded agent loop is an outage waiting for a trigger. This is the contract that bounds one.”", "action": "open", "file": "../../65-loop-contract.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beat.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the bounded spec",
+      "beats": [
+        { "id": "spec-bound", "label": "Type the recipe's bounded research agent", "cue": "“Thirty-two lines, and the bounds are declared — not enforced by a wrapper you hope someone wired up.”", "action": "type", "source": "../../65-loop-contract.md", "sourceLines": [43, 74], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean. Every bound in that spec is a field the schema knows about.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the model credential.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 2 · the warning that tells the truth",
+      "beats": [
+        { "id": "warn-compile", "label": "Compile and watch the warnings", "cue": "“accepted-but-unwired: the compiler took the field, and is telling you nothing consumes it yet. Accepting silently would be the bug.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/warn > live/warnings.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "compiles, surfacing any accepted-but-unwired warnings", "produces": ["live/warnings.txt"] } },
+        { "id": "warn-open", "label": "Read the output", "cue": "“A warning class that exists specifically so a spec field can't quietly do nothing.”", "action": "open", "file": "live/warnings.txt" },
+        { "id": "warn-hooks", "label": "Type the emitted hook wiring", "cue": "“And here is what the recipe says the loop's own lifecycle hooks compile down to.”", "action": "type", "source": "../../65-loop-contract.md", "sourceLines": [186, 199], "target": "live/hooks.ts", "replace": true },
+        { "id": "warn-parse", "label": "Prove it parses", "cue": "“Generated code you can read — a plain array, not a registration API.”", "action": "command", "command": "bun -e 'const s = require(\"fs\").readFileSync(\"live/hooks.ts\",\"utf8\"); new Bun.Transpiler({ loader: \"ts\" }).transformSync(s); console.log(\"live/hooks.ts: parses as TypeScript\");'", "verify": { "mode": "offline", "expectedExit": 0, "note": "the recipe's emitted-hooks fence is syntactically valid TS" } },
+        { "id": "warn-open-hooks", "label": "Open it", "cue": "“session-start, stop, pre-tool, post-tool — the loop's whole surface, as data.”", "action": "open", "file": "live/hooks.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · a bound the schema rejects",
+      "beats": [
+        { "id": "reject-type", "label": "Type an invalid limits block", "cue": "“The recipe's own counter-example: `limits:` at the root is not a thing.”", "action": "type", "source": "../../65-loop-contract.md", "sourceLines": [43, 74], "target": "live/bad.yaml", "replace": true },
+        { "id": "reject-append", "label": "Add the bogus key", "cue": "“Now the mistake — a plausible-looking field that the schema has never heard of.”", "action": "type", "text": "limits:\n  max_turns: 20\n", "target": "live/bad.yaml", "appendNewline": true },
+        { "id": "reject-lint", "label": "Lint it", "cue": "“Rejected by name: Unrecognized key 'limits'. A typo'd bound is worse than no bound, so this fails loudly.”", "action": "command", "command": "crewhaus lint live/bad.yaml > live/rejected.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 1, "note": "exit 1 — spec validation failed: <root>: Unrecognized key(s) in object: 'limits'", "produces": ["live/rejected.txt"] } },
+        { "id": "reject-open", "label": "Read the rejection", "cue": "“Strict-by-default is what makes a declared bound trustworthy.”", "action": "open", "file": "live/rejected.txt" }
+      ]
+    },
+    {
+      "title": "One more thing · run it inside its bounds",
+      "beats": [
+        { "id": "run-agent", "label": "Run the bounded agent", "cue": "[needs-key] “Give it something open-ended and watch it stop where the spec said it would.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs a model credential" } },
+        { "id": "run-ask", "label": "Ask for something unbounded", "cue": "[needs-key] “The bound is the feature. An agent that runs forever is not more capable.”", "action": "input", "text": "Research everything you can about this repository and don't stop until you're done.", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    }
+  ]
+}

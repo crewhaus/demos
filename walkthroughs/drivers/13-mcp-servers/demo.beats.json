@@ -1,0 +1,56 @@
+{
+  "title": "Recipe 13 — MCP Servers (tools you didn't write, namespaced and gated)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“MCP is how you get tools you didn't write — a community filesystem server, a Postgres server, someone else's Go binary.”", "action": "open", "file": "../../13-mcp-servers.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the run beat calls a remote tool, which means calling the model first.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · Adding an MCP server",
+      "beats": [
+        { "id": "spec-head", "label": "Name it, pick the shape", "cue": "“A plain cli agent — MCP adds tools to it, it doesn't change the shape.”", "action": "type", "source": "../../13-mcp-servers.md", "sourceLines": [51, 52], "replace": true },
+        { "id": "spec-agent", "label": "Add the agent block", "cue": "“The instructions name the prefix, because the prefix is what the model will see.”", "action": "type", "source": "../../13-mcp-servers.md", "sourceLines": [53, 57] },
+        { "id": "spec-mcp", "label": "Wire the reference MCP server", "cue": "“Five lines: a name, a transport, and the command the runtime spawns. That's the whole integration.”", "action": "type", "source": "../../13-mcp-servers.md", "sourceLines": [58, 62] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing spawned, nothing emitted.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“mcpServers survives lowering verbatim — transport, command, args. The compiler doesn't interpret them; the runtime does.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli, mcpServers.everything included" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, no key.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate, which is reached before the MCP handshake", "produces": ["live/dist/agent.ts", "live/dist/package.json"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "“The MCP host is a runtime import, not generated code — the bundle hands it the server table and gets a tool list back.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Call a tool you didn't write",
+      "beats": [
+        { "id": "run-repl", "label": "Launch the REPL with MCP debug on", "cue": "[needs-key] “CREWHAUS_MCP_DEBUG=1 logs every MCP message — the handshake, tools/list, tools/call.”", "action": "command", "command": "CREWHAUS_MCP_DEBUG=1 crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "spawns npx @modelcontextprotocol/server-everything on the way up; the chat loop needs Anthropic credentials" } },
+        { "id": "run-echo", "label": "Ask it to use the remote tool", "cue": "[needs-key] “The model asks for everything__echo — prefixed, because two servers with a `read` tool would otherwise collide.”", "action": "input", "text": "echo hello using the everything server", "verify": { "mode": "needs-key", "note": "runtime serializes tools/call over stdio; the response is classified with origin \"mcp\" before it reaches the model" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell, and the runtime reaps the server subprocess.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · many servers, one spec — and permissions on the prefixed names",
+      "beats": [
+        { "id": "multi-reset", "label": "Blank a second scratch spec", "cue": "“A production CLI agent runs three to five of these. There's no limit and no shared state.”", "action": "reset", "file": "live/multi.yaml" },
+        { "id": "multi-head", "label": "Same agent, second spec", "cue": "“Identical head — the interesting part is what we hang off it.”", "action": "type", "source": "../../13-mcp-servers.md", "sourceLines": [51, 57], "target": "live/multi.yaml", "replace": true },
+        { "id": "multi-servers", "label": "Wire four servers, two transports", "cue": "“Two stdio subprocesses the runtime spawns, two SSE connections to servers someone else operates.”", "action": "type", "source": "../../13-mcp-servers.md", "sourceLines": [217, 230], "target": "live/multi.yaml" },
+        { "id": "multi-perms", "label": "Gate the remote tools by name", "cue": "“Permission rules match the prefixed name — same grammar as Read and Bash. read_file allowed, write_file asks, create_repository denied.”", "action": "type", "source": "../../13-mcp-servers.md", "sourceLines": [194, 201], "target": "live/multi.yaml" },
+        { "id": "multi-lint", "label": "Lint the four-server spec", "cue": "“Clean — and note lint never dials the SSE URLs. Nothing here needs those services to exist.”", "action": "command", "command": "crewhaus lint live/multi.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings; sse urls are not resolved at lint time" } },
+        { "id": "multi-ir", "label": "Lower it to IR on disk", "cue": "“Four servers, and the three permission rules beside them — one JSON object the runtime consumes.”", "action": "command", "command": "crewhaus compile live/multi.yaml --emit-ir > live/multi.ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "redirect, not a pipe — the exit code is the compiler's", "produces": ["live/multi.ir.json"] } },
+        { "id": "multi-open", "label": "Read the lowered server table", "cue": "“filesystem, git, postgres, sentry — and the model will see filesystem__read_file, github__create_issue, and so on.”", "action": "open", "file": "live/multi.ir.json" }
+      ]
+    }
+  ]
+}

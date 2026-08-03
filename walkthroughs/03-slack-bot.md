@@ -119,7 +119,7 @@ The bundled example [`starters/channel/crewhaus.yaml`](../starters/channel/crewh
 name: hello-channel
 target: channel
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a Slack bot. When mentioned in a thread, reply concisely
     (1-2 sentences) in the same thread. You may use the Read filesystem

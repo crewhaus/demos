@@ -88,7 +88,7 @@ The bundled example [`starters/managed/crewhaus.yaml`](../starters/managed/crewh
 name: hello-managed
 target: managed
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a managed-daemon agent. Reply tersely (one short sentence).
 tenants:

@@ -173,7 +173,7 @@ message with **Approve** / **Deny** buttons into the run's thread:
 name: hello-channel
 target: channel
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a helpful Slack bot. Use the shell when a question needs it.
   tools: [read, bash]

@@ -1,0 +1,54 @@
+{
+  "title": "Recipe 61 — Self-building evals for any shape (scaffold, mine, calibrate)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“The reason most agents have no evals is that writing the first one is tedious. This recipe removes that excuse.”", "action": "open", "file": "../../61-self-building-evals.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — synthesis and judge calibration are billed.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · a spec with no evals",
+      "beats": [
+        { "id": "spec-cli", "label": "Type a harness", "cue": "“Seven lines and no eval assets whatsoever — the state every real project starts in.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean, and completely unmeasured. Those are different things.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · scaffold the assets",
+      "beats": [
+        { "id": "scaffold-run", "label": "Scaffold eval assets from the spec", "cue": "“It reads the spec and writes a dataset skeleton and a graders file shaped for that target. Day one, from nothing.”", "action": "command", "command": "crewhaus scaffold-evals live/crewhaus.yaml -o live/eval > live/scaffold.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "writes a starting dataset + graders pair under live/eval", "produces": ["live/scaffold.txt"] } },
+        { "id": "scaffold-ls", "label": "List what it wrote", "cue": "“Two files. Not a framework — two files you can read and edit.”", "action": "command", "command": "ls -1 live/eval > live/eval-files.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the scaffolded asset list", "produces": ["live/eval-files.txt"] } },
+        { "id": "scaffold-open-ls", "label": "Read the list", "cue": "“A dataset to grow and a graders file to sharpen. That's the whole starting kit.”", "action": "open", "file": "live/eval-files.txt" },
+        { "id": "scaffold-card", "label": "Read a template's grader card", "cue": "“graders card explains what a template actually measures — read it before you trust a score it produces.”", "action": "command", "command": "crewhaus graders card --template rag > live/card.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the rag template's documented graders", "produces": ["live/card.txt"] } },
+        { "id": "scaffold-open-card", "label": "Read it", "cue": "“A grader you can't explain is a number you shouldn't ship on.”", "action": "open", "file": "live/card.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · find the gaps, keep it honest",
+      "beats": [
+        { "id": "coverage-help", "label": "Read the coverage contract", "cue": "“eval coverage compares what your users actually asked against what your dataset covers — the gap is your next test case.”", "action": "command", "command": "crewhaus eval coverage --help > live/coverage.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped coverage flags", "produces": ["live/coverage.txt"] } },
+        { "id": "coverage-open", "label": "Read it", "cue": "“Coverage against real traffic, not against your imagination.”", "action": "open", "file": "live/coverage.txt" },
+        { "id": "lint-help", "label": "Read the dataset-lint contract", "cue": "“dataset lint catches near-duplicates, leaked answers, and rows whose gold is stale — the quiet ways a dataset rots.”", "action": "command", "command": "crewhaus dataset lint --help > live/dslint.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped dataset-lint flags", "produces": ["live/dslint.txt"] } },
+        { "id": "lint-open", "label": "Read it", "cue": "“--strict for CI. A rotting dataset fails green, which is the worst failure mode there is.”", "action": "open", "file": "live/dslint.txt" }
+      ]
+    },
+    {
+      "title": "One more thing · grow it and calibrate the judge",
+      "beats": [
+        { "id": "mine", "label": "Mine real sessions into cases", "cue": "[needs-key] “dataset mine --review turns the turns you actually served into candidate rows, with a human in the loop.”", "action": "command", "command": "crewhaus dataset mine --sessions all --review", "verify": { "mode": "needs-key", "note": "needs session history; the review step needs a human" } },
+        { "id": "synthesize", "label": "Synthesize variants", "cue": "[needs-key] “Bounded by --budget-usd, because generating test cases is exactly the loop that runs away.”", "action": "command", "command": "crewhaus dataset synthesize --from registry:support-agent-ratings --count 3 --budget-usd 1.00", "verify": { "mode": "needs-key", "note": "billed generation; bounded by the budget flag" } },
+        { "id": "calibrate", "label": "Calibrate the judge", "cue": "[needs-key] “The judge is a model too. graders test --min-agreement 0.85 is how you find out whether to trust it.”", "action": "command", "command": "crewhaus graders test --graders live/eval/graders.yaml --golden live/eval/golden-verdicts.jsonl --min-agreement 0.85", "verify": { "mode": "needs-key", "note": "needs golden verdicts and a model credential" } },
+        { "id": "extra-map", "label": "Read the whole verb map", "cue": "“scaffold → coverage → lint → mine → synthesize → calibrate. Each one answers a question the previous one raised.”", "action": "open", "file": "../../61-self-building-evals.md", "preview": true }
+      ]
+    }
+  ]
+}

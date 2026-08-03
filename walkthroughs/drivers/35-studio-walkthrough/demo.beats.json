@@ -1,0 +1,50 @@
+{
+  "title": "Recipe 35 — Studio Walkthrough (the spec surface, with a UI on it)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Studio is a UI over the same specs and the same compiler — it owns no runtime of its own.”", "action": "open", "file": "../../35-studio-walkthrough.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the Playground tab makes real model calls.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · a spec for Studio to open",
+      "beats": [
+        { "id": "spec-cli", "label": "Type a harness", "cue": "“Studio's Specs tab lists exactly this — files on disk, not rows in a database.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“The same lint the Wizard runs on every keystroke. One implementation, two front ends.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-ir", "label": "Show the lowered IR", "cue": "“And this is what the Graph tab draws — the IR, laid out. It isn't a separate model of your agent.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "IR written to live/ir.json — the graph-layout input", "produces": ["live/ir.json"] } },
+        { "id": "spec-open-ir", "label": "Open the IR", "cue": "“GET /api/graph-layout/:specName hands the browser a layout over this.”", "action": "open", "file": "live/ir.json" }
+      ]
+    },
+    {
+      "title": "Beat 2 · the API under the UI",
+      "beats": [
+        {"id": "api-smoke", "label": "Run the playground smoke", "cue": "[manual] “The recipe's Try it: every Playground probe, driven headlessly against the real backend contract.”", "action": "command", "command": "bun ../../../smoke/section-35-playground-smoke/smoke.ts", "verify": {"mode": "manual", "note": "needs the sibling factory workspace linked — the playground smoke resolves @crewhaus/* packages demos does not declare, so a bare `bun install --frozen-lockfile` checkout (CI) cannot run it. Passes on a dev machine with the workspace installed."}},
+        {"id": "api-open-smoke", "label": "Read the probe results", "cue": "“Run-a-spec, cost-summary, graph-layout — the three endpoints the tabs are built on.”", "action": "open", "file": "../../../smoke/section-35-playground-smoke/smoke.ts"}
+      ]
+    },
+    {
+      "title": "Beat 3 · the plugin surface",
+      "beats": [
+        { "id": "plugin-type", "label": "Type the recipe's plugin", "cue": "“definePlugin — Studio's extension point. Drop the file in ~/.crewhaus/plugins/ and it appears as a tab.”", "action": "type", "source": "../../35-studio-walkthrough.md", "sourceLines": [194, 215], "target": "live/plugin.ts", "replace": true },
+        { "id": "plugin-open", "label": "Open it", "cue": "“No build step, no registration call — a default export and a name.”", "action": "open", "file": "live/plugin.ts" }
+      ]
+    },
+    {
+      "title": "One more thing · open the actual UI",
+      "beats": [
+        { "id": "studio-run", "label": "Start Studio", "cue": "[manual] “Studio lives in the sibling crewhaus/utilities checkout, and this beat opens a browser — a human drives from here.”", "action": "command", "command": "bun run --cwd ../../../../utilities studio", "verify": { "mode": "manual", "note": "needs the sibling crewhaus/utilities checkout; serves the UI on :4243 and the backend on :4242" } },
+        { "id": "studio-workspace", "label": "Point it at a spec directory", "cue": "[manual] “STUDIO_WORKSPACE is the only wiring — it's a file browser with a compiler attached.”", "action": "command", "command": "STUDIO_WORKSPACE=$PWD/live bun run --cwd ../../../../utilities studio", "verify": { "mode": "manual", "note": "a human clicks through the Specs, Wizard, Graph, and Playground tabs" } },
+        { "id": "studio-tabs", "label": "Read the tab tour", "cue": "“Specs, Wizard, Graph, Playground, Cost — and what each one is actually calling underneath.”", "action": "open", "file": "../../35-studio-walkthrough.md", "preview": true }
+      ]
+    }
+  ]
+}

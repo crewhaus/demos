@@ -1,0 +1,53 @@
+{
+  "title": "Recipe 39 — Channel: WhatsApp (Cloud API webhooks → the same chat loop)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“WhatsApp is the generic channel adapter again — only the gateway and the send call change.”", "action": "open", "file": "../../39-channel-whatsapp.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed starter and the recipe are untouched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the credentials", "cue": "[needs-key] Sources demos/.env — WHATSAPP_PHONE_NUMBER_ID, _ACCESS_TOKEN, _APP_SECRET.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · Step 2 — the spec",
+      "beats": [
+        { "id": "spec-whatsapp", "label": "Type the recipe's spec", "cue": "“Twenty-one lines: the channel provider, the three env refs, and the agent. No webhook code.”", "action": "type", "source": "../../39-channel-whatsapp.md", "sourceLines": [56, 76], "replace": true },
+        { "id": "spec-open-starter", "label": "Compare against the committed starter", "cue": "“Same bytes as starters/channels/whatsapp — the recipe isn't a paraphrase of the starter, it is the starter.”", "action": "open", "file": "../../../starters/channels/whatsapp/crewhaus.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The channel block lowers to a gateway plus a session router — that's the whole adapter.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "IR written to live/ir.json", "produces": ["live/ir.json"] } },
+        { "id": "prove-open-ir", "label": "Open the IR", "cue": "“Read the channel node — provider, the env refs it will demand at boot, nothing else.”", "action": "open", "file": "live/ir.json" },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, gated exactly at the WhatsApp credentials the spec declares.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the declared credentials gate", "produces": ["live/dist/daemon.ts", "live/dist/gateway.ts", "live/dist/session-router.ts"] } },
+        { "id": "prove-open-gateway", "label": "Open the emitted gateway", "cue": "“Step 3's verification handshake and the X-Hub-Signature-256 check are generated here — you didn't write them.”", "action": "open", "file": "live/dist/gateway.ts" },
+        { "id": "prove-open-router", "label": "Open the session router", "cue": "“Per-user session keying: sess_<sha256(\"wa:\" + wa_id)[:16]> — one WhatsApp user, one durable session.”", "action": "open", "file": "live/dist/session-router.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · Step 4 — subscribe and run",
+      "beats": [
+        { "id": "run-daemon", "label": "Boot the daemon", "cue": "[needs-key] “The bundle is a Bun program — no CLI in the loop. It serves POST /whatsapp/events on :3000.”", "action": "command", "command": "bun live/dist/daemon.ts", "verify": { "mode": "needs-key", "note": "needs WHATSAPP_PHONE_NUMBER_ID / _ACCESS_TOKEN / _APP_SECRET plus an Anthropic credential" } },
+        { "id": "run-tunnel", "label": "Expose it to Meta", "cue": "[manual] “ngrok http 3000 — paste the https URL into the Meta app's webhook config, verify token from the spec.”", "action": "command", "command": "ngrok http 3000", "verify": { "mode": "manual", "note": "a human pastes the tunnel URL into the Meta app dashboard" } },
+        { "id": "run-message", "label": "Message the business number", "cue": "[manual] “Send a WhatsApp message from a real handset — that's the only inbound this shape has.”", "action": "input", "text": "What can you help me with?", "verify": { "mode": "manual", "note": "typed on a phone, not the keyboard" } }
+      ]
+    },
+    {
+      "title": "One more thing · the delivery contract, offline",
+      "beats": [
+        { "id": "extra-dedup", "label": "Find the replay dedup in the bundle", "cue": "“Meta redelivers on any non-2xx. The recipe shows the idea as `gateway.dedupKey = …`; the emitted gateway implements it as a real replay-dedup store keyed by the WhatsApp message id.”", "action": "command", "command": "grep -in 'dedup' live/dist/gateway.ts > live/dedup.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "DedupStore import, dedupCapacity knob, and the LRU/durable-store wiring — at-least-once made idempotent", "produces": ["live/dedup.txt"] } },
+        { "id": "extra-open-dedup", "label": "Read it", "cue": "“A bounded store with an eviction policy, not a variable you have to remember to set.”", "action": "open", "file": "live/dedup.txt" },
+        { "id": "extra-smoke", "label": "Run the channel smoke", "cue": "[needs-key] “bun run smoke:section-33-whatsapp drives a fixture webhook end to end.”", "action": "command", "command": "bun ../../../smoke/section-33-whatsapp-smoke/smoke.ts", "verify": { "mode": "needs-key", "note": "the smoke asserts a signed inbound round-trip; needs the WhatsApp app secret" } }
+      ]
+    }
+  ]
+}

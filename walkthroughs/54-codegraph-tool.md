@@ -58,7 +58,7 @@ That creates a `.codegraph/index.db` SQLite database in the cwd. The four tools 
 # spec.yaml
 name: refactor-helper
 target: crew
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 entry: refactor-helper
 roles:
   refactor-helper:

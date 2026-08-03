@@ -1,0 +1,67 @@
+{
+  "title": "Recipe 19 — Rate Limiting and Budgets (three orthogonal limits on one daemon)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Three guardrails that look alike and are not: a rate limit bounds requests per second, a budget bounds tokens per period, and the cost tracker only reports. In production you want all three.”", "action": "open", "file": "../../19-rate-limiting-and-budgets.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe and starters are never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the gateway needs a Claude credential to actually spend a tenant's budget.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the tenancy the limits key on",
+      "beats": [
+        { "id": "spec-managed", "label": "Type the managed starter", "cue": "“Recipe 19's prerequisite is tenancy — without it the dimensions collapse and the whole design loses its point. Fifteen lines: one agent, two tenants, and a token budget each.”", "action": "type", "source": "../../../starters/managed/crewhaus.yaml", "sourceLines": [1, 15], "replace": true },
+        { "id": "prove-lint", "label": "Lint it", "cue": "“Clean. The budget is a first-class spec field, not external policy bolted on at deploy time.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The tenants array survives lowering, ids and budgets exactly as written. The gateway reads this, not the YAML.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target managed, tenants + budgets included" } },
+        { "id": "prove-check", "label": "Compile the daemon", "cue": "“The bundle is emitted and the spec registered — that's what the limits attach to. The managed daemon is scaffolding here; recipe 11 is where its boot gets proved.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist", "verify": { "mode": "offline", "expectedExit": 0, "note": "emits the daemon bundle and registers the spec. Deliberately not --check: a managed daemon binds :3000, and --check scrubs the environment (so PORT cannot be overridden), which means exactly one driver in the suite may boot one — that is recipe 11's.", "produces": ["live/dist/daemon.ts", "live/dist/agent.ts", ".crewhaus/specs/hello-managed/manifest.json"] } },
+        { "id": "prove-open-daemon", "label": "Open the emitted daemon", "cue": "“JWT verify, tenant rebase, budget accounting, audit chain — the whole enforcement path, as TypeScript you own.”", "action": "open", "file": "live/dist/daemon.ts" },
+        { "id": "budget-grep", "label": "Find the budget gate in the generated code", "cue": "“The spec's numbers are compiled in as literals, and the accounting backend is a line of the bundle. Pre-flight estimate at the gateway, post-flight update per turn — both live here, not in a doc.”", "action": "command", "command": "grep -n -i budget live/dist/daemon.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "matches createBudgetStore, the per-tenant budget literals from the spec, and the 429 budget_exceeded shed path" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · the rate-limit key space",
+      "beats": [
+        { "id": "limits-type", "label": "Type the recipe's rateLimits block", "cue": "“Three buckets over the (tenant, provider, tool) tuple. Wildcards collapse a dimension — the third one caps Bash at one call a second across the whole deployment.”", "action": "type", "source": "../../19-rate-limiting-and-budgets.md", "sourceLines": [80, 100], "target": "live/rate-limits.yaml", "replace": true },
+        { "id": "limits-valid", "label": "Parse it back", "cue": "“Token-bucket, leaky-bucket, token-bucket. Token for human-driven traffic that arrives in bursts; leaky when you sit upstream of a provider that returns 429 on bursts.”", "action": "command", "command": "bun -e 'const c = Bun.YAML.parse(require(\"fs\").readFileSync(\"live/rate-limits.yaml\", \"utf8\")); console.log(c.rateLimits.length, \"buckets:\", c.rateLimits.map((b) => b.algorithm + \" \" + JSON.stringify(b.keys)).join(\"  |  \"))'", "verify": { "mode": "offline", "expectedExit": 0, "note": "3 buckets: token (tenant-a/anthropic/*) | leaky (tenant-a/openai/*) | token (*/*/Bash)" } },
+        { "id": "limits-backpressure", "label": "Watch back-pressure, not rejection", "cue": "“A five-per-second bucket, pumped with ten acquires. It does not throw — it makes you wait. That is the difference between a rate limit and a budget.”", "action": "command", "command": "bun --cwd live/dist -e 'import { createRateLimiter } from \"@crewhaus/rate-limiter\"; const buckets = new Map([[\"tenant:tenant-a\", { kind: \"token-bucket\", capacity: 5, refillPerSec: 5 }]]); const rl = createRateLimiter({ buckets }); const t0 = Date.now(); for (let i = 0; i < 10; i++) await rl.acquire([{ dimension: \"tenant\", id: \"tenant-a\" }]); console.log(\"10 acquires against a 5/s token bucket:\", Date.now() - t0, \"ms elapsed — back-pressure, not rejection\")'", "verify": { "mode": "offline", "expectedExit": 0, "note": "~1000 ms elapsed — the real @crewhaus/rate-limiter out of the bundle --check installed. Takes about a second on purpose; that is the proof" } }
+      ]
+    },
+    {
+      "title": "Beat 4 · the budget periods",
+      "beats": [
+        { "id": "budgets-type", "label": "Type the recipe's tenant budgets", "cue": "“Same tenants list, now with periods. Monthly resets on the first at UTC midnight, daily at UTC midnight, and perRun is the right answer for an evaluation pipeline — a fixed budget per run, no carryover.”", "action": "type", "source": "../../19-rate-limiting-and-budgets.md", "sourceLines": [162, 172], "target": "live/tenant-budgets.yaml", "replace": true },
+        { "id": "budgets-valid", "label": "Parse the periods back", "cue": "“Two tenants, two different period boundaries, one daemon. Budget exhaustion mid-conversation is a period problem, not a limit problem.”", "action": "command", "command": "bun -e 'const c = Bun.YAML.parse(require(\"fs\").readFileSync(\"live/tenant-budgets.yaml\", \"utf8\")); for (const t of c.tenants) console.log(t.id, \"→ period\", t.budget.period ?? \"monthly (default)\", \"· fields:\", Object.keys(t.budget).join(\", \"))'", "verify": { "mode": "offline", "expectedExit": 0, "note": "tenant-a → monthly, tenant-b → daily; each with maxInputTokens/maxOutputTokens/period" } }
+      ]
+    },
+    {
+      "title": "Beat 5 · drive one tenant's traffic through the gate",
+      "beats": [
+        { "id": "run-env", "label": "Pin the JWT secret and tenant root", "cue": "“At least sixteen characters or the daemon refuses to bind, and tenant storage rebased under live/ so the audit trail stays on camera.”", "action": "command", "command": "export CREWHAUS_GATEWAY_JWT_SECRET=demo-secret-please-rotate CREWHAUS_TENANTS_ROOT=live/tenants", "verify": { "mode": "offline", "expectedExit": 0, "note": "without the secret the daemon mints a one-shot dev one; default tenant root is /tmp/crewhaus-tenants" } },
+        { "id": "run-boot", "label": "Boot the gateway", "cue": "[needs-key] “Gateway listening on :3000.” Backgrounded, so this same terminal can drive it.", "action": "command", "command": "bun live/dist/daemon.ts &", "verify": { "mode": "needs-key", "note": "boots with no key; serving a run needs Anthropic credentials" } },
+        { "id": "run-mint", "label": "Mint tenant-a's token", "cue": "“Keyless — HS256 over the secret we just exported into this same terminal. It also proves @crewhaus/gateway-server resolves from the bundle --check installed.”", "action": "command", "command": "TENANT_A_JWT=$(bun --cwd live/dist -e 'import { signJwt } from \"@crewhaus/gateway-server\"; console.log(signJwt({ tenant_id: \"tenant-a\" }, process.env.CREWHAUS_GATEWAY_JWT_SECRET))')", "verify": { "mode": "offline", "expectedExit": 0, "note": "local signing, no network, no provider credentials — a 159-char JWT into the shell variable the next beat uses" } },
+        { "id": "run-create", "label": "Create a run as tenant-a", "cue": "[needs-key] “The pre-flight estimate runs before any model call. Drop maxInputTokens to a thousand and this same call answers 429 budget_exceeded instead — the recipe's own way to test the gate.”", "action": "command", "command": "curl -s -X POST http://localhost:3000/rpc -H \"Authorization: Bearer $TENANT_A_JWT\" -H \"Content-Type: application/json\" -d '{\"protocol\":\"crewhaus.v1\",\"id\":\"1\",\"method\":\"runs.create\",\"params\":{\"spec\":\"hello-managed\",\"input\":\"What is the capital of France?\",\"sessionId\":\"sess_0123456789abcdef\"}}'", "verify": { "mode": "needs-key", "note": "crewhaus.v1 envelope; the budget gate is enforced before the model call, but a successful answer needs Anthropic credentials" } },
+        { "id": "run-stop", "label": "Stop the gateway", "cue": "[needs-key] Job %1 is the daemon the boot beat backgrounded — skip this and the take leaves a process holding :3000.", "action": "command", "command": "kill %1", "verify": { "mode": "needs-key", "note": "kills the backgrounded daemon from the run-boot beat" } }
+      ]
+    },
+    {
+      "title": "One more thing · the limiter and the tracker, asserted",
+      "beats": [
+        { "id": "smoke-27", "label": "Run the recipe's Try-it smoke", "cue": "“Probe 2 is recipe 19's own end-to-end for the limiter, probe 1 for the cost tracker: three model responses priced from the table, summing to a USD total the smoke asserts to the microdollar.”", "action": "command", "command": "bun ../../../smoke/section-27-smoke/smoke.ts > live/section-27.log 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "all probes passed — probe 2 asserts back-pressure ≥ 800 ms on a 5 req/s bucket, probe 1 asserts totalUsdMicros 21875. Redirected rather than piped so the exit code is the smoke's own", "produces": ["live/section-27.log"] } },
+        { "id": "smoke-open", "label": "Read the probe log", "cue": "“Rate limit absorbs the spike, budget enforces the period, cost tracker reports for billing. Three limits, one deployment, none of them substituting for the others.”", "action": "open", "file": "live/section-27.log" }
+      ]
+    }
+  ]
+}

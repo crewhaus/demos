@@ -102,7 +102,7 @@ log("probe B: 5 model_response events round-trip + entity.guid");
     bus.publish({
       ...eventEnv(bus),
       kind: "model_request",
-      model: "claude-opus-4-7",
+      model: "claude-opus-5",
       messageCount: 1,
       toolCount: 0,
       streaming: false,
@@ -110,7 +110,7 @@ log("probe B: 5 model_response events round-trip + entity.guid");
     bus.publish({
       ...eventEnv(bus),
       kind: "model_response",
-      model: "claude-opus-4-7",
+      model: "claude-opus-5",
       stopReason: "end_turn",
       usage: { input: 100, output: 30 },
       durationMs: 800,

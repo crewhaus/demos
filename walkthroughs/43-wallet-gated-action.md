@@ -27,7 +27,7 @@ The two-gate invariant is the load-bearing safety property: the §7 permission e
 ```yaml
 name: usdc-payout
 target: workflow
-model: claude-opus-4-7
+model: claude-opus-5
 
 chains:
   - id: base-mainnet

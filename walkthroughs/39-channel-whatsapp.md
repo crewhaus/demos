@@ -56,7 +56,7 @@ WHATSAPP_APP_SECRET=...
 name: hello-channel-whatsapp
 target: channel
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a WhatsApp Business bot. When a customer messages, reply
     concisely (1-3 sentences). You may use the Read filesystem tool

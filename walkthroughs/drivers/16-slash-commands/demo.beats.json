@@ -1,0 +1,67 @@
+{
+  "title": "Recipe 16 — Slash Commands (expansion at the user layer, before the model)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“A slash command is a markdown template the user triggers. The expansion happens at the user layer — the model never sees the slash.”", "action": "open", "file": "../../16-slash-commands.md", "preview": true },
+        { "id": "setup-reset", "label": "Blank the scratch spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-reset-settings", "label": "Blank the scratch settings", "cue": "“The pre-slash hook lives in <cwd>/.crewhaus/settings.json — we'll come back to this file at the end.”", "action": "reset", "file": ".crewhaus/settings.json" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beat — typing /review for real means calling the model.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the harness commands attach to",
+      "beats": [
+        { "id": "spec-cli", "label": "Type recipe 01's harness", "cue": "“Slash commands are data, not spec surface — so start from the plainest recipe-01 agent and change nothing.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean before a single command exists — so anything that changes downstream is the commands' doing.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · write the command files",
+      "beats": [
+        { "id": "cmd-review", "label": "Type the recipe's /review command", "cue": "“One markdown file per command. Optional frontmatter for the /help line, then a body where $ARGUMENTS is the only moving part.”", "action": "type", "source": "../../16-slash-commands.md", "sourceLines": [170, 185], "target": ".crewhaus/commands/review.md", "replace": true },
+        { "id": "cmd-release", "label": "Add /release", "cue": "“Same shape, and $ARGUMENTS appears twice — patch, minor or major flows into both the version bump and the prose.”", "action": "type", "source": "../../16-slash-commands.md", "sourceLines": [191, 205], "target": ".crewhaus/commands/release.md", "replace": true },
+        { "id": "cmd-explain", "label": "Add /explain", "cue": "“Third one — and the one we'll use to prove the substitution is literal, not parsed.”", "action": "type", "source": "../../16-slash-commands.md", "sourceLines": [211, 221], "target": ".crewhaus/commands/explain.md", "replace": true },
+        { "id": "cmd-ls", "label": "List the project layer", "cue": "“Commands are file-discovered, so listing the directory is how you see what the runtime found.” Project layer wins over user and plugin.", "action": "command", "command": "ls .crewhaus/commands/", "verify": { "mode": "offline", "expectedExit": 0, "note": "explain.md, release.md, review.md — the project layer at <cwd>/.crewhaus/commands" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · compile, don't trust",
+      "beats": [
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“No trace of a slash command in the IR. They're runtime data read from the working directory — which is why no spec change was needed.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli — no slashCommands field in it" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it from this directory — so the boot that runs is the one that loads our three commands. GREEN, no key.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Find the command wiring in the emitted agent", "cue": "“One field: slashCommands, handed to runChatLoop. wireMemory found them from cwd. Nothing generated, nothing hidden.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 4 · the expansion grammar, proved",
+      "beats": [
+        { "id": "expand-run", "label": "Run the real expander, keylessly", "cue": "“loadCommands plus expand — the actual runtime functions, from the bundle we just checked. No model involved: this is a string operation.”", "action": "command", "command": "bun --cwd live/dist -e 'import { loadCommands, expand } from \"@crewhaus/slash-commands\"; const c = await loadCommands({ cwd: \"../..\", homeDir: \"/nonexistent\" }); console.log(\"commands: \" + [...c.keys()].sort().join(\", \")); const r = expand(\"/review 1234\", c); console.log(\"handled=\" + r.handled + \"  arguments=\" + r.arguments + \"\\n--- expansion ---\\n\" + r.expanded)' > live/expansion.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "keyless. homeDir is pinned off the operator's real ~/.crewhaus/commands so the take is deterministic; redirect, not a pipe, so the exit code is bun's", "produces": ["live/expansion.txt"] } },
+        { "id": "expand-open", "label": "Read what the model would receive", "cue": "“Eleven lines, and every $ARGUMENTS is now 1234. This — not `/review 1234` — is the user message the model gets.”", "action": "open", "file": "live/expansion.txt" },
+        { "id": "expand-literal", "label": "Prove the substitution is literal", "cue": "“Dollar-one stays dollar-one, dot-star-foo stays dot-star-foo, and an unknown name is handled=false — passed through untouched rather than guessed at.”", "action": "command", "command": "bun --cwd live/dist -e 'import { loadCommands, expand } from \"@crewhaus/slash-commands\"; const c = await loadCommands({ cwd: \"../..\", homeDir: \"/nonexistent\" }); for (const raw of [\"/explain $1\", \"/explain .*foo\", \"/nope 1\"]) { const r = expand(raw, c); console.log(JSON.stringify(raw) + \" -> handled=\" + r.handled + \" arguments=\" + JSON.stringify(r.arguments)); }'", "verify": { "mode": "offline", "expectedExit": 0, "note": "measured: \"$1\" and \".*foo\" survive verbatim (replaceAll on the literal placeholder), and /nope resolves to nothing so handled=false" } }
+      ]
+    },
+    {
+      "title": "Beat 5 · the pre-slash hook",
+      "beats": [
+        { "id": "hook-type", "label": "Type the recipe's pre-slash hook", "cue": "“A hook that can rewrite or refuse an expansion before it reaches the model — allow, deny, or allow-with-mutate.”", "action": "type", "source": "../../16-slash-commands.md", "sourceLines": [148, 156], "target": ".crewhaus/settings.json", "replace": true },
+        { "id": "hook-valid", "label": "Prove it is valid JSON", "cue": "“A malformed settings.json is the most common hooks bug — check it before the runtime does.”", "action": "command", "command": "bun -e 'JSON.parse(require(\"fs\").readFileSync(\".crewhaus/settings.json\",\"utf8\")); console.log(\"settings.json: valid\")'", "verify": { "mode": "offline", "expectedExit": 0, "note": "settings.json parses; the hook body itself is shell, executed only when a slash command fires" } }
+      ]
+    },
+    {
+      "title": "One more thing · type it for real",
+      "beats": [
+        { "id": "run-repl", "label": "Launch the REPL", "cue": "[needs-key] “Same spec as recipe 01. The difference is three markdown files and a hook it found on the way up.”", "action": "command", "command": "CREWHAUS_TRACE=pretty crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "CREWHAUS_TRACE=pretty is the recipe's own way to watch expansions at the user-message level; the chat loop needs Anthropic credentials" } },
+        { "id": "run-review", "label": "Type the slash command", "cue": "[needs-key] “Watch the trace: [slash:review] expanded args=1234, then the expanded user message. The model only ever sees the second one.”", "action": "input", "text": "/review 1234", "verify": { "mode": "needs-key", "note": "pre-slash hook returns allow (the recipe's hook only mutates /deploy), then the expansion is sent as the user turn" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    }
+  ]
+}

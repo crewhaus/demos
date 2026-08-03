@@ -1,0 +1,45 @@
+{
+  "title": "Recipe 71 — Building agent loops visually in Studio",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“A visual builder is only trustworthy if it round-trips to the same spec you'd have written by hand. That's what this checks.”", "action": "open", "file": "../../71-studio-builder.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the builder's preview runs the spec for real.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the artifact the builder produces",
+      "beats": [
+        { "id": "spec-graph", "label": "Type a loop spec", "cue": "“Whatever you draw in the builder, this is what comes out — an ordinary spec, in your repo, in your diff.”", "action": "type", "source": "../../../starters/graph/crewhaus.yaml", "sourceLines": [1, 32], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“The builder can't emit anything lint won't accept. Same gate as a hand-written spec.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — graph well-formedness included" } },
+        { "id": "spec-ir", "label": "Show the lowered IR", "cue": "“And this is what the canvas actually draws — the IR, laid out. The picture is a view of the spec, not a second source of truth.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "IR written to live/ir.json — the graph-layout input", "produces": ["live/ir.json"] } },
+        { "id": "spec-open-ir", "label": "Open the IR", "cue": "“Nodes and edges. Everything the builder shows you is derivable from this.”", "action": "open", "file": "live/ir.json" }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check: GREEN. A visually-built loop is a real bundle, with no builder runtime attached to it.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open", "label": "Open the emitted agent", "cue": "“Nothing in here mentions Studio. You can delete the builder and this still runs.”", "action": "open", "file": "live/dist/agent.ts" },
+        { "id": "prove-roundtrip", "label": "Prove the round trip", "cue": "“Re-emit the IR and compare: the spec → IR → spec path is lossless, which is what makes visual editing safe.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir2.json; diff live/ir.json live/ir2.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "identical IR on re-emit — deterministic lowering", "produces": ["live/ir2.json"] } }
+      ]
+    },
+    {
+      "title": "One more thing · open the builder",
+      "beats": [
+        { "id": "studio-install", "label": "Install the builder", "cue": "[manual] “The PWA lives in its own checkout — a human clones and installs it.”", "action": "command", "command": "bun install", "verify": { "mode": "manual", "note": "run inside the studio-pwa checkout, which is not part of this repo" } },
+        { "id": "studio-run", "label": "Start it", "cue": "[manual] “Then open a browser, drop this spec on the canvas, and drag an edge.”", "action": "command", "command": "bun run dev", "verify": { "mode": "manual", "note": "serves the builder UI; a human drives the canvas" } },
+        { "id": "studio-diff", "label": "Diff what it wrote", "cue": "[manual] “The test of any visual builder: does its output survive `git diff` review? Read the change it made.”", "action": "command", "command": "git diff -- live/crewhaus.yaml", "verify": { "mode": "manual", "note": "compare the builder's edit against the spec you started from" } },
+        { "id": "extra-read", "label": "Read the round-trip guarantees", "cue": "“What the builder promises to preserve, and where it will tell you it can't.”", "action": "open", "file": "../../71-studio-builder.md", "preview": true }
+      ]
+    }
+  ]
+}

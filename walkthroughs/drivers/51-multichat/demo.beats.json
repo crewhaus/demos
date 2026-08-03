@@ -1,0 +1,56 @@
+{
+  "title": "Recipe 51 — Multi-channel Personal Assistant (one agent, four front doors)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Slack, Telegram, Discord, WhatsApp — one agent behind all of them, with per-thread sessions.”", "action": "open", "file": "../../51-multichat.md", "preview": true },
+        { "id": "setup-reset", "label": "Blank the scratch file", "cue": "live/ is scratch — the committed showcase is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the channel tokens", "cue": "[needs-key] Sources demos/.env — four channels means four sets of platform credentials.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · Step 1 — the committed spec",
+      "beats": [
+        { "id": "spec-open", "label": "Open it", "cue": "“One agent block, one channels list. The agent has no idea which front door a message came through.”", "action": "open", "file": "../../../starters/showcases/multichat/crewhaus.yaml" },
+        { "id": "spec-lint", "label": "Lint it in place", "cue": "“Clean — four channels and a router, and the schema still catches a typo in any of them.”", "action": "command", "command": "crewhaus lint ../../../starters/showcases/multichat/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated exactly at the channel credentials the spec declares.”", "action": "command", "command": "crewhaus compile ../../../starters/showcases/multichat/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the declared credentials gate", "produces": ["live/dist/daemon.ts", "live/dist/gateway.ts", "live/dist/session-router.ts"] } },
+        { "id": "spec-ls", "label": "List what it emitted", "cue": "“A gateway, a session router, a daemon, and one agent. Four channels did not become four programs.”", "action": "command", "command": "ls -1 live/dist > live/emitted.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "one bundle, regardless of channel count", "produces": ["live/emitted.txt"] } },
+        { "id": "spec-open-ls", "label": "Read the file list", "cue": "“That's the whole multi-channel story: fan-in at the gateway, one loop behind it.”", "action": "open", "file": "live/emitted.txt" }
+      ]
+    },
+    {
+      "title": "Beat 2 · Steps 2–5 — the sections",
+      "beats": [
+        { "id": "sec-channels", "label": "Type the channels block", "cue": "“Step 2: adding Telegram and Discord is two list entries, not two integrations.”", "action": "type", "source": "../../51-multichat.md", "sourceLines": [121, 131], "target": "live/channels.yaml", "replace": true },
+        { "id": "sec-routing", "label": "Type the routing block", "cue": "“Step 3: per-thread session keying — a Slack thread and a Telegram chat get their own durable histories.”", "action": "type", "source": "../../51-multichat.md", "sourceLines": [141, 142], "target": "live/routing.yaml", "replace": true },
+        { "id": "sec-subagents", "label": "Type the planner sub-agent", "cue": "“Step 4: the planner is where multi-step requests go, so a slow plan never blocks the chat loop.”", "action": "type", "source": "../../51-multichat.md", "sourceLines": [162, 177], "target": "live/sub-agents.yaml", "replace": true },
+        { "id": "sec-permissions", "label": "Type the permission rules", "cue": "“Step 5: an assistant anyone in a Slack workspace can talk to needs rules more than a local coding agent does.”", "action": "type", "source": "../../51-multichat.md", "sourceLines": [189, 199], "target": "live/permissions.yaml", "replace": true },
+        { "id": "sec-open-perm", "label": "Read them", "cue": "“The blast radius of a multi-channel assistant is everyone who can find the bot.”", "action": "open", "file": "live/permissions.yaml" },
+        { "id": "sec-router-grep", "label": "Find the session keying in the bundle", "cue": "“Per-thread sessions as generated code — the router hashes the channel plus the thread id.”", "action": "command", "command": "grep -inE 'session|thread' live/dist/session-router.ts > live/keying.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the emitted per-thread keying", "produces": ["live/keying.txt"] } },
+        { "id": "sec-open-keying", "label": "Read it", "cue": "“One user in two channels is two sessions. One thread is one session, forever.”", "action": "open", "file": "live/keying.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · run it, one channel at a time",
+      "beats": [
+        { "id": "run-daemon", "label": "Boot with Slack only", "cue": "[needs-key] “Step 1: start with the channel you already have tokens for. The others stay dark until you add theirs.”", "action": "command", "command": "bun live/dist/daemon.ts", "verify": { "mode": "needs-key", "note": "needs SLACK_BOT_TOKEN + SLACK_SIGNING_SECRET plus a model credential" } },
+        { "id": "run-mention", "label": "Mention it in Slack", "cue": "[manual] “Typed in a real Slack workspace — that's the only inbound this shape has.”", "action": "input", "text": "@multichat what's the weather in Tokyo right now?", "verify": { "mode": "manual", "note": "typed in Slack, not the keyboard" } },
+        { "id": "run-heartbeat", "label": "Read the heartbeat block", "cue": "“A long-lived daemon needs a liveness signal. Step 7's heartbeat is that, declared.”", "action": "open", "file": "../../51-multichat.md", "preview": true }
+      ]
+    },
+    {
+      "title": "One more thing · the model choice",
+      "beats": [
+        { "id": "swap-grep", "label": "Find the model line", "cue": "“A chat assistant at four-channel volume is where a cheaper default actually pays for itself.”", "action": "command", "command": "grep -n 'model:' ../../../starters/showcases/multichat/crewhaus.yaml > live/model.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "the single provider-bound line", "produces": ["live/model.txt"] } },
+        { "id": "swap-open", "label": "Read it", "cue": "“Same recipe as 49 and 50 — one line, and the reasoning for it is written down.”", "action": "open", "file": "live/model.txt" }
+      ]
+    }
+  ]
+}

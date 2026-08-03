@@ -78,7 +78,7 @@ tenant SaaS image deployed to Linux would never even try.
 name: hello-channel-imessage
 target: channel
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are a personal iMessage assistant running on the user's Mac.
     Reply concisely (1-2 sentences). You may use the Read filesystem
@@ -215,7 +215,7 @@ session across daemon restarts.
 # Channel spec fragment — MCP tool names land as calendar__list_events,
 # reminders__add, gmail__list_unread, accessible to the agent:
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You are my personal assistant running on my Mac. Tasks I may
     ask:

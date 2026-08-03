@@ -1,0 +1,52 @@
+{
+  "title": "Recipe 14 — Hooks (shell commands at every lifecycle event)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Hooks are the integration point when a shell command is the natural answer — audit, corp policy, sandbox enforcement.”", "action": "open", "file": "../../14-hooks.md", "preview": true },
+        { "id": "setup-reset-spec", "label": "Blank the scratch spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-reset-settings", "label": "Blank the scratch settings", "cue": "“Hooks are declared in <cwd>/.crewhaus/settings.json — that's the file we're about to write.”", "action": "reset", "file": ".crewhaus/settings.json" }
+      ]
+    },
+    {
+      "title": "Beat 1 · the harness hooks attach to",
+      "beats": [
+        { "id": "spec-cli", "label": "Type recipe 01's harness", "cue": "“Hooks are per-deployment, not per-spec — so start from the plainest recipe-01 agent, unchanged.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean before we add a single hook — so anything that changes is the hooks' doing.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · declare the hooks",
+      "beats": [
+        { "id": "hooks-declare", "label": "Type the settings.json from the recipe", "cue": "“A pre-tool hook that denies `rm -rf /`, and a post-tool hook that ships every outcome to syslog.”", "action": "type", "source": "../../14-hooks.md", "sourceLines": [58, 71], "target": ".crewhaus/settings.json", "replace": true },
+        { "id": "hooks-open", "label": "Open what we just wrote", "cue": "“The hook contract is a JSON verdict on stdout: {\"decision\":\"deny\",\"reason\":…}.”", "action": "open", "file": ".crewhaus/settings.json" },
+        { "id": "hooks-valid", "label": "Prove it is valid JSON", "cue": "“A malformed settings.json is the single most common hooks bug — so check it before the runtime does.”", "action": "command", "command": "bun -e 'JSON.parse(require(\"fs\").readFileSync(\".crewhaus/settings.json\",\"utf8\")); console.log(\"settings.json: valid\")'", "verify": { "mode": "offline", "expectedExit": 0, "note": "settings.json parses" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · compile, don't trust",
+      "beats": [
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Hooks are runtime wiring, not spec surface — the IR is unchanged. That's the point of per-deployment.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli — no hooks in it" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check boots the bundle from this directory, so loadHooks() reads the settings.json we just typed: GREEN.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Find loadHooks in the emitted agent", "cue": "“One line of generated code — `loadHooks({ cwd })`. Nothing magic, and nothing hidden.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "One more thing · watch a hook fire",
+      "beats": [
+        { "id": "run-repl", "label": "Launch the REPL", "cue": "[needs-key] “Now the hooks are live — every tool call goes through the pre-tool verdict.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs Anthropic credentials" } },
+        { "id": "run-denied", "label": "Ask for the thing the hook denies", "cue": "[needs-key] “The pre-tool hook returns deny — the agent never gets to run it, and it says why.”", "action": "input", "text": "Run this shell command for me: rm -rf /", "verify": { "mode": "needs-key", "note": "pre-tool hook denies with reason \"refused rm -rf /\"" } },
+        { "id": "run-allowed", "label": "Ask for something benign", "cue": "[needs-key] “Same hook, allow verdict — and post-tool logs the outcome to syslog.”", "action": "input", "text": "Run this shell command for me: echo hello", "verify": { "mode": "needs-key", "note": "pre-tool allows; post-tool ships outcome via logger" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } },
+        { "id": "extra-debug", "label": "Open the recipe's debugging section", "cue": "“CREWHAUS_HOOK_DEBUG=1 prints the stdin every hook received — read that before guessing.”", "action": "open", "file": "../../14-hooks.md", "preview": true }
+      ]
+    }
+  ]
+}

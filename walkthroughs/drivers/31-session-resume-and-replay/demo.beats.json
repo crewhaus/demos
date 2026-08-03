@@ -1,0 +1,66 @@
+{
+  "title": "Recipe 31 — Session Resume and Replay (the shell is the interface)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Two files per run: metadata for fast listing, an append-only JSONL for the truth. Resume walks the conversation and nothing else.”", "action": "open", "file": "../../31-session-resume-and-replay.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed starter is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — only the resume beats need it.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the spec the recipe resumes",
+      "beats": [
+        { "id": "spec-cli", "label": "Type the recipe's own spec", "cue": "“The recipe's resume line names starters/cli — so that's what we type. Seven lines; sessions are free, not configured.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Clean. Note there is no sessions block to lint — persistence is a runtime property, not spec surface.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Nothing about sessions in the IR either. What the bundle carries is a session name and target — the store derives the rest.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, boots it: GREEN. It also installs the session store and the event log we're about to drive directly.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate. Also lands live/dist/node_modules/@crewhaus/{session-store,event-log}, which the anatomy beats import.", "produces": ["live/dist/agent.ts", "live/dist/node_modules/@crewhaus/session-store/dist/index.js", "live/dist/node_modules/@crewhaus/event-log/dist/index.js"] } },
+        { "id": "prove-open", "label": "Open the emitted agent", "cue": "“Two lines carry the whole story — sessionName and sessionTarget. Everything else about a session is the store's business.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · session anatomy, written by the real store",
+      "beats": [
+        { "id": "sess-create", "label": "Create the recipe's session id", "cue": "“The store writes it, not us — and it comes out mode 0600, readable only by the owner, with the id the recipe prints.”", "action": "command", "command": "bun -e 'const {createSessionStore}=await import(\"./live/dist/node_modules/@crewhaus/session-store/dist/index.js\"); const s=await createSessionStore().create({id:\"sess_abc123def4567890\",name:\"hello\",target:\"cli\",model:\"claude-sonnet-5\"}); const p=\".crewhaus/sessions/\"+s.id+\".json\"; const m=require(\"fs\").statSync(p).mode & 0o777; console.log(\"wrote \"+p+\" mode 0\"+m.toString(8)); if(!/^sess_[0-9a-f]{16}$/.test(s.id)) throw new Error(\"id is not sess_<16hex>\"); if(m!==0o600) throw new Error(\"want 0600, got 0\"+m.toString(8))'", "verify": { "mode": "offline", "expectedExit": 0, "note": "wrote .crewhaus/sessions/sess_abc123def4567890.json mode 0600; asserts the sess_<16hex> id shape and the 0o600 file mode the recipe claims", "produces": [".crewhaus/sessions/sess_abc123def4567890.json"] } },
+        { "id": "meta-type", "label": "Type the recipe's printed metadata", "cue": "“This is the metadata block straight out of the recipe. Now let's see whether the store agrees with it.”", "action": "type", "source": "../../31-session-resume-and-replay.md", "sourceLines": [54, 62], "target": "live/session-metadata.json", "replace": true },
+        { "id": "meta-compare", "label": "Compare the recipe against the store", "cue": "“Seven keys on each side, and they match exactly — id, createdAt, updatedAt, name, target, model, lastTurnIndex.”", "action": "command", "command": "bun -e 'const k=p=>Object.keys(JSON.parse(require(\"fs\").readFileSync(p,\"utf8\"))).sort(); const a=k(\"live/session-metadata.json\"); const b=k(\".crewhaus/sessions/sess_abc123def4567890.json\"); console.log(\"recipe: \"+a.join(\", \")); console.log(\"store:  \"+b.join(\", \")); if(a.join()!==b.join()) throw new Error(\"the recipe and the store disagree\")'", "verify": { "mode": "offline", "expectedExit": 0, "note": "both sides print the same seven sorted keys" } },
+        { "id": "log-append", "label": "Write six events, then count the replayable ones", "cue": "“Six events go in: a user turn, an assistant turn, a tool call, its result, a compaction, an error. Resume walks two of them — the conversation, never the side effects.”", "action": "command", "command": "bun -e 'const {openEventLog}=await import(\"./live/dist/node_modules/@crewhaus/event-log/dist/index.js\"); const log=await openEventLog(\"sess_abc123def4567890\"); await log.append({kind:\"user_message\",payload:{content:\"How do I resume a session?\"}}); await log.append({kind:\"assistant_message\",payload:{content:[{type:\"text\",text:\"Hand the id back to run with --resume.\"}]}}); await log.append({kind:\"tool_use\",payload:{name:\"Read\",input:{file_path:\"README.md\"}}}); await log.append({kind:\"tool_result\",payload:{content:\"# demos\"}}); await log.append({kind:\"compaction\",payload:{tokensBefore:9000,tokensAfter:4000}}); await log.append({kind:\"error\",payload:{name:\"Error\",message:\"transient\"}}); await log.close(); const {parseSessionLog}=await import(\"./live/dist/node_modules/@crewhaus/session-store/dist/index.js\"); const evs=parseSessionLog(require(\"fs\").readFileSync(\".crewhaus/sessions/sess_abc123def4567890.jsonl\",\"utf8\")); const replayable=evs.filter(e=>e.kind===\"user_message\"||e.kind===\"assistant_message\"); console.log(\"log: \"+evs.length+\" events (\"+evs.map(e=>e.kind).join(\", \")+\")\"); console.log(\"resume reconstructs from \"+replayable.length+\" of them\"); if(evs.length!==6||replayable.length!==2) throw new Error(\"unexpected log shape\")'", "verify": { "mode": "offline", "expectedExit": 0, "note": "6 events appended by the real event log; parseSessionLog finds exactly 2 replayable kinds — this is why resume never re-runs a tool side effect", "produces": [".crewhaus/sessions/sess_abc123def4567890.jsonl"] } }
+      ]
+    },
+    {
+      "title": "Beat 4 · the shell is the interface",
+      "beats": [
+        { "id": "shell-ls", "label": "List sessions, newest first", "cue": "“No sessions dashboard needed for this — they are files, so ls is the list command.”", "action": "command", "command": "ls -t .crewhaus/sessions/sess_*.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "one line — the session the store beat just wrote" } },
+        { "id": "shell-jq-users", "label": "Walk every user message", "cue": "“And the recipe's own one-liner: pull the user's side of the conversation straight out of the JSONL.”", "action": "command", "command": "jq -r 'select(.kind == \"user_message\") | .payload.content' .crewhaus/sessions/sess_abc123def4567890.jsonl", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints `How do I resume a session?` — the one user turn in the log" } }
+      ]
+    },
+    {
+      "title": "Beat 5 · hand the id back to run",
+      "beats": [
+        { "id": "resume-run", "label": "Resume the session by id", "cue": "[needs-key] “The runtime loads the metadata, confirms the spec name matches, rebuilds the history, and opens a new turn.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml --resume sess_abc123def4567890", "verify": { "mode": "needs-key", "note": "interactive REPL; needs Anthropic credentials. Resumes the session the store beats wrote earlier in this drive — its two replayable events become the model's history. `--continue` takes the most-recent session instead of an explicit id." } },
+        { "id": "resume-ask", "label": "Ask it what you asked before", "cue": "[needs-key] “It has the earlier turn in context — the answer refers back to it rather than starting cold.”", "action": "input", "text": "What did I ask you a moment ago, and what was your answer?", "verify": { "mode": "needs-key" } },
+        { "id": "resume-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · eviction, and the replay engine",
+      "beats": [
+        { "id": "evict-touch", "label": "Age the session past its TTL", "cue": "“Eviction is mtime-keyed, so the recipe's trick is exactly this: backdate the file.”", "action": "command", "command": "touch -t 202001010000 .crewhaus/sessions/sess_abc123def4567890.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "the recipe's own touch line; sets the metadata's mtime to 2020" } },
+        { "id": "evict-run", "label": "Run the eviction pass", "cue": "“Thirty days by default, and it takes the sibling event log with it. This is the runtime's only automatic deletion.”", "action": "command", "command": "bun -e 'const {evictExpiredSessions,DEFAULT_TTL_DAYS}=await import(\"./live/dist/node_modules/@crewhaus/session-store/dist/index.js\"); const {evictedIds}=await evictExpiredSessions(); console.log(\"ttlDays default: \"+DEFAULT_TTL_DAYS+\"; evicted: \"+evictedIds.join(\", \")); const fs=require(\"fs\"); for(const p of [\".crewhaus/sessions/sess_abc123def4567890.json\",\".crewhaus/sessions/sess_abc123def4567890.jsonl\"]) if(fs.existsSync(p)) throw new Error(p+\" survived eviction\"); console.log(\"metadata and event log both gone\")'", "verify": { "mode": "offline", "expectedExit": 0, "note": "ttlDays default: 30; evicted: sess_abc123def4567890; asserts both the .json and its sibling .jsonl are unlinked" } },
+        {"id": "replay-smoke", "label": "Run the Studio replay smoke", "cue": "[manual] “Probe 4 is the replay engine the Studio viewer embeds: same events in, same events out, deterministically.”", "action": "command", "command": "bun ../../../smoke/section-31-smoke/smoke.ts", "verify": {"mode": "manual", "note": "needs the sibling factory workspace linked: the smoke imports @crewhaus/graph-visualizer, which demos does not declare as a dependency, so a bare `bun install --frozen-lockfile` checkout (CI) cannot resolve it. Passes on a dev machine with the workspace installed."}}
+      ]
+    }
+  ]
+}

@@ -230,7 +230,7 @@ in the same thread.
 
 ## Step 7 — Swap the model
 
-Same recipe as 49 and 50. `claude-sonnet-4-6` is a good default — a
+Same recipe as 49 and 50. `claude-sonnet-5` is a good default — a
 multi-channel daemon is verbose enough that Sonnet's price/perf is
 better than Opus for the cost.
 

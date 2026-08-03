@@ -1,6 +1,6 @@
 name: hello-workflow
 target: workflow
-model: claude-sonnet-4-6
+model: claude-sonnet-5
 # Workflow steps run in single-turn mode, where the permission engine has
 # no interactive surface to prompt on — any tool whose default verdict is
 # `ask` is converted to `deny`. The Bash tool is `destructive: true` and

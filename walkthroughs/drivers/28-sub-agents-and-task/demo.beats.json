@@ -1,0 +1,61 @@
+{
+  "title": "Recipe 28 — Sub-agents and the Task tool (delegate without polluting context)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Sub-agents are one-shot exploration with hard isolation — fresh session, empty history, its own permission posture.”", "action": "open", "file": "../../28-sub-agents-and-task.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed showcase spec is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-reset-def", "label": "Blank the on-disk definition", "cue": "“The second route to a sub-agent is a file: .crewhaus/sub-agents/<name>.md. That's the file we'll write.”", "action": "reset", "file": ".crewhaus/sub-agents/code-reviewer.md" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beats.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the parent, and the two children the recipe names",
+      "beats": [
+        { "id": "spec-parent", "label": "Type the plain recipe-01 parent", "cue": "“Start from the plainest agent there is. Nothing here can delegate yet — no Task tool exists.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "spec-explorer", "label": "Add code-explorer — the read-only mapper", "cue": "“The showcase's own read-only explorer: Read, Glob, Grep and nothing else. Read-only children are the ones that run concurrently.”", "action": "type", "source": "../../../starters/showcases/procode/crewhaus.yaml", "sourceLines": [185, 209] },
+        { "id": "spec-runner", "label": "Add test-runner — allow-listed bash", "cue": "“Same shape, sharper teeth: Bash, but allow-listed per test runner, and rm -rf denied outright.”", "action": "type", "source": "../../../starters/showcases/procode/crewhaus.yaml", "sourceLines": [210, 247] }
+      ]
+    },
+    {
+      "title": "Beat 2 · the other route — a definition on disk",
+      "beats": [
+        { "id": "def-type", "label": "Type the recipe's sub-agent definition", "cue": "“Frontmatter is the contract: name, description, the child's tool whitelist, and its permissions \u2014 inherit, scoped, or an explicit allow/deny pair. Discovery is project, then user, then plugin.”", "action": "type", "source": "../../28-sub-agents-and-task.md", "sourceLines": [108, 134], "target": ".crewhaus/sub-agents/code-reviewer.md", "replace": true },
+        { "id": "def-validate", "label": "Prove the frontmatter is well formed", "cue": "“A malformed definition is the common bug — check the four required keys AND the permissions shape before the runtime does. The spec-style {mode, rules} block is the one that gets written here by mistake, and the parser rejects it.”", "action": "command", "command": "bun -e 'const t=require(\"fs\").readFileSync(\".crewhaus/sub-agents/code-reviewer.md\",\"utf8\"); const m=t.match(/^---\\n([\\s\\S]*?)\\n---\\n/); if(!m) throw new Error(\"no frontmatter\"); for(const k of [\"name:\",\"description:\",\"tools:\",\"permissions:\"]) if(!m[1].includes(k)) throw new Error(\"missing \"+k); const p=Bun.YAML.parse(m[1]).permissions; if(!(p===\"inherit\"||p===\"scoped\"||(p&&Array.isArray(p.allow)&&Array.isArray(p.deny)))) throw new Error(\"permissions must be inherit | scoped | {allow, deny}\"); console.log(\"code-reviewer.md: frontmatter ok, permissions=\"+JSON.stringify(p)+\", briefing \"+(t.length-m[0].length)+\" bytes\")'", "verify": { "mode": "offline", "expectedExit": 0, "note": "code-reviewer.md: frontmatter ok, permissions={allow:[Read,Grep],deny:[Bash(**)]} \u2014 the three legal shapes are inherit | scoped | {allow, deny}, NOT the spec-style {mode, rules}" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the parent spec", "cue": "“Two sub-agents added, still clean — so anything that changes below is the delegation's doing.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“The children are spec surface, not runtime magic — they're right there in the IR the compiler sees.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli, sub_agents included" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check boots the bundle from this directory, so the on-disk definition we just wrote gets resolved too: GREEN, no key.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts", "live/dist/package.json"] } },
+        { "id": "prove-task", "label": "Find the Task tool in the emitted agent", "cue": "“Four lines of generated code: the tool, the spawner, the registration, and the bridge. That's the whole mechanism.”", "action": "command", "command": "grep -n \"tool-task\\|spawnSubAgent\\|createTaskTool\" live/dist/agent.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "4 lines — createTaskTool import, spawnSubAgent import, catalog registration, and the bridge wiring" } },
+        { "id": "prove-open", "label": "Open the emitted agent", "cue": "“spawnSubAgent is handed in through the bridge — the Task tool never imports runtime-core itself.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 4 · what the parent's log actually keeps",
+      "beats": [
+        {"id": "log-type", "label": "Type the boundary events", "cue": "“A fifty-action child shows up in the parent's log as exactly this: one start, one end. The full transcript lives in the child's own session file.”", "action": "type", "source": "../../28-sub-agents-and-task.md", "sourceLines": [232, 233], "target": "live/parent-session.jsonl", "replace": true},
+        { "id": "log-validate", "label": "Prove it is one boundary pair", "cue": "“Same childRunId on both lines — that's the handle you follow into .crewhaus/sessions to read the child.”", "action": "command", "command": "bun -e 'const ls=require(\"fs\").readFileSync(\"live/parent-session.jsonl\",\"utf8\").trim().split(\"\\n\").map(l=>JSON.parse(l)); if(ls.length!==2) throw new Error(\"want one boundary pair, got \"+ls.length); const [a,b]=ls; if(a.kind!==\"sub_agent_start\"||b.kind!==\"sub_agent_end\") throw new Error(\"not a start/end pair\"); if(a.childRunId!==b.childRunId) throw new Error(\"childRunId mismatch\"); console.log(\"parent log: 2 events, one child (\"+a.childRunId+\"), description: \"+a.description)'", "verify": { "mode": "offline", "expectedExit": 0, "note": "parent log: 2 events, one child (run_def)" } }
+      ]
+    },
+    {
+      "title": "One more thing · the Task tool exists only because the spec declares children",
+      "beats": [
+        { "id": "contrast-type", "label": "Type the parent with no children", "cue": "“Same seven lines, no sub_agents block. Watch what disappears from the bundle.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "target": "live/plain.yaml", "replace": true },
+        { "id": "contrast-compile", "label": "Compile the childless parent", "cue": "“Compiles clean — nothing is wrong with it. It just cannot delegate.”", "action": "command", "command": "crewhaus compile live/plain.yaml -o live/plain", "verify": { "mode": "offline", "expectedExit": 0, "note": "compiled bundle (2 files) → live/plain", "produces": ["live/plain/agent.ts"] } },
+        { "id": "contrast-grep", "label": "Look for Task — and find nothing", "cue": "“Deliberate empty result, exit 1: no Task tool, no spawner. Declaring sub_agents is what mints the tool.”", "action": "command", "command": "grep -n \"tool-task\\|spawnSubAgent\\|createTaskTool\" live/plain/agent.ts", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate no-match — grep exits 1; the childless bundle has no Task tool at all" } },
+        { "id": "extra-factory", "label": "Run the isolation and abort suites", "cue": "[manual] “The invariants a recipe-level smoke would cover — isolation, abort cascade, permission inheritance — live in the factory packages.”", "action": "command", "command": "bun test packages/sub-agent-spawner packages/agent-context-isolation", "verify": { "mode": "manual", "note": "the recipe's own commands cd into a sibling ../factory checkout and a driver beat never cds; run by hand from there. Verified locally: packages/sub-agent-spawner is 19 pass / 0 fail." } }
+      ]
+    }
+  ]
+}

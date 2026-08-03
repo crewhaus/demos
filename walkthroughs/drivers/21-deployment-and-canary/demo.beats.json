@@ -1,0 +1,74 @@
+{
+  "title": "Recipe 21 — Deployment and Canary (specs as versioned artifacts, pins as the only lever)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Recipe 21 treats a spec like code: stored versions, one pin per environment, promotions and rollbacks that are audit-logged, and a ramp gated on a real eval regression check.”", "action": "open", "file": "../../21-deployment-and-canary.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe and starters are never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-registry", "label": "Start from an empty registry", "cue": "“The registry is file-backed under .crewhaus — scratch here, so every version and every audit record you are about to see was written by this take.”", "action": "command", "command": "rm -rf .crewhaus/specs .crewhaus/audit .crewhaus/experiments", "verify": { "mode": "offline", "expectedExit": 0, "note": "idempotent — makes the version numbers and audit sequence on camera reproducible" } },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the canary ramp evals both versions, and an eval needs a real credential.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the spec that becomes v1",
+      "beats": [
+        { "id": "spec-cli", "label": "Type recipe 01's harness", "cue": "“Any spec will do — versioning is orthogonal to shape. Seven lines, so the interesting thing on screen is the registry, not the YAML.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "prove-lint", "label": "Lint it", "cue": "“Clean before it is ever stored. A registry full of specs that do not compile is worse than no registry.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“GREEN with no key — and read the last two lines: compiling registered hello@v1. The registry is not a separate ritual; the compiler feeds it.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate. Also prints “registered hello@v1” — auto-registration is what puts v1 in .crewhaus/specs", "produces": ["live/dist/agent.ts", ".crewhaus/specs/hello/manifest.json"] } },
+        { "id": "registry-list", "label": "List what the registry holds", "cue": "“One version, and nobody typed a registry command to get it there.”", "action": "command", "command": "crewhaus spec list hello", "verify": { "mode": "offline", "expectedExit": 0, "note": "v1" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · versions, and the pins that are the aliases",
+      "beats": [
+        { "id": "spec-put-v2", "label": "Store a second version", "cue": "“put is the add operation. Storing a version changes nothing about what runs — that is the whole safety property.”", "action": "command", "command": "crewhaus spec put hello v2 live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "stored hello@v2 (190 bytes)" } },
+        { "id": "pin-prod", "label": "Pin prod to v1", "cue": "“pin is the only operation that changes what production runs. There is no separate alias map — the env pins are the aliases.”", "action": "command", "command": "crewhaus spec pin hello prod v1", "verify": { "mode": "offline", "expectedExit": 0, "note": "pinned hello prod → v1" } },
+        { "id": "pin-staging", "label": "Pin staging to v2", "cue": "“Staging ahead of prod: the normal state of a healthy deployment.”", "action": "command", "command": "crewhaus spec pin hello staging v2", "verify": { "mode": "offline", "expectedExit": 0, "note": "pinned hello staging → v2" } },
+        { "id": "alias-prod", "label": "Resolve prod", "cue": "“alias is the read: which version does this environment actually resolve to right now. This is the question a running daemon asks.”", "action": "command", "command": "crewhaus spec alias hello prod", "verify": { "mode": "offline", "expectedExit": 0, "note": "v1" } },
+        { "id": "registry-open", "label": "Open the manifest", "cue": "“The source of truth, on disk: the version list and the pins map. Every write to it is a tempfile-and-rename, so a concurrent promote and rollback serialize instead of interleaving.”", "action": "open", "file": ".crewhaus/specs/hello/manifest.json" }
+      ]
+    },
+    {
+      "title": "Beat 3 · tenant overlays",
+      "beats": [
+        {"id": "tenant-pin", "label": "Pin tenant-a ahead of everyone", "cue": "“A tenant on a regulatory hold, or one in an early-access beta. The overlay does not copy the spec — it points at a version everybody else already shares.”", "action": "command", "command": "crewhaus spec pin hello prod v2 --tenant tenant-a", "verify": {"mode": "offline", "expectedExit": 0, "note": "pinned tenant=tenant-a hello prod → v2; writes the env-keyed overlay .crewhaus/specs/_tenants/tenant-a/hello.json ({\"prod\":\"v2\"})"}},
+        { "id": "tenant-alias", "label": "Resolve prod for tenant-a", "cue": "“v2 for tenant-a, v1 for everyone else — same environment, same vetted version set, two answers. That is the resolution order: overlay first, env pin otherwise.”", "action": "command", "command": "crewhaus spec alias hello prod --tenant tenant-a", "verify": { "mode": "offline", "expectedExit": 0, "note": "v2 — contrast with the alias-prod beat's v1" } }
+      ]
+    },
+    {
+      "title": "Beat 4 · promote, roll back, and prove the trail",
+      "beats": [
+        {"id": "promote", "label": "Promote staging to prod", "cue": "“Read the version pinned to staging, pin prod to it, audit the change. Three steps, atomic, no spec bytes copied.”", "action": "command", "command": "crewhaus deploy promote hello staging prod", "verify": {"mode": "offline", "expectedExit": 0, "note": "promoted hello staging → prod (now pinned to v2)"}},
+        {"id": "rollback", "label": "Roll prod back to v1", "cue": "“The fast lever: assert the target version exists, re-pin, audit the reason. One command, and no partial cutover survives it.”", "action": "command", "command": "crewhaus deploy rollback hello prod v1", "verify": {"mode": "offline", "expectedExit": 0, "note": "rolled back hello prod → v1 (was v2)"}},
+        { "id": "audit-verify", "label": "Verify the deployment audit chain", "cue": "“Two deployment_action records, hash-chained, gapless from sequence zero, and the on-host tail anchor matching. Replay that log and you know who pinned what, when.”", "action": "command", "command": "crewhaus audit verify", "verify": { "mode": "offline", "expectedExit": 0, "note": "hash chain intact — the promote and rollback records, each chained to the previous hash", "produces": [".crewhaus/audit/_chain-tail.json"] } }
+      ]
+    },
+    {
+      "title": "Beat 5 · migrations — the schema delta, not the behavior delta",
+      "beats": [
+        {"id": "migrate", "label": "Migrate every spec in the registry", "cue": "“It walks the registry, computes the chain of up steps per spec, and applies them — landing a fresh v3. Migration shaves off the schema delta; canary is for the behavior delta. The two compose, in that order.”", "action": "command", "command": "crewhaus migrate-all --from 1 --to 1", "verify": {"mode": "offline", "expectedExit": 0, "note": "migrate hello@v2 → v3 · migrated=1 skipped=0 failed=0", "produces": [".crewhaus/specs/hello/v3.yaml"]}}
+      ]
+    },
+    {
+      "title": "Beat 6 · the canary ramp",
+      "beats": [
+        { "id": "canary", "label": "Ramp v3 against v1, gated on a regression check", "cue": "[needs-key] “At each step it evals both versions against the same dataset and graders, then feeds the two results into the regression gate. Pass every step and prod auto-promotes; fail the first and it auto-rolls-back and stops.”", "action": "command", "command": "crewhaus deploy canary live/crewhaus.yaml v3 --traffic 5,25,50,100 --dataset ../../../starters/eval/.crewhaus/datasets/hello-eval/dev.jsonl --graders ../../../starters/eval/graders.yaml --from v1 --env prod --max-pass-rate-drop 0.05 --max-p95-latency-ms 5000", "verify": { "mode": "needs-key", "note": "every ramp step runs two real evals; needs Anthropic credentials. The percentages sequence the confidence ramp — for target: cli each step evals the FULL dataset, because route() has no serving-path consumer" } }
+      ]
+    },
+    {
+      "title": "One more thing · the outcome ledger refuses to guess",
+      "beats": [
+        { "id": "exp-record", "label": "Record one outcome", "cue": "“The ledger is the outcome path — one record per (version, outcome), from a ramp's eval samples or from your own serving boundary.”", "action": "command", "command": "crewhaus experiment record --name hello --version v3 --outcome pass", "verify": { "mode": "offline", "expectedExit": 0, "note": "[experiment] recorded pass for hello@v3", "produces": [".crewhaus/experiments"] } },
+        { "id": "exp-status", "label": "Ask it who won", "cue": "“Wilson 95% intervals, and a flat refusal: n=1 is below the thirty-observation minimum. It also collapses repeat eval measurements of the same sample, because re-running a ramp does not grow the evidence.”", "action": "command", "command": "crewhaus experiment status --name hello --min-n 30", "verify": { "mode": "offline", "expectedExit": 0, "note": "verdict: insufficient-data — refusing to declare a winner below --min-n. Exit 0: refusing to guess is a valid answer, not a failure" } },
+        { "id": "exp-assign", "label": "Ask for a variant assignment", "cue": "“Exit 1, and the error is the lifecycle: no ramp wrote a split, or a ramp concluded and retired it. A surviving 50/50 file would route half your keys at a version nobody is running.”", "action": "command", "command": "crewhaus experiment assign --name hello --key user_42", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection, exit 1 — no assignment exists because no --traffic-split ramp has run in this take. The message names both reasons rather than returning a default version" } }
+      ]
+    }
+  ]
+}

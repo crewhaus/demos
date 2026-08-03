@@ -1,0 +1,57 @@
+{
+  "title": "Recipe 59 — Model resilience & cost (failover, budgets, and right-sizing)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Four escalating answers to 'the model failed or cost too much' — each one a few lines of spec.”", "action": "open", "file": "../../59-model-resilience-and-cost.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run and scan beats.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · declarative provider failover",
+      "beats": [
+        { "id": "spec-failover", "label": "Type the failover spec", "cue": "“model_fallbacks: a chain, not a try/catch. When the breaker opens, turns retry down the chain instead of dying.”", "action": "type", "source": "../../59-model-resilience-and-cost.md", "sourceLines": [46, 60], "replace": true },
+        { "id": "failover-lint", "label": "Lint it", "cue": "“Clean — failover is declared, so a reviewer sees it in the diff.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "failover-check", "label": "Compile it and check it", "cue": "“--check: GREEN. The chain survives a real install and boot.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/failover --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/failover/agent.ts"] } },
+        { "id": "failover-taxonomy", "label": "Type the failure taxonomy", "cue": "“Not every failure should fail over. A 400 is your bug; a 529 is theirs — only one of those deserves a retry.”", "action": "type", "source": "../../59-model-resilience-and-cost.md", "sourceLines": [79, 82], "target": "live/taxonomy.yaml", "replace": true },
+        { "id": "failover-open-tax", "label": "Read it", "cue": "“Classifying the failure is what makes the retry safe.”", "action": "open", "file": "live/taxonomy.yaml" }
+      ]
+    },
+    {
+      "title": "Beat 2 · the adaptive pool",
+      "beats": [
+        { "id": "pool-reset", "label": "Blank the scratch spec", "cue": "“Now the far end of the recipe — a pool the router learns over, instead of a fixed chain.”", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "pool-spec", "label": "Type the adaptive pool spec", "cue": "“Candidates with tags — balanced and strong. The router picks per turn, and learns which one was worth it.”", "action": "type", "source": "../../59-model-resilience-and-cost.md", "sourceLines": [168, 185], "replace": true },
+        { "id": "pool-lint", "label": "Lint it", "cue": "“Clean. A learned router is still a declared router.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "pool-check", "label": "Compile it and check it", "cue": "“--check: GREEN, gated at the model credential.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/pool --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/pool/agent.ts"] } },
+        { "id": "pool-status", "label": "Ask the router what it has learned", "cue": "“No routing data yet — it says so instead of showing you a confident empty table.”", "action": "command", "command": "crewhaus route status > live/route.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "reports honestly with no routing history", "produces": ["live/route.txt"] } },
+        { "id": "pool-open-status", "label": "Read it", "cue": "“Per-band arms and the current best. After a few hundred turns this is where the savings show up.”", "action": "open", "file": "live/route.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · is the cheap model good enough?",
+      "beats": [
+        { "id": "rightsize-help", "label": "Read the right-size contract", "cue": "“right-size answers the question with the dataset instead of a hunch: can the cheap model hold the score?”", "action": "command", "command": "crewhaus model right-size --help > live/rightsize.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped right-size flags", "produces": ["live/rightsize.txt"] } },
+        { "id": "rightsize-open", "label": "Read it", "cue": "“It needs a dataset. Every cost claim in this recipe is measured, never asserted.”", "action": "open", "file": "live/rightsize.txt" },
+        { "id": "scan-help", "label": "Read the model-scan contract", "cue": "“model-scan runs the whole candidate set and hands you the score/cost frontier.”", "action": "command", "command": "crewhaus model-scan --help > live/scan.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped model-scan flags", "produces": ["live/scan.txt"] } },
+        { "id": "scan-open", "label": "Read it", "cue": "“Pick the knee of the curve, not the top of it.”", "action": "open", "file": "live/scan.txt" }
+      ]
+    },
+    {
+      "title": "One more thing · budgets and pricing",
+      "beats": [
+        { "id": "budget-run", "label": "Cap a run", "cue": "[needs-key] “--budget-usd 2.00 is the hard stop. It ends the run cleanly rather than halfway through a tool call.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml --budget-usd 2.00", "verify": { "mode": "needs-key", "note": "interactive REPL bounded by a spend cap; needs a model credential" } },
+        { "id": "pricing-doctor", "label": "Flag unpriced models", "cue": "“doctor --models catches a model your pricing table has never heard of — the one that makes every cost number a lie.”", "action": "command", "command": "crewhaus doctor --models > live/pricing.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "flags any model with no pricing row", "produces": ["live/pricing.txt"] } },
+        { "id": "pricing-open", "label": "Read it", "cue": "“If this is empty, your cost dashboard means something. If it isn't, it doesn't.”", "action": "open", "file": "live/pricing.txt" }
+      ]
+    }
+  ]
+}

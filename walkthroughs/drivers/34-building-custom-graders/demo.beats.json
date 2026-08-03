@@ -1,0 +1,61 @@
+{
+  "title": "Recipe 34 — Building Custom Graders (a grader is an instrument; measure it)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“The bundled graders stop where your domain starts. This is the authoring loop for the one you have to write yourself.”", "action": "open", "file": "../../34-building-custom-graders.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed recipe and the starter it borrows are never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — only the judge beat at the end needs it.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the harness a grader plugs into",
+      "beats": [
+        { "id": "spec-eval", "label": "Type the starter the recipe points at", "cue": "“starters/eval is the runnable starting point: a math agent, a labelled dev split, one deterministic grader.”", "action": "type", "source": "../../../starters/eval/crewhaus.yaml", "sourceLines": [1, 13], "replace": true },
+        { "id": "prove-lint", "label": "Lint the spec", "cue": "“Clean before we add an instrument, so anything that moves later is the grader's doing.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-check", "label": "Compile the scorer — and check it", "cue": "“--check asserts the emitted shape, installs the deps, boots it: GREEN, gated on a registered dataset rather than a key.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (3 anchors); install ok; boot gated at the eval dataset gate (this scratch dir vendors no dataset)", "produces": ["live/dist/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 2 · author the grader",
+      "beats": [
+        { "id": "grader-fn", "label": "Type the recipe's pure-function grader", "cue": "“The whole contract: sample in, run result in, and out comes passed, score, rationale. Thirteen lines, no framework.”", "action": "type", "source": "../../34-building-custom-graders.md", "sourceLines": [90, 102], "target": ".crewhaus/graders/starts-with-digit/index.ts", "replace": true },
+        { "id": "grader-export", "label": "Make it discoverable", "cue": "“One default export is what turns a function into a plugin — and the name here is the REGISTERED name, not the file name.”", "action": "type", "target": ".crewhaus/graders/starts-with-digit/index.ts", "text": "\nexport default [{ name: \"starts_with_digit\", grader: startsWithDigit }];\n" },
+        { "id": "graders-yaml", "label": "Type the recipe's graders.yaml entry", "cue": "“type: registry, and grader: is the registered name. name: is only the label the report prints.”", "action": "type", "source": "../../34-building-custom-graders.md", "sourceLines": [118, 121], "target": "live/graders.yaml", "replace": true }
+      ]
+    },
+    {
+      "title": "Beat 3 · an unmeasured instrument is a guess",
+      "beats": [
+        { "id": "golden", "label": "Write three human-adjudicated verdicts", "cue": "“Strict JSONL: an id, the input, the agent output, and what a human says the verdict should be.”", "action": "type", "target": "live/golden-verdicts.jsonl", "replace": true, "text": "{\"id\":\"g1\",\"input\":\"how many things\",\"agent_output\":\"5 things to remember\",\"expected_passed\":true,\"expected_score\":1}\n{\"id\":\"g2\",\"input\":\"how many things\",\"agent_output\":\"five things to remember\",\"expected_passed\":false,\"expected_score\":0}\n{\"id\":\"g3\",\"input\":\"count the apples\",\"agent_output\":\"3 apples\",\"expected_passed\":true,\"expected_score\":1}\n" },
+        { "id": "graders-test", "label": "Meta-eval the grader", "cue": "“Agreement 100%, kappa 1.000, score error zero — and the gate passes. That number is about the instrument, not the agent. Credential-free: nothing called a model.”", "action": "command", "command": "crewhaus graders test --graders live/graders.yaml --golden live/golden-verdicts.jsonl --min-agreement 0.85", "verify": { "mode": "offline", "expectedExit": 0, "note": "discovers the plugin from ./.crewhaus/graders, replays 3 golden verdicts: agreement 100% (3/3), kappa 1.000, MAE 0.000, gate passed" } },
+        { "id": "card", "label": "Card the instrument", "cue": "“Deterministic — no timestamps, identity is the gradersHash. So a card diff in a PR is a real instrument change, never noise.”", "action": "command", "command": "crewhaus graders card --graders live/graders.yaml -o live/RUBRIC-CARD.md", "verify": { "mode": "offline", "expectedExit": 0, "note": "writes the rubric card: gradersHash, combine policy, one registry grader", "produces": ["live/RUBRIC-CARD.md"] } },
+        { "id": "card-open", "label": "Read the card", "cue": "“This is what you attach to the release PR: the measurement instrument, in writing.”", "action": "open", "file": "live/RUBRIC-CARD.md", "preview": true }
+      ]
+    },
+    {
+      "title": "Beat 4 · the recipe's own tests, verbatim",
+      "beats": [
+        { "id": "test-header", "label": "Import the grader under test", "cue": "“Two imports — the grader is an ordinary function, so it tests like one.”", "action": "type", "target": "live/grader.test.ts", "replace": true, "text": "import { expect, test } from \"bun:test\";\n\nimport { startsWithDigit } from \"../.crewhaus/graders/starts-with-digit/index.ts\";\n\n" },
+        { "id": "test-body", "label": "Type the recipe's fixture tests", "cue": "“Straight out of the recipe's Testing graders section: one case that must pass, one that must fail.”", "action": "type", "source": "../../34-building-custom-graders.md", "sourceLines": [468, 483], "target": "live/grader.test.ts" },
+        { "id": "test-run", "label": "Run them", "cue": "“Two pass, zero fail, seven milliseconds. Deterministic, fast, free — which is why you reach for a pure function whenever you can.”", "action": "command", "command": "bun test live/grader.test.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "2 pass, 0 fail, 3 expect() calls — the recipe's own fenced tests against the recipe's own fenced grader" } }
+      ]
+    },
+    {
+      "title": "One more thing · when the grader needs a model",
+      "beats": [
+        { "id": "judge-head", "label": "Start a judge config", "cue": "“Fuzzy quality needs a model in the loop — and the second rubric branch picks exactly one label instead of a 1-to-5 score.”", "action": "type", "target": "live/graders-judge.yaml", "replace": true, "text": "graders:\n" },
+        { "id": "judge-body", "label": "Type the recipe's categorical rubric", "cue": "“The label scores and the passing set are deliberately hidden from the judge — it picks a label, the config decides what that means.”", "action": "type", "source": "../../34-building-custom-graders.md", "sourceLines": [184, 191], "target": "live/graders-judge.yaml" },
+        { "id": "judge-skip", "label": "Meta-eval it with no credentials", "cue": "“Exit one, on purpose: it names the missing key, skips the judge, and refuses to report an agreement it never measured. Deterministic graders would have kept testing — this file has none.”", "action": "command", "command": "env -u ANTHROPIC_API_KEY -u ANTHROPIC_AUTH_TOKEN crewhaus graders test --graders live/graders-judge.yaml --golden live/golden-verdicts.jsonl", "verify": { "mode": "offline", "expectedExit": 1, "note": "REAL exit 1 — “skipped llm_judge \"verdict\" — no credentials visible …” then “no testable graders”. Scrubs explicitly because the Setup group sourced .env into this same shell" } },
+        { "id": "judge-test", "label": "Now with a key", "cue": "[needs-key] “Same file, same goldens — the judge actually runs, and its agreement with the humans is the number that matters.”", "action": "command", "command": "crewhaus graders test --graders live/graders-judge.yaml --golden live/golden-verdicts.jsonl", "verify": { "mode": "needs-key", "note": "judges at the rubric's declared passing set; needs visible judge credentials (the calibrate --apply overlay is deliberately NOT applied here)" } }
+      ]
+    }
+  ]
+}

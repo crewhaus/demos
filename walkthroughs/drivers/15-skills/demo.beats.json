@@ -1,0 +1,60 @@
+{
+  "title": "Recipe 15 — Skills (a registry of procedures the model opts into)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“A skill is a markdown procedure the model chooses to load. Frontmatter costs tokens at boot; the body costs nothing until it's called.”", "action": "open", "file": "../../15-skills.md", "preview": true },
+        { "id": "setup-reset", "label": "Blank the scratch spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run beat — watching the model pick a skill means really calling it.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the harness skills attach to",
+      "beats": [
+        { "id": "spec-cli", "label": "Type recipe 01's harness", "cue": "“Skills are data, not spec surface — so start from the plainest recipe-01 agent, and change nothing about it.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "spec-lint", "label": "Lint it", "cue": "“Clean before a single skill exists — so anything that changes downstream is the skills' doing.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } }
+      ]
+    },
+    {
+      "title": "Beat 2 · write the skills",
+      "beats": [
+        { "id": "skill-release", "label": "Type the recipe's release-checklist skill", "cue": "“One directory, one SKILL.md: frontmatter with a name and a description, then a numbered procedure with an explicit stop point.”", "action": "type", "source": "../../15-skills.md", "sourceLines": [43, 61], "target": ".crewhaus/skills/release-checklist/SKILL.md", "replace": true },
+        { "id": "skill-open", "label": "Open what we just wrote", "cue": "“Second-person imperatives, tools named the way the model sees them, and a line that says where to stop. That's the whole authoring guidance.”", "action": "open", "file": ".crewhaus/skills/release-checklist/SKILL.md" },
+        { "id": "skill-triage", "label": "Add the bug-triage skill", "cue": "“Second procedure — and note it references linear__get_issue by its model-facing MCP name, not prose.”", "action": "type", "source": "../../15-skills.md", "sourceLines": [168, 182], "target": ".crewhaus/skills/bug-triage/SKILL.md", "replace": true },
+        { "id": "skill-review", "label": "Add the code-review skill", "cue": "“Third. Now we have a registry — and the point of the recipe is that three cost the same at boot as one, plus sixty tokens.”", "action": "type", "source": "../../15-skills.md", "sourceLines": [188, 202], "target": ".crewhaus/skills/code-review/SKILL.md", "replace": true },
+        { "id": "skills-ls", "label": "List the project layer", "cue": "“Skills are file-discovered, so the directory listing IS the registry.” That's the recipe's first debugging move.", "action": "command", "command": "ls .crewhaus/skills/", "verify": { "mode": "offline", "expectedExit": 0, "note": "bug-triage, code-review, release-checklist — the project layer, which overrides ~/.crewhaus/skills" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · compile, don't trust",
+      "beats": [
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Nothing about skills appears in the IR. They're runtime data read from the working directory — which is exactly why no spec change was needed.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target cli — no skills field in it" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it from this directory — so the boot that runs is the one that discovers our three skills. GREEN, no key.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (11 anchors); install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Find the skill wiring in the emitted agent", "cue": "“Three lines of generated code: wireMemory discovers them from cwd, createSkillTool registers the synthetic Skill tool. Nothing hidden.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 4 · what the model sees at boot",
+      "beats": [
+        { "id": "boot-render", "label": "Run the real discovery, keylessly", "cue": "“discoverSkills plus formatSkillsForPrompt — the actual runtime functions the bundle calls, from the bundle we just checked. This is the system-prompt block, not a mock-up.”", "action": "command", "command": "bun --cwd live/dist -e 'import { discoverSkills, formatSkillsForPrompt } from \"@crewhaus/skills-registry\"; const s = await discoverSkills({ cwd: \"../..\", homeDir: \"/nonexistent\" }); console.log(formatSkillsForPrompt(s))' > live/skills-at-boot.txt", "verify": { "mode": "offline", "expectedExit": 0, "note": "keyless — discovery is frontmatter parsing on disk. homeDir is pinned off the operator's real ~/.crewhaus/skills so the take is deterministic; redirect, not a pipe, so the exit code is bun's", "produces": ["live/skills-at-boot.txt"] } },
+        { "id": "boot-open", "label": "Read the rendered block", "cue": "“One line per skill — name and description only. The bodies stayed on disk, which is the whole reason fifty skills isn't fifty system prompts.”", "action": "open", "file": "live/skills-at-boot.txt" }
+      ]
+    },
+    {
+      "title": "One more thing · watch the model opt in",
+      "beats": [
+        { "id": "run-repl", "label": "Launch the REPL", "cue": "[needs-key] “Same spec as recipe 01. The only difference is three files it found on the way up.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs Anthropic credentials" } },
+        { "id": "run-ship", "label": "Say the word the skill was written for", "cue": "[needs-key] “The model calls Skill({ name: \"release-checklist\" }) — and only then does the body cost anything.”", "action": "input", "text": "Let's ship a release.", "verify": { "mode": "needs-key", "note": "lazy load: loadSkillBody reads the body from disk at call time and returns it as the tool output" } },
+        { "id": "run-exit", "label": "Exit the REPL", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } },
+        { "id": "extra-recipe", "label": "Open the recipe's boundary section", "cue": "“A skill is model-discovered. If you need it on every call regardless of what the model wants, that's a hook — recipe 14.”", "action": "open", "file": "../../15-skills.md", "preview": true }
+      ]
+    }
+  ]
+}

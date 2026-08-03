@@ -150,7 +150,7 @@ passing_score: 4
 export const factuallyAccurate = createJudgeGrader(rubric, {
   model: "claude-haiku-4-5-20251001",
   // optional: temperature (default 0), repeats (odd — median panel),
-  // judges: ["claude-sonnet-4-5", "openai/gpt-4o"] (multi-model panel),
+  // judges: ["claude-sonnet-5", "openai/gpt-4o"] (multi-model panel),
   // target: "transcript" (judge the trajectory, not the final answer)
 });
 ```

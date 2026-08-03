@@ -47,7 +47,7 @@ name: support-agent
 target: cli
 version: 1
 agent:
-  model: claude-sonnet-4-5
+  model: claude-sonnet-5
   instructions: |
     Answer the user's support question. Cite the doc you used.
   model_fallbacks:
@@ -94,7 +94,7 @@ name: support-agent
 target: cli
 version: 1
 agent:
-  model: claude-sonnet-4-5
+  model: claude-sonnet-5
   instructions: Answer the user's support question.
 tools: []
 budget:
@@ -132,11 +132,11 @@ name: support-agent
 target: cli
 version: 1
 agent:
-  model: claude-sonnet-4-5
+  model: claude-sonnet-5
   instructions: Answer the user's support question.
   model_tiers:
     fast: claude-haiku-4-5
-    default: claude-sonnet-4-5
+    default: claude-sonnet-5
     routing:
       contextTokenThreshold: 10000
       toolsToDefault: true
@@ -169,14 +169,14 @@ name: support-agent
 target: cli
 version: 1
 agent:
-  model: claude-sonnet-4-5
+  model: claude-sonnet-5
   instructions: Answer the user's support question.
   model_pool:
     policy: learned              # static | heuristic (default) | learned
     candidates:
       - { model: claude-haiku-4-5, tags: [cheap] }
-      - { model: claude-sonnet-4-5, tags: [balanced] }
-      - { model: claude-opus-4-1, tags: [strong] }
+      - { model: claude-sonnet-5, tags: [balanced] }
+      - { model: claude-opus-5, tags: [strong] }
     objective: { quality: 0.7, cost: 0.2, latency: 0.1 }
     learning:
       minSamplesPerArm: 25
@@ -287,7 +287,7 @@ command, one comparison table:
 crewhaus eval crewhaus.yaml \
   --dataset registry:support-agent-ratings \
   --graders eval/graders.yaml \
-  --models claude-sonnet-4-5,claude-haiku-4-5,openai/gpt-4o \
+  --models claude-sonnet-5,claude-haiku-4-5,openai/gpt-4o \
   --seed 42
 ```
 

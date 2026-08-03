@@ -1,0 +1,55 @@
+{
+  "title": "Recipe 63 — The harness learns from its own sessions",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Four commands that turn a pile of session logs into few-shots, an FAQ skill, and written-down lessons.”", "action": "open", "file": "../../63-harness-self-knowledge.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — nothing committed is touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for the run and optimize beats.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · a harness with a history to mine",
+      "beats": [
+        { "id": "spec-cli", "label": "Type a harness", "cue": "“All four verbs read .crewhaus/sessions — so first, something that writes there.”", "action": "type", "source": "../../../starters/cli/crewhaus.yaml", "sourceLines": [1, 7], "replace": true },
+        { "id": "spec-check", "label": "Compile it and check it", "cue": "“--check: GREEN. Self-knowledge is a set of verbs over session logs, not a spec feature.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the provider credentials gate", "produces": ["live/dist/agent.ts"] } }
+      ]
+    },
+    {
+      "title": "Beat 2 · the empty state is the honest state",
+      "beats": [
+        { "id": "empty-fewshot", "label": "Ask for the few-shot pool", "cue": "“No pool yet — and it names the exact path it looked in rather than returning an empty list.”", "action": "command", "command": "crewhaus fewshot show --k 5 > live/fewshot.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 1, "note": "exit 1 — `no few-shot pool at <cwd>/.crewhaus/...`; harvest has to run first", "produces": ["live/fewshot.txt"] } },
+        { "id": "empty-open", "label": "Read it", "cue": "“A tool that fabricates examples from no data would be worse than one that refuses.”", "action": "open", "file": "live/fewshot.txt" },
+        { "id": "empty-harvest", "label": "Try harvesting", "cue": "“Same answer, same honesty: no sessions, no harvest.”", "action": "command", "command": "crewhaus fewshot harvest --all-sessions --min-score 0.8 > live/harvest.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 1, "note": "exit 1 — `no sessions found under .crewhaus/sessions`", "produces": ["live/harvest.txt"] } },
+        { "id": "empty-open-harvest", "label": "Read it", "cue": "“--min-score 0.8: only the turns that actually went well become examples.”", "action": "open", "file": "live/harvest.txt" },
+        { "id": "empty-summarize", "label": "Read the session-summarize contract", "cue": "“The one verb that works on an empty machine — because it's about retention, not mining.”", "action": "command", "command": "crewhaus sessions summarize --help > live/summarize.txt 2>&1", "verify": { "mode": "offline", "expectedExit": 0, "note": "the shipped sessions-summarize flags", "produces": ["live/summarize.txt"] } },
+        { "id": "empty-open-summarize", "label": "Read it", "cue": "“--evicted --ttl-days: summarize what you're about to delete, so ageing out isn't forgetting.”", "action": "open", "file": "live/summarize.txt" }
+      ]
+    },
+    {
+      "title": "Beat 3 · earn the history",
+      "beats": [
+        { "id": "run-agent", "label": "Run the agent a few times", "cue": "[needs-key] “The recipe's precondition is boring and unavoidable: you have to use it before it can learn from you.”", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive REPL; needs a model credential" } },
+        { "id": "run-ask", "label": "Ask it something typical", "cue": "[needs-key] “Typical is the word that matters — few-shots harvested from edge cases teach the wrong lesson.”", "action": "input", "text": "What does the compiler emit for a cli target?", "verify": { "mode": "needs-key" } },
+        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+      ]
+    },
+    {
+      "title": "One more thing · the four verbs, for real",
+      "beats": [
+        { "id": "verb-harvest", "label": "Harvest the good turns", "cue": "[needs-key] “The high-scoring turns become a few-shot pool the optimizer can draw on.”", "action": "command", "command": "crewhaus fewshot harvest --all-sessions --min-score 0.8", "verify": { "mode": "needs-key", "note": "needs session history" } },
+        { "id": "verb-faq", "label": "Distill an FAQ skill", "cue": "[needs-key] “--min-occurrences: a question asked once is noise; asked ten times it's a skill.”", "action": "command", "command": "crewhaus faq distill --sessions all --min-occurrences 3 -o live/skills/faq", "verify": { "mode": "needs-key", "note": "needs session history" } },
+        { "id": "verb-lessons", "label": "Write down the lessons", "cue": "[needs-key] “The low-scoring turns become lessons — the harness's own record of what it got wrong.”", "action": "command", "command": "crewhaus lessons update --sessions all --low-score", "verify": { "mode": "needs-key", "note": "needs session history" } },
+        { "id": "verb-optimize", "label": "Feed the pool to optimize", "cue": "[needs-key] “--few-shot auto resolves the harvested pool. The harness teaching itself, with a measured gate.”", "action": "command", "command": "crewhaus optimize live/crewhaus.yaml --few-shot auto", "verify": { "mode": "needs-key", "note": "billed on candidate and judge" } },
+        { "id": "extra-read", "label": "Read the per-user path", "cue": "“crewhaus run --user max injects that user's lessons. Self-knowledge can be scoped to a person.”", "action": "open", "file": "../../63-harness-self-knowledge.md", "preview": true }
+      ]
+    }
+  ]
+}

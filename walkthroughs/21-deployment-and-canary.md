@@ -75,17 +75,20 @@ kind `deployment_action` under `.crewhaus/audit/`).
 ## Tenant overlays
 
 Some tenants want to pin to an older version (regulatory hold) or
-a newer version (early-access beta). Overlay files in
-`_tenants/<tenantId>/<spec>.json`:
+a newer version (early-access beta). Write one with
+`crewhaus spec pin <name> <env> <version> --tenant <tenantId>`, which
+creates an overlay file at `_tenants/<tenantId>/<spec>.json`. The
+overlay maps **environment → version**, so one tenant can be held back
+in `prod` while still tracking the latest in `staging`:
 
 ```json
-{ "version": "v2" }
+{ "prod": "v2" }
 ```
 
 The runtime resolution order:
 
-1. Look for `_tenants/<tenantId>/<specName>.json`. If present, use
-   that version.
+1. Look for `_tenants/<tenantId>/<specName>.json`. If it has an entry
+   for the deployment's environment, use that version.
 2. Otherwise, use the env pin from `manifest.json` for the deployment's
    environment.
 
@@ -134,16 +137,21 @@ export const migration = {
 };
 ```
 
-To migrate the whole registry:
+To migrate the whole registry, name the span to walk. Both `--from` and
+`--to` are required, and both are **integer IR versions** — the engine
+walks the registered chain between them, so the pair you pass has to be
+a chain that exists:
 
 ```bash
-crewhaus migrate-all
+crewhaus migrate-all --from <ver> --to <ver>
 ```
 
 Walks every spec in `.crewhaus/specs/`, computes the chain of `up`
-steps from each spec's IR version to the current IR version, and
-applies them. The chain is reversible — `migrate-all --down --target v1.3`
-walks `down` steps.
+steps from each spec's IR version to the target IR version, and
+applies them, reporting `migrated=… skipped=… failed=…`. Rehearse with
+`--dry-run` first — it reports the same counts and writes nothing, and
+it is also how you find out that a `--from`/`--to` pair has no
+registered chain before you rewrite the registry.
 
 Migration is the right answer when the schema changes; canary is the
 right answer when the **behavior** changes. The two compose: a
@@ -152,10 +160,16 @@ behavior delta.
 
 ## The deployment controller
 
+Two verbs, and both take their arguments positionally — `promote` is
+`<name> <fromEnv> <toEnv>`, `rollback` is `<name> <env> <version>`:
+
 ```bash
-crewhaus deploy promote agent-name --from staging --to prod
-crewhaus deploy rollback agent-name --env prod --to v2
+crewhaus deploy promote agent-name staging prod
+crewhaus deploy rollback agent-name prod v2
 ```
+
+Add `--require-approval` (and `--check-pr`) to gate a protected
+environment behind a human.
 
 Promote semantics:
 

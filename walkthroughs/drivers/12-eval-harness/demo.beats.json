@@ -1,0 +1,66 @@
+{
+  "title": "Recipe 12 — Eval Harness (a dataset, a grader, and a number you can defend)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Recipe 12 is where an agent stops being a demo. A labelled split, a grader, a confidence interval — and a gate you can put in CI.”", "action": "open", "file": "../../12-eval-harness.md", "preview": true },
+        { "id": "setup-reset", "label": "Blank the scratch spec", "cue": "live/ is scratch — the committed recipe is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — scoring samples means really calling the model, once per sample.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · Step 1 — two ways to run an eval, two spec shapes",
+      "beats": [
+        { "id": "spec-cli", "label": "Type the agent under test", "cue": "“crewhaus eval grades a plain target: cli spec — six lines. The dataset and graders are flags, not spec fields.”", "action": "type", "source": "../../12-eval-harness.md", "sourceLines": [102, 107], "target": "live/agent.cli.yaml", "replace": true },
+        { "id": "spec-eval-head", "label": "Now the target: eval shape", "cue": "“Same agent, different target. This one folds the data and the graders into the spec, and compiles to a standalone scorer.”", "action": "type", "source": "../../12-eval-harness.md", "sourceLines": [120, 125], "replace": true },
+        { "id": "spec-eval-tail", "label": "Point at the data and the grader", "cue": "“The dataset is a registry reference — name, version, split — not a file path. And exact_match, because inside an eval spec `name` doubles as the type.”", "action": "type", "source": "../../12-eval-harness.md", "sourceLines": [126, 132] }
+      ]
+    },
+    {
+      "title": "Beat 2 · Steps 1.5 and 2 — prove the stack, then author the data",
+      "beats": [
+        { "id": "probe-smoke", "label": "Run the in-process eval probe", "cue": "“Five probes over the dataset registry, the grader registry, the regression runner and the prompt optimizer — no model calls, under two seconds. If this fails, nothing downstream is worth debugging.”", "action": "command", "command": "bun ../../../smoke/section-29-smoke/smoke.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "measured: all five probes pass in ~0.35s, keyless — includes the test-split lock and an injected regression that correctly fails the gate" } },
+        { "id": "data-type", "label": "Type the recipe's dataset", "cue": "“Three splits, one purpose each: train shapes the agent, dev is for development grading, test is the go/no-go you spend once.”", "action": "type", "source": "../../12-eval-harness.md", "sourceLines": [234, 252], "target": ".crewhaus/datasets/hello-eval/v1.json", "replace": true },
+        { "id": "data-lint", "label": "Lint the dataset before spending a token", "cue": "“Duplicate ids, empty golds, a gold-needing grader over a dataset with no golds, canary contamination — all caught offline. --strict makes it a CI gate.”", "action": "command", "command": "crewhaus dataset lint --dataset registry:hello-eval --strict", "verify": { "mode": "offline", "expectedExit": 0, "note": "measured: hello-eval@v1 — 0 errors, 0 warnings, clean. A bare registry ref resolves train+dev only; the test split stays locked" } },
+        { "id": "data-verify", "label": "Verify the recorded identity — and watch it refuse", "cue": "“The recipe's illustration ships sampleHashes empty, so verify reports five mismatches and exits 1. That is the check working: a hand-edited dataset file is not the dataset the registry recorded.”", "action": "command", "command": "crewhaus datasets verify hello-eval", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate non-zero. Measured: “verify hello-eval@v1: 5 hash mismatch(es)” — stored (none) != actual, once per sample, because the doc fixture's sampleHashes is {}. The sanctioned authoring path is `crewhaus datasets put`, which records the hashes as it writes" } }
+      ]
+    },
+    {
+      "title": "Beat 3 · Step 3 — the standalone graders.yaml",
+      "beats": [
+        { "id": "graders-type", "label": "Type the whole graders grammar", "cue": "“Five lines and every knob is here: the combine policy, the weighted-mode cut, and one entry with an explicit type. The top level is strict — a typo'd passing_treshold is a parse error, not a silently ignored policy.”", "action": "type", "source": "../../12-eval-harness.md", "sourceLines": [349, 353], "target": "live/graders.yaml", "replace": true },
+        { "id": "graders-card", "label": "Card the measurement instrument", "cue": "“The grader file is the instrument. Card it, and you get its hash — the identity that run history and baseline pins are keyed on.”", "action": "command", "command": "crewhaus graders card --graders live/graders.yaml -o live/RUBRIC-CARD.md", "verify": { "mode": "offline", "expectedExit": 0, "note": "offline — parses the file and renders it; also the cheapest proof the graders.yaml is valid", "produces": ["live/RUBRIC-CARD.md"] } },
+        { "id": "graders-open", "label": "Read the card", "cue": "“combine: all, one deterministic grader, and a gradersHash. Edit the graders file and that hash moves — which is the system telling you your numbers are no longer comparable.”", "action": "open", "file": "live/RUBRIC-CARD.md" }
+      ]
+    },
+    {
+      "title": "Beat 4 · compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the eval spec", "cue": "“Parse plus the IR passes the compile path skips — nothing emitted yet.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Dataset reference, grader list, fan-out — three things the emitted bundle passes to runEval as separate arguments.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target eval — dataset ref, graders, concurrency" } },
+        { "id": "prove-check", "label": "Compile the scorer — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN with no key, gated on the dataset it declares rather than failing.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (3 anchors); install ok; boot gated (boot reached its eval dataset gate — the bundle's boot resolves the registry itself)", "produces": ["live/dist/agent.ts"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted scorer", "cue": "“It imports runEval, resolves the registry, applies the graders, prints the score. No eval framework in the loop — just this file.”", "action": "open", "file": "live/dist/agent.ts" }
+      ]
+    },
+    {
+      "title": "Beat 5 · Step 4 — score the dev split",
+      "beats": [
+        { "id": "run-bundle", "label": "Run the compiled scorer", "cue": "[needs-key] “The bundle drives the real runEval.” runId, pass rate, and the 95% interval beside it — because at n=2 the point estimate alone is a lie.", "action": "command", "command": "bun live/dist/agent.ts", "verify": { "mode": "needs-key", "note": "needs Anthropic credentials — one model call per sample. Reports passRate with a Wilson interval and meanScore with a Student-t interval, and omits them rather than fabricating when n is too small" } },
+        { "id": "run-cli-eval", "label": "Score the same agent through the CLI", "cue": "[needs-key] “Same agent, same data, same grader, no bundle in the loop — and --seed 42 so the grader and sampling are reproducible.”", "action": "command", "command": "crewhaus eval live/agent.cli.yaml --dataset registry:hello-eval --graders live/graders.yaml --concurrency 2 --seed 42 -o live/eval", "verify": { "mode": "needs-key", "note": "needs Anthropic credentials. Writes per-sample transcript.jsonl / events.jsonl / grades.json plus an index.html report under live/eval, and appends the run to .crewhaus/evals/index.jsonl" } }
+      ]
+    },
+    {
+      "title": "One more thing · Step 9 — size the dataset before you pay for it",
+      "beats": [
+        { "id": "extra-plan", "label": "Ask what n it would actually take", "cue": "“Six samples told us the harness works. This tells us what it would cost to believe the number: 385 samples for ±5 points, and 769 if you want to compare two runs.”", "action": "command", "command": "crewhaus eval plan --target-delta 0.05 --confidence 0.95", "verify": { "mode": "offline", "expectedExit": 0, "note": "pure arithmetic, no model and no dataset needed. Measured: n = 385 at 95%/±5pp worst-case p=0.5, ~769 per run for a two-run comparison, and it says out loud that it sizes an estimate's width, not a test's power" } }
+      ]
+    }
+  ]
+}

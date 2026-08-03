@@ -50,7 +50,7 @@ managed daemon.
 name: docs-agent
 target: cli
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     You answer questions about our product using ONLY the docs corpus.
     Always call Retrieve first, then answer from the returned chunks and
@@ -158,7 +158,7 @@ docs corpus is the same three lines:
 name: support-bot
 target: channel
 agent:
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5
   instructions: |
     Answer support questions from the docs corpus, citing chunks by [n].
 channels:

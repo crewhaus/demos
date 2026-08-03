@@ -31,7 +31,7 @@ These are the only §47 shapes that needed new IR variants. Every other §47 sha
 name: treasury-monitor
 target: onchain
 agent:
-  model: claude-opus-4-7
+  model: claude-opus-5
   instructions: |
     You watch the treasury for unusual transfers. When an event fires,
     classify it as routine / notable / suspicious. For suspicious
@@ -86,7 +86,7 @@ The compiler lowers this to `IrChainV0` ([packages/ir/src/index.ts](https://gith
 name: dark-forest-agent
 target: onchain-game
 agent:
-  model: claude-opus-4-7
+  model: claude-opus-5
   instructions: |
     You play Dark Forest. Read the board state, identify near-by enemy
     planets, and order moves that prioritize defending owned planets

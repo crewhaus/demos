@@ -43,7 +43,7 @@ const seed = {
   description: "Hello-world CLI template",
   author: "smoke",
   target: "cli",
-  yaml: "name: hello\ntarget: cli\nagent:\n  model: claude-sonnet-4-6\n",
+  yaml: "name: hello\ntarget: cli\nagent:\n  model: claude-sonnet-5\n",
 };
 
 // ── Probe A: local round-trip ─────────────────────────────────────────────

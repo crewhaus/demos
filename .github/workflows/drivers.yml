@@ -1,11 +1,16 @@
 name: Demo drivers
 
+# A starter driver slices its starter's spec; a walkthrough driver slices its
+# recipe's own fenced blocks. Either source moving desyncs every slice boundary
+# after it, so both are triggers — that drift is what this job exists to catch.
 on:
   push:
     branches: [main]
     paths:
       - "starters/**/demo.beats.json"
       - "starters/**/crewhaus.yaml"
+      - "walkthroughs/drivers/**/demo.beats.json"
+      - "walkthroughs/*.md"
       - "scripts/verify-drivers.ts"
       - "DEMO-DRIVERS.md"
       - ".github/workflows/drivers.yml"
@@ -14,6 +19,8 @@ on:
     paths:
       - "starters/**/demo.beats.json"
       - "starters/**/crewhaus.yaml"
+      - "walkthroughs/drivers/**/demo.beats.json"
+      - "walkthroughs/*.md"
       - "scripts/verify-drivers.ts"
       - "DEMO-DRIVERS.md"
       - ".github/workflows/drivers.yml"
@@ -23,10 +30,10 @@ permissions:
 
 jobs:
   verify:
-    # A driver types its starter's committed spec back in contiguous slices, so a
-    # spec edit can silently desync every slice boundary after it. This job
-    # replays all of them and fails on drift.
-    name: Replay every starter's demo.beats.json
+    # A driver types committed bytes back in contiguous slices, so an edit to the
+    # source can silently desync every slice boundary after it. This job replays
+    # every starter driver and every walkthrough driver, and fails on drift.
+    name: Replay every demo.beats.json
     runs-on: ubuntu-latest
     steps:
       - name: Checkout demos

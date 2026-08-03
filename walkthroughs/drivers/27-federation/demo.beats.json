@@ -1,0 +1,61 @@
+{
+  "title": "Recipe 27 — Federation (crew handoff that crosses a deployment boundary)",
+  "cwd": ".",
+  "defaults": {
+    "target": "live/crewhaus.yaml",
+    "speedMsPerChar": 14,
+    "chunk": 1
+  },
+  "groups": [
+    {
+      "title": "Setup",
+      "beats": [
+        { "id": "setup-recipe", "label": "Open the recipe", "cue": "“Federation is crew handoff that crosses a deployment boundary — mTLS, cert pinning, one trace across two hosts.”", "action": "open", "file": "../../27-federation.md", "preview": true },
+        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed starter is never touched by a take.", "action": "reset", "file": "live/crewhaus.yaml" },
+        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env for symmetry with every other drive. Nothing below actually needs it.", "action": "command", "command": "set -a; . ../../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env; every proof beat here is hermetic" } }
+      ]
+    },
+    {
+      "title": "Beat 1 · the shape federation extends — crew on one host",
+      "beats": [
+        { "id": "spec-head", "label": "Type the crew header", "cue": "“Start where the recipe says to start: recipe 04's crew. Three roles, one deployment.”", "action": "type", "source": "../../../starters/crew/crewhaus.yaml", "sourceLines": [1, 6], "replace": true },
+        { "id": "spec-researcher", "label": "Add the researcher", "cue": "“The entry role. It lists risks, then hands off — by name, in-process.”", "action": "type", "source": "../../../starters/crew/crewhaus.yaml", "sourceLines": [7, 14] },
+        { "id": "spec-writer", "label": "Add the writer", "cue": "“Handoff lands here. SendMessage lets it ask the critic a question mid-turn.”", "action": "type", "source": "../../../starters/crew/crewhaus.yaml", "sourceLines": [15, 22] },
+        { "id": "spec-critic", "label": "Add the critic", "cue": "“Three roles that trust each other because they share a process. Federation is what you reach for when they can't.”", "action": "type", "source": "../../../starters/crew/crewhaus.yaml", "sourceLines": [23, 26] }
+      ]
+    },
+    {
+      "title": "Beat 2 · compile, don't trust",
+      "beats": [
+        { "id": "prove-lint", "label": "Lint the crew spec", "cue": "“Clean — and note what is not in here: there is no federation block to lint. The spec schema has no such field.”", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings" } },
+        { "id": "prove-ir", "label": "Show the lowered IR", "cue": "“Three roles, one orchestrator. Every edge in that IR is in-process.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints the IR for target crew" } },
+        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "“--check asserts the shape, installs the deps, and boots it: GREEN, no key needed.”", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok (4 anchors); install ok; boot gated at the stdin input gate", "produces": ["live/dist/orchestrator.ts", "live/dist/package.json"] } },
+        { "id": "prove-open-bundle", "label": "Open the emitted orchestrator", "cue": "“Handoff is a function call in here. Crossing a host boundary is the part the bundle cannot do for you.”", "action": "open", "file": "live/dist/orchestrator.ts" }
+      ]
+    },
+    {
+      "title": "Beat 3 · the bytes on the wire",
+      "beats": [
+        { "id": "wire-envelope", "label": "Type the federation envelope", "cue": "“This is the whole protocol surface — a versioned envelope with the caller's traceparent riding along.”", "action": "type", "source": "../../27-federation.md", "sourceLines": [41, 53], "target": "live/envelope.json", "replace": true },
+        { "id": "wire-open", "label": "Open the envelope", "cue": "“Read where the identities live: only inside federation.from and federation.to. There is no top-level from.”", "action": "open", "file": "live/envelope.json" },
+        { "id": "wire-validate", "label": "Assert the envelope's invariants", "cue": "“Strict version, and identities only under federation.* — the two things a receiver fails closed on.”", "action": "command", "command": "bun -e 'const e=JSON.parse(require(\"fs\").readFileSync(\"live/envelope.json\",\"utf8\")); if(e.version!==\"crewhaus.federation.v1\") throw new Error(\"version must match exactly\"); if(\"from\" in e || \"fromRole\" in e) throw new Error(\"identities belong under federation.from/to\"); console.log(\"envelope ok: \"+e.kind+\" \"+e.federation.from.deployment+\"/\"+e.federation.from.role+\" -> \"+e.federation.to.deployment+\"/\"+e.federation.to.role)'", "verify": { "mode": "offline", "expectedExit": 0, "note": "envelope ok: question deployment-a/researcher -> deployment-b/code-reviewer" } },
+        { "id": "wire-peer", "label": "Type the discovered PeerRecord", "cue": "“Discovery returns this from .well-known/crewhaus.json — endpoint, version, shapes, and the leaf fingerprint the router pins.”", "action": "type", "source": "../../27-federation.md", "sourceLines": [157, 162], "target": "live/peer-record.json", "replace": true },
+        { "id": "wire-peer-validate", "label": "Hold the PeerRecord to the pin rule", "cue": "“https only, version strict, fingerprint exactly 64 hex. The recipe prints a placeholder — so watch it fail the pin rule.”", "action": "command", "command": "bun -e 'const p=JSON.parse(require(\"fs\").readFileSync(\"live/peer-record.json\",\"utf8\")); if(!p.endpoint.startsWith(\"https://\")) throw new Error(\"endpoint must be https\"); if(p.version!==\"crewhaus.federation.v1\") throw new Error(\"strict version\"); console.log(\"endpoint https: ok; version strict: ok; 64-hex fingerprint: \"+/^[0-9a-f]{64}$/.test(p.publicKeyFingerprint)+\" (a placeholder — discovery fails closed on it)\")'", "verify": { "mode": "offline", "expectedExit": 0, "note": "prints 64-hex fingerprint: false — the recipe's abc...<64-char hex> placeholder is rejected by the pin rule" } }
+      ]
+    },
+    {
+      "title": "Beat 4 · fail closed",
+      "beats": [
+        { "id": "fed-discover", "label": "Ask the CLI to find the peer", "cue": "“discover is the only federation verb the CLI exposes. Point it at a peer that isn't there — deliberate rejection, exit 1.”", "action": "command", "command": "crewhaus federation discover deployment-b.example --format json", "verify": { "mode": "offline", "expectedExit": 1, "note": "deliberate rejection — `federation discover: peer discovery failed for deployment-b.example`; .example never resolves" } },
+        { "id": "fed-taxonomy", "label": "Read the recovery taxonomy", "cue": "“Network error retries, a 503 retries — but a cert-pin mismatch tombstones. Retry cannot fix a trust failure.”", "action": "command", "command": "grep -n \"classifyRouterError\" ../../../smoke/section-34-federation-smoke/smoke.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "5 lines — the import plus probe D's four taxonomy assertions" } }
+      ]
+    },
+    {
+      "title": "One more thing · the smoke is the demo",
+      "beats": [
+        { "id": "extra-smoke", "label": "Run the two-deployment fixture", "cue": "“Six probes: envelope round-trip, discovery TTL, router happy path, taxonomy, and a live in-process peer. No docker, no key.”", "action": "command", "command": "bun ../../../smoke/section-34-federation-smoke/smoke.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "probes A–E all green; probe F skipped without CREWHAUS_FEDERATION_LIVE=1" } },
+        { "id": "extra-gap", "label": "Read the spec-integration gap", "cue": "“Say this out loud: there is no federation field in crewhaus.yaml today. You compose the three packages in deployment code.”", "action": "open", "file": "../../27-federation.md", "preview": true }
+      ]
+    }
+  ]
+}

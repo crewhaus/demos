@@ -11,7 +11,9 @@
 > queue). Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
-> validated by `bun run walkthroughs:smoke`.
+> validated by `bun run walkthroughs:smoke`. Every recipe also ships a
+> screencast driver under [`drivers/`](./drivers/), replayed and asserted
+> green by `bun run drivers:verify`.
 
 If you're new here, start with [`GETTING-STARTED.md`](https://github.com/crewhaus/docs/blob/main/GETTING-STARTED.md)
 first. Each recipe assumes you've read it.
@@ -534,11 +536,12 @@ re-compiles on every PR.
 
 ## Testing recipes
 
-Two scripts validate every walkthrough in `walkthroughs/`:
+Three scripts validate every walkthrough in `walkthroughs/`:
 
 ```bash
 bun run walkthroughs:test    # static checks; ~5 seconds
 bun run walkthroughs:smoke   # compile + smoke runs; ~10 seconds in CI mode
+bun run drivers:verify       # replays each recipe's screencast driver
 ```
 
 ### `walkthroughs:test` — static validation
@@ -571,6 +574,25 @@ runs the `bun_scripts` each recipe declares. Two modes:
 - **Live (`RECIPE_SMOKE_LIVE=1`):** also runs `run:*` and `smoke:*`
   scripts. Requires an Anthropic credential and may make billed
   model calls. Run locally before publishing.
+
+### `drivers:verify` — replay the recipe on camera
+
+Every recipe has a screencast driver at
+`walkthroughs/drivers/<recipe>/demo.beats.json`, for the
+[Demo Driver](https://github.com/crewhaus/demo-driver) VS Code extension. Each
+beat types a slice of *this recipe's own committed fenced blocks* into a scratch
+file, or runs a real `crewhaus` command.
+[`scripts/verify-drivers.ts`](../scripts/verify-drivers.ts) replays every driver
+with the extension's exact semantics and executes each command beat classified
+`offline`, so a recipe and its drive can't drift apart: edit a fence, and any
+driver whose slice boundaries no longer line up fails.
+
+```bash
+bun run drivers:verify 05-stateful-graph   # one recipe
+bun run drivers:verify                     # every starter + every recipe
+```
+
+See [DEMO-DRIVERS.md](../DEMO-DRIVERS.md) for the convention and the beat modes.
 
 ### Authoring a testable recipe
 
