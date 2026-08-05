@@ -1,5 +1,5 @@
 {
-  "title": "hello-harness-designer — a harness that designs other harnesses (target: cli)",
+  "title": "hello-harness-designer \u2014 a harness that designs other harnesses (target: cli)",
   "cwd": ".",
   "defaults": {
     "target": "live/crewhaus.yaml",
@@ -10,63 +10,462 @@
     {
       "title": "Setup",
       "beats": [
-        { "id": "setup-readme", "label": "Open the starter README", "cue": "“A CrewHaus harness that designs OTHER CrewHaus harnesses by interviewing you about intent.”", "script": "A CrewHaus harness that designs OTHER CrewHaus harnesses by interviewing you about intent. [[pause:1.2s]] The editor opens README.md now. This is the source or generated artifact behind the current step; focus on the details the first chunk called out.", "action": "open", "file": "README.md" },
-        { "id": "setup-reset", "label": "Start from a blank spec", "cue": "live/ is scratch — the committed crewhaus.yaml stays untouched.", "script": "Live/ is scratch — the committed crewhaus.yaml stays untouched. [[pause:900ms]] The driver clears live slash crewhaus.yaml in the scratch workspace now, giving this take a repeatable starting point without changing the committed example.", "action": "reset", "file": "live/crewhaus.yaml" },
-        { "id": "setup-env", "label": "Load the API key", "cue": "[needs-key] Sources demos/.env — the designer interviews you on claude-fable-5.", "script": "Sources demos/.env — the designer interviews you on claude-fable-5. [[pause:1.8s]] Configured provider or platform credentials are required here, so the offline verifier checks the shape but does not execute the call. Operator-supplied demos/.env.", "action": "command", "command": "set -a; . ../../.env; set +a", "verify": { "mode": "needs-key", "note": "operator-supplied demos/.env" } },
-        { "id": "setup-docs-path", "label": "Name the two checkouts it reads", "cue": "Step 1 of its resolution ladder is these two variables — set them and the take reads the checkouts you can see, not a cache in your home directory.", "script": "Step 1 of its resolution ladder is these two variables — set them and the take reads the checkouts you can see, not a cache in your home directory. [[pause:1.5s]] This is an offline proof and should complete successfully. Step 1 of each resolution ladder in agent.instructions. Without it the designer probes its parent directories (step 2) which still lands on ../..", "action": "command", "command": "export CREWHAUS_DEMOS_PATH=../.. CREWHAUS_FACTORY_PATH=../../../factory", "verify": { "mode": "offline", "expectedExit": 0, "note": "step 1 of each resolution ladder in agent.instructions. Without it the designer probes its parent directories (step 2) — which still lands on ../.. and ../../../factory from inside this checkout, but on a copied-out starter would fall to the ~/.crewhaus/*-cache branch and clone on camera. Must come after setup-env — demos/.env may carry an empty CREWHAUS_FACTORY_PATH, and the ladder treats empty as unset — and the manifest's one persistent terminal carries the export into the Beat 3 run." } },
-        { "id": "setup-docs-check", "label": "Prove both resolve", "cue": "The recipe index and the Zod schema the designer validates against — 582 lines and 3,162, both already on disk.", "script": "The recipe index and the Zod schema the designer validates against — 582 lines and 3,162, both already on disk. [[pause:1.5s]] No credentials are involved in this check; a clean exit confirms the local path behaves as described. Both paths resolve from the starter dir, so the designer's step-1 lookup succeeds and neither the parent probe nor the clone-if-absent cache branch is reached.", "action": "command", "command": "ls $CREWHAUS_DEMOS_PATH/walkthroughs/INDEX.md $CREWHAUS_FACTORY_PATH/packages/spec/src/index.ts", "verify": { "mode": "offline", "expectedExit": 0, "note": "both paths resolve from the starter dir, so the designer's step-1 lookup succeeds and neither the parent probe nor the clone-if-absent cache branch is reached" } }
+        {
+          "id": "setup-readme",
+          "label": "Open the starter README",
+          "cue": "\u201cA CrewHaus harness that designs OTHER CrewHaus harnesses by interviewing you about intent.\u201d",
+          "script": "A CrewHaus harness that designs OTHER CrewHaus harnesses by interviewing you about intent. [[pause:1.2s]] The editor opens README.md now. This is the source or generated artifact behind the current step; focus on the details the first chunk called out.",
+          "action": "open",
+          "file": "README.md"
+        },
+        {
+          "id": "setup-reset",
+          "label": "Start from a blank spec",
+          "cue": "live/ is scratch \u2014 the committed crewhaus.yaml stays untouched.",
+          "script": "Live/ is scratch \u2014 the committed crewhaus.yaml stays untouched. [[pause:900ms]] The driver clears live slash crewhaus.yaml in the scratch workspace now, giving this take a repeatable starting point without changing the committed example.",
+          "action": "reset",
+          "file": "live/crewhaus.yaml"
+        },
+        {
+          "id": "setup-env",
+          "label": "Load the API key",
+          "cue": "[needs-key] Sources demos/.env \u2014 the designer interviews you on claude-fable-5.",
+          "script": "Sources demos/.env \u2014 the designer interviews you on claude-fable-5. [[pause:1.8s]] Configured provider or platform credentials are required here, so the offline verifier checks the shape but does not execute the call. Operator-supplied demos/.env.",
+          "action": "command",
+          "command": "set -a; . ../../.env; set +a",
+          "verify": {
+            "mode": "needs-key",
+            "note": "operator-supplied demos/.env"
+          }
+        },
+        {
+          "id": "setup-docs-path",
+          "label": "Name the two checkouts it reads",
+          "cue": "Step 1 of its resolution ladder is these two variables \u2014 set them and the take reads the checkouts you can see, not a cache in your home directory.",
+          "script": "Step 1 of its resolution ladder is these two variables \u2014 set them and the take reads the checkouts you can see, not a cache in your home directory. [[pause:1.5s]] This is an offline proof and should complete successfully. Step 1 of each resolution ladder in agent.instructions. Without it the designer probes its parent directories (step 2) which still lands on ../..",
+          "action": "command",
+          "command": "export CREWHAUS_DEMOS_PATH=../.. CREWHAUS_FACTORY_PATH=../../../factory",
+          "verify": {
+            "mode": "offline",
+            "expectedExit": 0,
+            "note": "step 1 of each resolution ladder in agent.instructions. Without it the designer probes its parent directories (step 2) \u2014 which still lands on ../.. and ../../../factory from inside this checkout, but on a copied-out starter would fall to the ~/.crewhaus/*-cache branch and clone on camera. Must come after setup-env \u2014 demos/.env may carry an empty CREWHAUS_FACTORY_PATH, and the ladder treats empty as unset \u2014 and the manifest's one persistent terminal carries the export into the Beat 3 run."
+          }
+        },
+        {
+          "id": "setup-docs-check",
+          "label": "Prove both resolve",
+          "cue": "The recipe index and the Zod schema the designer validates against \u2014 582 lines and 3,162, both already on disk.",
+          "script": "The recipe index and the Zod schema the designer validates against \u2014 582 lines and 3,162, both already on disk. [[pause:1.5s]] No credentials are involved in this check; a clean exit confirms the local path behaves as described. Both paths resolve from the starter dir, so the designer's step-1 lookup succeeds and neither the parent probe nor the clone-if-absent cache branch is reached.",
+          "action": "command",
+          "command": "ls $CREWHAUS_DEMOS_PATH/walkthroughs/INDEX.md $CREWHAUS_FACTORY_PATH/packages/spec/src/index.ts",
+          "verify": {
+            "mode": "offline",
+            "expectedExit": 0,
+            "note": "both paths resolve from the starter dir, so the designer's step-1 lookup succeeds and neither the parent probe nor the clone-if-absent cache branch is reached"
+          }
+        }
       ]
     },
     {
-      "title": "Beat 1 · The designer, one block at a time",
+      "title": "Beat 1 \u00b7 The designer, one block at a time",
       "beats": [
-        { "id": "spec-header", "label": "The header: what it is, how to run it", "cue": "“Reflexivity demonstrator” — a YAML spec that produces the harness that writes YAML.", "script": "“Reflexivity demonstrator” — a YAML spec that produces the harness that writes YAML. [[pause:900ms]] Watch the driver type lines 1 through 16 of crewhaus.yaml, rebuilding live slash crewhaus.yaml from a known state. The slice comes from committed source, so the fresh file exactly matches the example this take is introducing.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [1, 16], "replace": true },
-        { "id": "spec-shape", "label": "Name, shape, token budget", "cue": "target: cli, max_tokens: 100000 — an interview plus a written spec is a long session.", "script": "Target: cli, max_tokens: 100000 — an interview plus a written spec is a long session. [[pause:900ms]] Watch lines 17 through 22 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Only this next block is appended, so the specification grows in the same order the runtime will parse it.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [17, 22] },
-        { "id": "spec-mission", "label": "State the job", "cue": "“Interview a user about their INTENT — not ask them which YAML fields to fill in.”", "script": "Interview a user about their INTENT — not ask them which YAML fields to fill in. [[pause:900ms]] Watch lines 23 through 26 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [23, 26] },
-        { "id": "spec-docs-tools", "label": "Why the docs ladder is all Bash", "cue": "Read, Write, Edit, Glob and Grep are fenced to the working directory — they reject `../` outright. Both checkouts live outside it, so every step below is a shell command.", "script": "Read, Write, Edit, Glob and Grep are fenced to the working directory — they reject `../` outright. Both checkouts live outside it, so every step below is a shell command. [[pause:900ms]] Watch lines 27 through 43 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [27, 43] },
-        { "id": "spec-docs-ladder", "label": "Resolve the docs at startup", "cue": "Recipes from demos, the Zod schema from factory: the env var, else a walk up the parent directories, else a cache it clones only if it isn't already there — then a pull to HEAD before it advises you.", "script": "Recipes from demos, the Zod schema from factory: the env var, else a walk up the parent directories, else a cache it clones only if it isn't already there — then a pull to HEAD before it advises you. [[pause:900ms]] Watch lines 44 through 79 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [44, 79] },
-        { "id": "spec-method", "label": "The interview method", "cue": "One open question, walk the decision tree, at most four clarifiers, then read the recipe.", "script": "One open question, walk the decision tree, at most four clarifiers, then read the recipe. [[pause:900ms]] Watch lines 80 through 102 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Only this next block is appended, so the specification grows in the same order the runtime will parse it.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [80, 102] },
-        { "id": "spec-selfcontained", "label": "Write a self-contained directory", "cue": "No `../`, no absolute paths — anything outside the harness dir gets copied in first.", "script": "No `../`, no absolute paths — anything outside the harness dir gets copied in first. [[pause:900ms]] Watch lines 103 through 126 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [103, 126] },
-        { "id": "spec-readme", "label": "Scaffold .env.example and README", "cue": "The generated README runs from inside its own directory, never “from the repo root”.", "script": "The generated README runs from inside its own directory, never “from the repo root”. [[pause:900ms]] Watch lines 127 through 149 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [127, 149] },
-        { "id": "spec-validate", "label": "Compile before handing it back", "cue": "“Never hand the user a spec you have not seen the compiler accept.”", "script": "Never hand the user a spec you have not seen the compiler accept. [[pause:900ms]] Watch lines 150 through 155 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [150, 155] },
-        { "id": "spec-optimize", "label": "Offer to tune it against a dataset", "cue": "If you have examples, it scaffolds an eval and runs crewhaus optimize --write-back.", "script": "If you have examples, it scaffolds an eval and runs crewhaus optimize --write-back. [[pause:900ms]] Watch lines 156 through 172 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [156, 172] },
-        { "id": "spec-rules-interview", "label": "The never-ask rules", "cue": "Never ask which tools, which mode, which shape — and never invent a target outside the 14.", "script": "Never ask which tools, which mode, which shape — and never invent a target outside the 14. [[pause:900ms]] Watch lines 173 through 189 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [173, 189] },
-        { "id": "spec-rules-safety", "label": "The rules that aren't negotiable", "cue": "Anything with bash or network cites Recipe 41 and denies `rm -rf` and `sudo` — with `**`, above the allows, because the engine takes the first rule that matches.", "script": "Anything with bash or network cites Recipe 41 and denies `rm -rf` and `sudo` — with `**`, above the allows, because the engine takes the first rule that matches. [[pause:900ms]] Watch lines 190 through 209 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [190, 209] },
-        { "id": "spec-tools", "label": "Six tools", "cue": "read, write, edit, glob, grep, bash — enough to author a harness and compile it.", "script": "Read, write, edit, glob, grep, bash — enough to author a harness and compile it. [[pause:900ms]] Watch lines 210 through 217 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [210, 217] },
-        { "id": "spec-perms-deny", "label": "Deny first — the order is the policy", "cue": "First match wins, so the two denies lead. And they read `**`, not `*`: a lone `*` compiles to [^/]* and stops at the first `/`, so `Bash(rm -rf *)` would never see `rm -rf /tmp/x`.", "script": "First match wins, so the two denies lead. And they read `**`, not `*`: a lone `*` compiles to [^/]* and stops at the first `/`, so `Bash(rm -rf *)` would never see `rm -rf /tmp/x`. [[pause:900ms]] Watch lines 218 through 230 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [218, 230] },
-        { "id": "spec-perms-writes", "label": "Allow the reads and the five writes", "cue": "The only pre-approved writes are the five files a harness is made of — spec, .env.example, README, dataset, graders.", "script": "The only pre-approved writes are the five files a harness is made of — spec, .env.example, README, dataset, graders. [[pause:900ms]] Watch lines 231 through 246 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Only this next block is appended, so the specification grows in the same order the runtime will parse it.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [231, 246] },
-        { "id": "spec-perms-bash", "label": "Fence the shell", "cue": "Every command the ladder above names is here, and nothing wider: `printenv` on exactly two variables, `test` (which leaks an exit code and nothing else), and `cat` scoped to recipes and the schema — so `cat ../../.env` still stops at the gate. Everything else lands on `Bash` with no arg glob, and asks.", "script": "Every command the ladder above names is here, and nothing wider: `printenv` on exactly two variables, `test` (which leaks an exit code and nothing else), and `cat` scoped to recipes and the schema — so `cat ../../.env` still stops at the gate. Everything else lands on `Bash` with no arg glob, and asks. [[pause:900ms]] Watch lines 247 through 304 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [247, 304] },
-        { "id": "spec-compaction", "label": "Hand compaction to Haiku", "cue": "A long interview compacts — on a different model than the one doing the designing.", "script": "A long interview compacts — on a different model than the one doing the designing. [[pause:900ms]] Watch lines 305 through 307 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Only this next block is appended, so the specification grows in the same order the runtime will parse it.", "action": "type", "source": "crewhaus.yaml", "sourceLines": [305, 307] }
+        {
+          "id": "spec-header",
+          "label": "The header: what it is, how to run it",
+          "cue": "\u201cReflexivity demonstrator\u201d \u2014 a YAML spec that produces the harness that writes YAML.",
+          "script": "\u201cReflexivity demonstrator\u201d \u2014 a YAML spec that produces the harness that writes YAML. [[pause:900ms]] Watch the driver type lines 1 through 16 of crewhaus.yaml, rebuilding live slash crewhaus.yaml from a known state. The slice comes from committed source, so the fresh file exactly matches the example this take is introducing.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            1,
+            16
+          ],
+          "replace": true
+        },
+        {
+          "id": "spec-shape",
+          "label": "Name, shape, token budget",
+          "cue": "target: cli, max_tokens: 100000 \u2014 an interview plus a written spec is a long session.",
+          "script": "Target: cli, max_tokens: 100000 \u2014 an interview plus a written spec is a long session. [[pause:900ms]] Watch lines 17 through 22 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Only this next block is appended, so the specification grows in the same order the runtime will parse it.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            17,
+            22
+          ]
+        },
+        {
+          "id": "spec-mission",
+          "label": "State the job",
+          "cue": "\u201cInterview a user about their INTENT \u2014 not ask them which YAML fields to fill in.\u201d",
+          "script": "Interview a user about their INTENT \u2014 not ask them which YAML fields to fill in. [[pause:900ms]] Watch lines 23 through 26 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            23,
+            26
+          ]
+        },
+        {
+          "id": "spec-docs-tools",
+          "label": "Why the docs ladder is all Bash",
+          "cue": "Read, Write, Edit, Glob and Grep are fenced to the working directory \u2014 they reject `../` outright. Both checkouts live outside it, so every step below is a shell command.",
+          "script": "Read, Write, Edit, Glob and Grep are fenced to the working directory \u2014 they reject `../` outright. Both checkouts live outside it, so every step below is a shell command. [[pause:900ms]] Watch lines 27 through 43 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            27,
+            43
+          ]
+        },
+        {
+          "id": "spec-docs-ladder",
+          "label": "Resolve the docs at startup",
+          "cue": "Recipes from demos, the Zod schema from factory: the env var, else a walk up the parent directories, else a cache it clones only if it isn't already there \u2014 then a pull to HEAD before it advises you.",
+          "script": "Recipes from demos, the Zod schema from factory: the env var, else a walk up the parent directories, else a cache it clones only if it isn't already there \u2014 then a pull to HEAD before it advises you. [[pause:900ms]] Watch lines 44 through 79 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            44,
+            79
+          ]
+        },
+        {
+          "id": "spec-method",
+          "label": "The interview method",
+          "cue": "One open question, walk the decision tree, at most four clarifiers, then read the recipe.",
+          "script": "One open question, walk the decision tree, at most four clarifiers, then read the recipe. [[pause:900ms]] Watch lines 80 through 102 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Only this next block is appended, so the specification grows in the same order the runtime will parse it.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            80,
+            102
+          ]
+        },
+        {
+          "id": "spec-selfcontained",
+          "label": "Write a self-contained directory",
+          "cue": "No `../`, no absolute paths \u2014 anything outside the harness dir gets copied in first.",
+          "script": "No `../`, no absolute paths \u2014 anything outside the harness dir gets copied in first. [[pause:900ms]] Watch lines 103 through 126 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            103,
+            126
+          ]
+        },
+        {
+          "id": "spec-readme",
+          "label": "Scaffold .env.example and README",
+          "cue": "The generated README runs from inside its own directory, never \u201cfrom the repo root\u201d.",
+          "script": "The generated README runs from inside its own directory, never \u201cfrom the repo root\u201d. [[pause:900ms]] Watch lines 127 through 149 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            127,
+            179
+          ]
+        },
+        {
+          "id": "spec-validate",
+          "label": "Compile before handing it back",
+          "cue": "\u201cNever hand the user a spec you have not seen the compiler accept.\u201d",
+          "script": "Never hand the user a spec you have not seen the compiler accept. [[pause:900ms]] Watch lines 150 through 155 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            180,
+            185
+          ]
+        },
+        {
+          "id": "spec-optimize",
+          "label": "Offer to tune it against a dataset",
+          "cue": "If you have examples, it scaffolds an eval and runs crewhaus optimize --write-back.",
+          "script": "If you have examples, it scaffolds an eval and runs crewhaus optimize --write-back. [[pause:900ms]] Watch lines 156 through 172 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            186,
+            202
+          ]
+        },
+        {
+          "id": "spec-rules-interview",
+          "label": "The never-ask rules",
+          "cue": "Never ask which tools, which mode, which shape \u2014 and never invent a target outside the 14.",
+          "script": "Never ask which tools, which mode, which shape \u2014 and never invent a target outside the 14. [[pause:900ms]] Watch lines 173 through 189 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            203,
+            219
+          ]
+        },
+        {
+          "id": "spec-rules-safety",
+          "label": "The rules that aren't negotiable",
+          "cue": "Anything with bash or network cites Recipe 41 and denies `rm -rf` and `sudo` \u2014 with `**`, above the allows, because the engine takes the first rule that matches.",
+          "script": "Anything with bash or network cites Recipe 41 and denies `rm -rf` and `sudo` \u2014 with `**`, above the allows, because the engine takes the first rule that matches. [[pause:900ms]] Watch lines 190 through 209 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            220,
+            239
+          ]
+        },
+        {
+          "id": "spec-tools",
+          "label": "Six tools",
+          "cue": "read, write, edit, glob, grep, bash \u2014 enough to author a harness and compile it.",
+          "script": "Read, write, edit, glob, grep, bash \u2014 enough to author a harness and compile it. [[pause:900ms]] Watch lines 210 through 217 of crewhaus.yaml become the next block of live slash crewhaus.yaml. The manifest points at committed lines directly, keeping the executable demo and its narration in lockstep.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            240,
+            247
+          ]
+        },
+        {
+          "id": "spec-perms-deny",
+          "label": "Deny first \u2014 the order is the policy",
+          "cue": "First match wins, so the two denies lead. And they read `**`, not `*`: a lone `*` compiles to [^/]* and stops at the first `/`, so `Bash(rm -rf *)` would never see `rm -rf /tmp/x`.",
+          "script": "First match wins, so the two denies lead. And they read `**`, not `*`: a lone `*` compiles to [^/]* and stops at the first `/`, so `Bash(rm -rf *)` would never see `rm -rf /tmp/x`. [[pause:900ms]] Watch lines 218 through 230 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            248,
+            260
+          ]
+        },
+        {
+          "id": "spec-perms-writes",
+          "label": "Allow the reads and the five writes",
+          "cue": "The only pre-approved writes are the five files a harness is made of \u2014 spec, .env.example, README, dataset, graders.",
+          "script": "The only pre-approved writes are the five files a harness is made of \u2014 spec, .env.example, README, dataset, graders. [[pause:900ms]] Watch lines 231 through 246 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Only this next block is appended, so the specification grows in the same order the runtime will parse it.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            261,
+            276
+          ]
+        },
+        {
+          "id": "spec-perms-bash",
+          "label": "Fence the shell",
+          "cue": "Every command the ladder above names is here, and nothing wider: `printenv` on exactly two variables, `test` (which leaks an exit code and nothing else), and `cat` scoped to recipes and the schema \u2014 so `cat ../../.env` still stops at the gate. Everything else lands on `Bash` with no arg glob, and asks.",
+          "script": "Every command the ladder above names is here, and nothing wider: `printenv` on exactly two variables, `test` (which leaks an exit code and nothing else), and `cat` scoped to recipes and the schema \u2014 so `cat ../../.env` still stops at the gate. Everything else lands on `Bash` with no arg glob, and asks. [[pause:900ms]] Watch lines 247 through 304 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Because the bytes come from the checked-in source, the onscreen result is the exact material the verifier exercises.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            277,
+            334
+          ]
+        },
+        {
+          "id": "spec-compaction",
+          "label": "Hand compaction to Haiku",
+          "cue": "A long interview compacts \u2014 on a different model than the one doing the designing.",
+          "script": "A long interview compacts \u2014 on a different model than the one doing the designing. [[pause:900ms]] Watch lines 305 through 307 of crewhaus.yaml become the next block of live slash crewhaus.yaml. Only this next block is appended, so the specification grows in the same order the runtime will parse it.",
+          "action": "type",
+          "source": "crewhaus.yaml",
+          "sourceLines": [
+            335,
+            337
+          ]
+        }
       ]
     },
     {
-      "title": "Beat 2 · Compile, don't trust",
+      "title": "Beat 2 \u00b7 Compile, don't trust",
       "beats": [
-        { "id": "prove-lint", "label": "Lint the spec", "cue": "“lint: clean — no findings.” Parse, the IR passes, and the scope audit.", "script": "“lint: clean — no findings.” Parse, the IR passes, and the scope audit. [[pause:1.5s]] No credentials are involved in this check; a clean exit confirms the local path behaves as described. Lint: clean — no findings.", "action": "command", "command": "crewhaus lint live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "lint: clean — no findings." } },
-        { "id": "prove-tools", "label": "Audit its own tool grants", "cue": "The trick the designer plays on you, played on the designer: builtins ranked vs intent.", "script": "The trick the designer plays on you, played on the designer: builtins ranked vs intent. [[pause:1.5s]] This is an offline proof and should complete successfully. Keyword-ranks builtins against agent.instructions; flags implied-but-missing and possible over-grants.", "action": "command", "command": "crewhaus tools suggest live/crewhaus.yaml", "verify": { "mode": "offline", "expectedExit": 0, "note": "keyword-ranks builtins against agent.instructions; flags implied-but-missing and possible over-grants" } },
-        { "id": "prove-ir", "label": "Emit the lowered IR", "cue": "“The spec is sugar; this JSON is what the compiler actually sees.”", "script": "The spec is sugar; this JSON is what the compiler actually sees. [[pause:1.5s]] This command is replayable offline, so its result is part of the repository's machine-checked demo contract. 160 lines of IR — line 7 alone is the 10k-character instructions blob, so it goes to a file rather than scrolling the terminal.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json", "verify": { "mode": "offline", "expectedExit": 0, "note": "160 lines of IR — line 7 alone is the 10k-character instructions blob, so it goes to a file rather than scrolling the terminal", "produces": ["live/ir.json"] } },
-        { "id": "prove-open-ir", "label": "Open the IR", "cue": "Fold line 7 — the instructions arrive as one escaped 8.5k string — and what's left is the shape: the six tools, then every permission rule in the order the engine reads them.", "script": "Fold line 7 — the instructions arrive as one escaped 8.5k string — and what's left is the shape: the six tools, then every permission rule in the order the engine reads them. [[pause:1.2s]] The editor opens live slash ir.json now. The relevant implementation is now visible, so the claim can be inspected directly instead of taken on faith.", "action": "open", "file": "live/ir.json" },
-        { "id": "prove-check", "label": "Compile the bundle — and check it", "cue": "Shape asserted, deps installed, booted to the credentials gate: GREEN with no key.", "script": "Shape asserted, deps installed, booted to the credentials gate: GREEN with no key. [[pause:1.5s]] This command is replayable offline, so its result is part of the repository's machine-checked demo contract. GREEN — assertion ok; install ok; boot gated at the credentials gate.", "action": "command", "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check", "verify": { "mode": "offline", "expectedExit": 0, "note": "GREEN — assertion ok; install ok; boot gated at the credentials gate", "produces": ["live/dist/agent.ts"] } },
-        { "id": "prove-open-bundle", "label": "Open the emitted agent", "cue": "Every permission rule you just typed, compiled into a program you own.", "script": "Every permission rule you just typed, compiled into a program you own. [[pause:1.2s]] The editor opens live slash dist slash agent.ts now. This is the source or generated artifact behind the current step; focus on the details the first chunk called out.", "action": "open", "file": "live/dist/agent.ts" }
+        {
+          "id": "prove-lint",
+          "label": "Lint the spec",
+          "cue": "\u201clint: clean \u2014 no findings.\u201d Parse, the IR passes, and the scope audit.",
+          "script": "\u201clint: clean \u2014 no findings.\u201d Parse, the IR passes, and the scope audit. [[pause:1.5s]] No credentials are involved in this check; a clean exit confirms the local path behaves as described. Lint: clean \u2014 no findings.",
+          "action": "command",
+          "command": "crewhaus lint live/crewhaus.yaml",
+          "verify": {
+            "mode": "offline",
+            "expectedExit": 0,
+            "note": "lint: clean \u2014 no findings."
+          }
+        },
+        {
+          "id": "prove-tools",
+          "label": "Audit its own tool grants",
+          "cue": "The trick the designer plays on you, played on the designer: builtins ranked vs intent.",
+          "script": "The trick the designer plays on you, played on the designer: builtins ranked vs intent. [[pause:1.5s]] This is an offline proof and should complete successfully. Keyword-ranks builtins against agent.instructions; flags implied-but-missing and possible over-grants.",
+          "action": "command",
+          "command": "crewhaus tools suggest live/crewhaus.yaml",
+          "verify": {
+            "mode": "offline",
+            "expectedExit": 0,
+            "note": "keyword-ranks builtins against agent.instructions; flags implied-but-missing and possible over-grants"
+          }
+        },
+        {
+          "id": "prove-ir",
+          "label": "Emit the lowered IR",
+          "cue": "\u201cThe spec is sugar; this JSON is what the compiler actually sees.\u201d",
+          "script": "The spec is sugar; this JSON is what the compiler actually sees. [[pause:1.5s]] This command is replayable offline, so its result is part of the repository's machine-checked demo contract. 160 lines of IR \u2014 line 7 alone is the 10k-character instructions blob, so it goes to a file rather than scrolling the terminal.",
+          "action": "command",
+          "command": "crewhaus compile live/crewhaus.yaml --emit-ir > live/ir.json",
+          "verify": {
+            "mode": "offline",
+            "expectedExit": 0,
+            "note": "160 lines of IR \u2014 line 7 alone is the 10k-character instructions blob, so it goes to a file rather than scrolling the terminal",
+            "produces": [
+              "live/ir.json"
+            ]
+          }
+        },
+        {
+          "id": "prove-open-ir",
+          "label": "Open the IR",
+          "cue": "Fold line 7 \u2014 the instructions arrive as one escaped 8.5k string \u2014 and what's left is the shape: the six tools, then every permission rule in the order the engine reads them.",
+          "script": "Fold line 7 \u2014 the instructions arrive as one escaped 8.5k string \u2014 and what's left is the shape: the six tools, then every permission rule in the order the engine reads them. [[pause:1.2s]] The editor opens live slash ir.json now. The relevant implementation is now visible, so the claim can be inspected directly instead of taken on faith.",
+          "action": "open",
+          "file": "live/ir.json"
+        },
+        {
+          "id": "prove-check",
+          "label": "Compile the bundle \u2014 and check it",
+          "cue": "Shape asserted, deps installed, booted to the credentials gate: GREEN with no key.",
+          "script": "Shape asserted, deps installed, booted to the credentials gate: GREEN with no key. [[pause:1.5s]] This command is replayable offline, so its result is part of the repository's machine-checked demo contract. GREEN \u2014 assertion ok; install ok; boot gated at the credentials gate.",
+          "action": "command",
+          "command": "crewhaus compile live/crewhaus.yaml -o live/dist --check",
+          "verify": {
+            "mode": "offline",
+            "expectedExit": 0,
+            "note": "GREEN \u2014 assertion ok; install ok; boot gated at the credentials gate",
+            "produces": [
+              "live/dist/agent.ts"
+            ]
+          }
+        },
+        {
+          "id": "prove-open-bundle",
+          "label": "Open the emitted agent",
+          "cue": "Every permission rule you just typed, compiled into a program you own.",
+          "script": "Every permission rule you just typed, compiled into a program you own. [[pause:1.2s]] The editor opens live slash dist slash agent.ts now. This is the source or generated artifact behind the current step; focus on the details the first chunk called out.",
+          "action": "open",
+          "file": "live/dist/agent.ts"
+        }
       ]
     },
     {
-      "title": "Beat 3 · Let it design one",
+      "title": "Beat 3 \u00b7 Let it design one",
       "beats": [
-        { "id": "run-designer", "label": "Launch the designer", "cue": "[needs-key] “agent ready” — then it waits at `you>`. You speak first; the docs resolution and the interview both happen on that first turn.", "script": "“agent ready” — then it waits at `you>`. You speak first; the docs resolution and the interview both happen on that first turn. [[pause:1.8s]] Configured provider or platform credentials are required here, so the offline verifier checks the shape but does not execute the call. Interactive interview; needs Anthropic credentials. The REPL prints `agent ready (model: …). type \"exit\" to quit.` and prompts — the agent does not open the conversation.", "action": "command", "command": "crewhaus run live/crewhaus.yaml", "verify": { "mode": "needs-key", "note": "interactive interview; needs Anthropic credentials. The REPL prints `agent ready (model: …). type \"exit\" to quit.` and prompts — the agent does not open the conversation" } },
-        { "id": "run-intent", "label": "Describe the intent", "cue": "[needs-key] Straight from the spec's own header — plain English, no CrewHaus terms.", "script": "Straight from the spec's own header — plain English, no CrewHaus terms. [[pause:1.2s]] The driver sends the next user turn into the active session: “I want an agent that watches USDC transfers and pings me on Telegram.” Watch the response demonstrate the behavior while preserving the same session context.", "action": "input", "text": "I want an agent that watches USDC transfers and pings me on Telegram.", "verify": { "mode": "needs-key" } },
-        { "id": "run-approve", "label": "Approve a gated Bash call", "cue": "[needs-key] mode: default. The allow-list already covers what the instructions tell it to run — `git -C ../.. fetch`, `mkdir -p live/usdc-watcher`, the validation compile — so what stops at `approve Bash … [y/N] >` is the unnamed rest: a `bun install`, an `ls`, a Write outside the five harness files. Fire this beat again each time one appears.", "script": "Mode: default. The allow-list already covers what the instructions tell it to run — `git -C ../.. fetch`, `mkdir -p live/usdc-watcher`, the validation compile — so what stops at `approve Bash … [y/N] >` is the unnamed rest: a `bun install`, an `ls`, a Write outside the five harness files. Fire this beat again each time one appears. [[pause:1.2s]] The driver sends the next user turn into the active session: “y”. Reusable — click it from the beats panel whenever the REPL raises an approval prompt.", "action": "input", "text": "y", "verify": { "mode": "needs-key", "note": "reusable — click it from the beats panel whenever the REPL raises an approval prompt" } },
-        { "id": "run-clarify", "label": "Answer the clarifiers", "cue": "[needs-key] Each answer maps to a field: target, tools, permission rules, memory.", "script": "Each answer maps to a field: target, tools, permission rules, memory. [[pause:1.2s]] The driver sends the next user turn into the active session: “Telegram only, and it should message me — it never writes files or moves funds.” This keeps the proof inside the current conversation, so any continuity in the answer is visible.", "action": "input", "text": "Telegram only, and it should message me — it never writes files or moves funds.", "verify": { "mode": "needs-key" } },
-        { "id": "run-where", "label": "Tell it where to write", "cue": "[needs-key] Point it at live/ so the take leaves no diff in the repo.", "script": "Point it at live/ so the take leaves no diff in the repo. [[pause:1.2s]] The driver sends the next user turn into the active session: “Call it usdc-watcher and write it under live/.” Watch the response demonstrate the behavior while preserving the same session context.", "action": "input", "text": "Call it usdc-watcher and write it under live/.", "verify": { "mode": "needs-key" } },
-        { "id": "run-no-dataset", "label": "Decline the eval scaffold", "cue": "[needs-key] The “if no” branch: which shape, why, and the exact commands to run it.", "script": "The “if no” branch: which shape, why, and the exact commands to run it. [[pause:1.2s]] The driver sends the next user turn into the active session: “No dataset yet — just give me the summary and the standalone commands.” Watch the response demonstrate the behavior while preserving the same session context.", "action": "input", "text": "No dataset yet — just give me the summary and the standalone commands.", "verify": { "mode": "needs-key" } },
-        { "id": "run-exit", "label": "Exit", "cue": "[needs-key] “exit” returns to the shell.", "script": "“exit” returns to the shell. [[pause:1.2s]] The driver sends exit to close the active REPL cleanly. The terminal returns to a normal shell while the generated artifacts and session history remain available.", "action": "input", "text": "exit", "verify": { "mode": "needs-key" } }
+        {
+          "id": "run-designer",
+          "label": "Launch the designer",
+          "cue": "[needs-key] \u201cagent ready\u201d \u2014 then it waits at `you>`. You speak first; the docs resolution and the interview both happen on that first turn.",
+          "script": "\u201cagent ready\u201d \u2014 then it waits at `you>`. You speak first; the docs resolution and the interview both happen on that first turn. [[pause:1.8s]] Configured provider or platform credentials are required here, so the offline verifier checks the shape but does not execute the call. Interactive interview; needs Anthropic credentials. The REPL prints `agent ready (model: \u2026). type \"exit\" to quit.` and prompts \u2014 the agent does not open the conversation.",
+          "action": "command",
+          "command": "crewhaus run live/crewhaus.yaml",
+          "verify": {
+            "mode": "needs-key",
+            "note": "interactive interview; needs Anthropic credentials. The REPL prints `agent ready (model: \u2026). type \"exit\" to quit.` and prompts \u2014 the agent does not open the conversation"
+          }
+        },
+        {
+          "id": "run-intent",
+          "label": "Describe the intent",
+          "cue": "[needs-key] Straight from the spec's own header \u2014 plain English, no CrewHaus terms.",
+          "script": "Straight from the spec's own header \u2014 plain English, no CrewHaus terms. [[pause:1.2s]] The driver sends the next user turn into the active session: \u201cI want an agent that watches USDC transfers and pings me on Telegram.\u201d Watch the response demonstrate the behavior while preserving the same session context.",
+          "action": "input",
+          "text": "I want an agent that watches USDC transfers and pings me on Telegram.",
+          "verify": {
+            "mode": "needs-key"
+          }
+        },
+        {
+          "id": "run-approve",
+          "label": "Approve a gated Bash call",
+          "cue": "[needs-key] mode: default. The allow-list already covers what the instructions tell it to run \u2014 `git -C ../.. fetch`, `mkdir -p live/usdc-watcher`, the validation compile \u2014 so what stops at `approve Bash \u2026 [y/N] >` is the unnamed rest: a `bun install`, an `ls`, a Write outside the five harness files. Fire this beat again each time one appears.",
+          "script": "Mode: default. The allow-list already covers what the instructions tell it to run \u2014 `git -C ../.. fetch`, `mkdir -p live/usdc-watcher`, the validation compile \u2014 so what stops at `approve Bash \u2026 [y/N] >` is the unnamed rest: a `bun install`, an `ls`, a Write outside the five harness files. Fire this beat again each time one appears. [[pause:1.2s]] The driver sends the next user turn into the active session: \u201cy\u201d. Reusable \u2014 click it from the beats panel whenever the REPL raises an approval prompt.",
+          "action": "input",
+          "text": "y",
+          "verify": {
+            "mode": "needs-key",
+            "note": "reusable \u2014 click it from the beats panel whenever the REPL raises an approval prompt"
+          }
+        },
+        {
+          "id": "run-clarify",
+          "label": "Answer the clarifiers",
+          "cue": "[needs-key] Each answer maps to a field: target, tools, permission rules, memory.",
+          "script": "Each answer maps to a field: target, tools, permission rules, memory. [[pause:1.2s]] The driver sends the next user turn into the active session: \u201cTelegram only, and it should message me \u2014 it never writes files or moves funds.\u201d This keeps the proof inside the current conversation, so any continuity in the answer is visible.",
+          "action": "input",
+          "text": "Telegram only, and it should message me \u2014 it never writes files or moves funds.",
+          "verify": {
+            "mode": "needs-key"
+          }
+        },
+        {
+          "id": "run-where",
+          "label": "Tell it where to write",
+          "cue": "[needs-key] Point it at live/ so the take leaves no diff in the repo.",
+          "script": "Point it at live/ so the take leaves no diff in the repo. [[pause:1.2s]] The driver sends the next user turn into the active session: \u201cCall it usdc-watcher and write it under live/.\u201d Watch the response demonstrate the behavior while preserving the same session context.",
+          "action": "input",
+          "text": "Call it usdc-watcher and write it under live/.",
+          "verify": {
+            "mode": "needs-key"
+          }
+        },
+        {
+          "id": "run-no-dataset",
+          "label": "Decline the eval scaffold",
+          "cue": "[needs-key] The \u201cif no\u201d branch: which shape, why, and the exact commands to run it.",
+          "script": "The \u201cif no\u201d branch: which shape, why, and the exact commands to run it. [[pause:1.2s]] The driver sends the next user turn into the active session: \u201cNo dataset yet \u2014 just give me the summary and the standalone commands.\u201d Watch the response demonstrate the behavior while preserving the same session context.",
+          "action": "input",
+          "text": "No dataset yet \u2014 just give me the summary and the standalone commands.",
+          "verify": {
+            "mode": "needs-key"
+          }
+        },
+        {
+          "id": "run-exit",
+          "label": "Exit",
+          "cue": "[needs-key] \u201cexit\u201d returns to the shell.",
+          "script": "\u201cexit\u201d returns to the shell. [[pause:1.2s]] The driver sends exit to close the active REPL cleanly. The terminal returns to a normal shell while the generated artifacts and session history remain available.",
+          "action": "input",
+          "text": "exit",
+          "verify": {
+            "mode": "needs-key"
+          }
+        }
       ]
     },
     {
-      "title": "One more thing · the harness it wrote",
+      "title": "One more thing \u00b7 the harness it wrote",
       "beats": [
-        { "id": "extra-generated-readme", "label": "Read the README it generated", "cue": "[needs-key] cd in, compile, install, run — no repo root, no `../`, no sibling checkout.", "script": "Cd in, compile, install, run — no repo root, no `../`, no sibling checkout. [[pause:1.8s]] Configured provider or platform credentials are required here, so the offline verifier checks the shape but does not execute the call. Reads the README the interview writes; only exists after the Beat 3 run.", "action": "command", "command": "cat live/usdc-watcher/README.md", "verify": { "mode": "needs-key", "note": "reads the README the interview writes; only exists after the Beat 3 run" } },
-        { "id": "extra-generated-check", "label": "Put its spec through the same gate", "cue": "[needs-key] The spec it wrote, checked the way you checked the designer's own.", "script": "The spec it wrote, checked the way you checked the designer's own. [[pause:1.8s]] This is a live, credentialed step and is intentionally excluded from offline replay. The generated spec only exists after the Beat 3 run; the compile itself needs no key.", "action": "command", "command": "crewhaus compile live/usdc-watcher/crewhaus.yaml -o live/usdc-watcher/dist --check", "verify": { "mode": "needs-key", "note": "the generated spec only exists after the Beat 3 run; the compile itself needs no key" } }
+        {
+          "id": "extra-generated-readme",
+          "label": "Read the README it generated",
+          "cue": "[needs-key] cd in, compile, install, run \u2014 no repo root, no `../`, no sibling checkout.",
+          "script": "Cd in, compile, install, run \u2014 no repo root, no `../`, no sibling checkout. [[pause:1.8s]] Configured provider or platform credentials are required here, so the offline verifier checks the shape but does not execute the call. Reads the README the interview writes; only exists after the Beat 3 run.",
+          "action": "command",
+          "command": "cat live/usdc-watcher/README.md",
+          "verify": {
+            "mode": "needs-key",
+            "note": "reads the README the interview writes; only exists after the Beat 3 run"
+          }
+        },
+        {
+          "id": "extra-generated-check",
+          "label": "Put its spec through the same gate",
+          "cue": "[needs-key] The spec it wrote, checked the way you checked the designer's own.",
+          "script": "The spec it wrote, checked the way you checked the designer's own. [[pause:1.8s]] This is a live, credentialed step and is intentionally excluded from offline replay. The generated spec only exists after the Beat 3 run; the compile itself needs no key.",
+          "action": "command",
+          "command": "crewhaus compile live/usdc-watcher/crewhaus.yaml -o live/usdc-watcher/dist --check",
+          "verify": {
+            "mode": "needs-key",
+            "note": "the generated spec only exists after the Beat 3 run; the compile itself needs no key"
+          }
+        }
       ]
     }
   ]
