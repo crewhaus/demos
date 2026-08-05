@@ -9,21 +9,33 @@
 #   2. channel — it answers questions in Slack threads, and 👍/👎 reactions
 #      on its replies become rating signal for the flywheel.
 #
-# WIKI BACKEND — a deliberate choice: this daemon uses the LOCAL wiki
-# (`memory.wiki`, files under .crewhaus/wiki/hello-expert-daemon/) while the
-# cli spec uses hosted `thredz: true`. As of CrewHaus 0.4.0 `thredz:` is
-# emit-wired on the channel shape too, so you CAN swap `memory.wiki` below
-# for `thredz: true` and the two shapes will share one hosted brain. Keeping
-# it local here shows off the other half of the story — on the local backend
+# THE SECOND KEY — the reason this file is worth reading. The daemon does NOT
+# reuse the cli spec's THREDZ_API_KEY. It carries its own $THREDZ_DAEMON_KEY
+# and its own `space: coffee-daemon`, because two facts meet here:
+#
+#   · Thredz allows ONE individual wiki space per API KEY — asking a key for a
+#     second one comes back 409 individual_space_exists.
+#   · thredz-mcp reads ONE THREDZ_API_KEY per PROCESS, and each spec compiles
+#     to its own process with its own synthesized server.
+#
+# So per-agent private memory = one key per agent = one server process per
+# agent. Everything this daemon studies unattended lands in `coffee-daemon`,
+# which the cli expert's key cannot read. Want ONE brain across both shapes
+# instead? Create a SHARED space and put its slug in both specs — a shared
+# space is readable by every wiki-enabled key on the account.
+#
+# Going hosted trades away one thing worth knowing: on the LOCAL wiki backend
 # `wiki_write` DETERMINISTICALLY rejects an uncited body (the `## Sources`
-# gate is enforced in code), whereas on the hosted thredz backend that same
-# discipline is the learning-loop skill's instruction, not a hard gate.
+# gate is enforced in code), whereas on Thredz that same discipline is the
+# learning-loop skill's standing instruction. Delete the `thredz:` block below
+# and the `memory.wiki` block falls back to local files — that is the
+# mechanical rejection, live.
 #
 # Usage (from inside this directory) — `crewhaus run` is cli/browser-only and
 # will NOT serve a channel daemon, so compile and run the bundle (or use the
 # `crewhaus dev` supervised loop, which works here because this spec has no
 # local-relative-path MCP servers):
-#   cp .env.example .env   # ANTHROPIC_API_KEY + SLACK_*
+#   cp .env.example .env   # ANTHROPIC_API_KEY + THREDZ_DAEMON_KEY + SLACK_*
 #   crewhaus dev daemon.yaml                       # supervised dev loop
 #   # — or, standalone:
 #   bunx crewhaus compile daemon.yaml -o dist && bun install --cwd dist && bun dist/daemon.ts
@@ -33,7 +45,14 @@ name: hello-expert-daemon
 target: channel
 
 memory:
-  wiki: { enabled: true, autoRecall: true } # the daemon's local wiki brain (see header — swap for `thredz: true` to share the cli's hosted brain)
+  wiki: { enabled: true, autoRecall: true } # autoRecall folds the recalled slice into every session start; the block below flips the backend from local files to Thredz
+
+# A SECOND key, deliberately — see the header. One individual space per API
+# key is a hard Thredz limit, so the daemon needs its own key to get memory
+# the interactive expert cannot read.
+thredz:
+  api_key: $THREDZ_DAEMON_KEY
+  space: coffee-daemon
 
 learning:
   domain: specialty coffee brewing & extraction science
@@ -119,9 +138,11 @@ permissions:
     - { type: alwaysAllow, pattern: wiki_list }
     - { type: alwaysAllow, pattern: wiki_related }
     - { type: alwaysAllow, pattern: wiki_stats }
+    - { type: alwaysAllow, pattern: wiki_space_list } # "which spaces can this key see?"
     - { type: alwaysAllow, pattern: wiki_write }
     - { type: alwaysAllow, pattern: wiki_set_signals }
     - { type: alwaysAllow, pattern: log_knowledge_gap }
+    - { type: alwaysAllow, pattern: task_list } # gaps arrive as Thredz tasks on this backend — the tick lists them first
     - { type: alwaysAllow, pattern: Edit(curriculum.md) }
     - { type: alwaysAllow, pattern: Edit(eval/**) }
     - { type: alwaysAllow, pattern: Edit(sources/**) }

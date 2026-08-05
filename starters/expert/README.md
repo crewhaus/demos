@@ -13,7 +13,9 @@ Since CrewHaus v0.3.0 the whole mechanism is **built in**. The spec is two
 knobs plus domain content:
 
 ```yaml
-thredz: true                  # the hosted wiki = long-term memory (one env var)
+thredz:                       # the hosted wiki = long-term memory
+  api_key: $THREDZ_API_KEY    # one key per agent…
+  space: coffee-expert        # …because one key owns exactly one private space
 
 learning:
   domain: specialty coffee brewing & extraction science
@@ -22,20 +24,24 @@ learning:
   exam: { dataset: eval/dataset.jsonl, graders: eval/graders.yaml }
 ```
 
-`thredz:` synthesizes the MCP server (`npx thredz-mcp`), delivers
-`THREDZ_API_KEY` to it, registers the wiki tools under their bare names
-(`wiki_recall`, `wiki_write`, `log_knowledge_gap`, …), and enforces
-`private` visibility. `learning:` registers the shipped **`learning-loop`
+`thredz:` synthesizes the MCP server (`npx thredz-mcp@0.3.0`), delivers the
+key to it, registers the wiki tools under their bare names (`wiki_recall`,
+`wiki_write`, `log_knowledge_gap`, …), and scopes every one of them to
+`space:` — a Thredz **wiki space**, the memory boundary this agent's
+knowledge lives inside. (Without a space, `visibility:` defaults to
+`private`; inside one, the space's own type decides who can read, so
+neither spec sets it.) `learning:` registers the shipped **`learning-loop`
 skill** with your domain/curriculum/sources substituted in, gates in the
 `/study` `/reflect` `/exam` commands, holds `wiki_write` to *no source, no
 commit*, and wires the first-class exam. That Sources discipline is
-backend-dependent: on a **local** `memory.wiki` backend the tool layer
-enforces it deterministically (`wiki_write` rejects an uncited body); on
-the **hosted thredz** backend this cli spec uses, it's the `learning-loop`
-skill's standing instruction rather than a hard gate (`daemon.yaml`, which
-stays local, is where you see the mechanical rejection). There is no
-vendored server, no 150-line mechanism prompt, and no Bash shell-out —
-those were this demo's scaffolding before the capability shipped.
+backend-dependent: on the **hosted thredz** backend both specs here use,
+it's the `learning-loop` skill's standing instruction; on a **local**
+`memory.wiki` backend the tool layer enforces it deterministically
+(`wiki_write` rejects an uncited body) — delete the `thredz:` block from
+`daemon.yaml` and its `memory.wiki` block falls back to local files, where
+you can watch the mechanical rejection. There is no vendored server, no
+150-line mechanism prompt, and no Bash shell-out — those were this demo's
+scaffolding before the capability shipped.
 
 The seed domain is **specialty coffee brewing & extraction science** —
 evergreen fundamentals plus fast-moving research, crisp verifiable numbers,
@@ -70,34 +76,54 @@ and a real certification curriculum. See
 
 Two shapes:
 
-- **`crewhaus.yaml` (`target: cli`)** — the **interactive** expert on the
-  hosted Thredz wiki. Ask it things; it answers from memory with citations.
-  Drive `/study`, `/reflect`, `/exam` by hand.
-- **`daemon.yaml` (`target: channel`)** — the **always-on** expert. A
-  heartbeat fires every 6h and the built-in study rotation
-  (`learning.study.on_heartbeat`) runs a bounded STUDY or REFLECT pass with
-  no human in the loop (see [`HEARTBEAT.md`](HEARTBEAT.md)); it answers
-  questions in Slack and turns 👍/👎 reactions into rating signal.
-  *Wiki backend:* this daemon uses the **local** wiki (`memory.wiki`,
-  files under `.crewhaus/wiki/`) as a deliberate choice — same tools, same
-  skill, and it's where the mechanical `## Sources` gate is enforced. As
-  of CrewHaus 0.4.0 `thredz:` is emit-wired on the channel shape too, so
-  you can swap `memory.wiki` for `thredz: true` to share the cli's one
-  hosted brain.
+- **`crewhaus.yaml` (`target: cli`)** — the **interactive** expert, on
+  `THREDZ_API_KEY` and the `coffee-expert` space. Ask it things; it answers
+  from memory with citations. Drive `/study`, `/reflect`, `/exam` by hand.
+- **`daemon.yaml` (`target: channel`)** — the **always-on** expert, on
+  `THREDZ_DAEMON_KEY` and the `coffee-daemon` space. A heartbeat fires every
+  6h and the built-in study rotation (`learning.study.on_heartbeat`) runs a
+  bounded STUDY or REFLECT pass with no human in the loop (see
+  [`HEARTBEAT.md`](HEARTBEAT.md)); it answers questions in Slack and turns
+  👍/👎 reactions into rating signal.
+
+## Two keys, two spaces
+
+A **wiki space** is a memory boundary inside a Thredz account. A `shared`
+space is readable by every wiki-enabled key on the account; an `individual`
+space only by the key that owns it. Two limits decide the shape of this
+harness:
+
+- Thredz allows **one individual space per API key** — a second `create` on
+  the same key returns `409 individual_space_exists`.
+- `thredz-mcp` reads **one `THREDZ_API_KEY` per process**, and each spec
+  compiles to its own process with its own synthesized server.
+
+Together: *per-agent private memory = one key per agent = one server process
+per agent.* That's why the daemon carries a second key rather than reusing
+the first, and why what it studies overnight in `coffee-daemon` is invisible
+to the interactive expert's key. Want **one** brain across both shapes
+instead? Create a `shared` space and put its slug in both specs.
+
+Spaces need a **Pro or Scale** plan (Pro: 5 shared / 10 individual across up
+to 10 keys; Scale: 25 / 50 across up to 50 keys). Free and Starter have no
+spaces — drop `space:` from both specs and each key uses the account's
+unspaced wiki. The agent can inspect what its own key can see with
+`wiki_space_list`, and create a space with `wiki_space_create` (that one is
+justification-gated: it consumes plan quota).
 
 ## Prerequisites
 
 | Need | Why | Where |
 |---|---|---|
-| **Thredz API key with a wiki grant** (cli spec) | the expert's long-term memory | [thredz.crewhaus.ai](https://thredz.crewhaus.ai) — create a key, grant it wiki `read-write` via `/api/wiki/access` |
+| **Two Thredz API keys, each with a wiki grant** | one private space per agent (see above) | [thredz.crewhaus.ai](https://thredz.crewhaus.ai) — create each key, grant it wiki `read-write` via `/api/wiki/access`, then create its space |
 | **Anthropic key** (`ANTHROPIC_API_KEY`) | run the agent | — |
 | **Search provider** (`CREWHAUS_SEARCH_*`) | `/study` reads the live web | any provider CrewHaus supports (brave, tavily, …) |
 | **Slack app creds** (daemon only) | Slack Q&A | `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET` |
 
 Copy `.env.example` to `.env` and fill it in — Bun auto-loads `./.env`, so
-run commands from inside this directory. A missing `THREDZ_API_KEY` fails
-at boot with a clear message (exit 21), and a Thredz outage *degrades* the
-run to local files instead of killing it.
+run commands from inside this directory. A missing Thredz key fails at boot
+with a clear message naming the variable (exit 21), and a Thredz outage
+*degrades* the run to local files instead of killing it.
 
 ## Run it (interactive)
 
@@ -133,8 +159,10 @@ crewhaus dev daemon.yaml              # supervised: recompiles + relaunches on c
 bunx crewhaus compile daemon.yaml -o dist && bun install --cwd dist && bun dist/daemon.ts
 ```
 
-A small status page comes up on `http://localhost:4173` (`gateway.ui`). For a
-live demo, drop `heartbeat.every` to `5m` so you can watch a study pass fire.
+It reads `THREDZ_DAEMON_KEY` from the same `.env` — its own key, its own
+space. A small status page comes up on `http://localhost:4173`
+(`gateway.ui`). For a live demo, drop `heartbeat.every` to `5m` so you can
+watch a study pass fire.
 
 ## The four modes (the shipped `learning-loop` skill)
 
@@ -196,7 +224,8 @@ Everything is domain-agnostic except the seed content. To make it an expert
 in *your* field:
 
 1. Change `learning.domain` (and the one-paragraph persona in
-   `agent.instructions`) in both specs.
+   `agent.instructions`) in both specs, and rename the two `thredz.space`
+   slugs to match — one space per agent, so keep them distinct.
 2. Replace [`curriculum.md`](curriculum.md) — its ladder with your field's
    real learning path (a degree syllabus, a certification outline, a
    canonical textbook's table of contents) — and `learning.sources` with
@@ -213,13 +242,13 @@ grow-the-exam — ships with CrewHaus and carries over unchanged.
 ```
 expert/
   crewhaus.yaml            interactive expert (target: cli) — thredz: + learning:
-  daemon.yaml              always-on expert (target: channel) — heartbeat study rotation
+  daemon.yaml              always-on expert (target: channel) — second key, second space
   curriculum.md            the learning ladder + source notes (agent-editable)
   HEARTBEAT.md             documents the built-in unattended study rotation
   sources/                 hand-checked seed notes to bootstrap from
   eval/dataset.jsonl       the competency exam (grows over time)
   eval/graders.yaml        the exam rubric (llm_judge)
-  .env.example             keys: Anthropic, Thredz, search, Slack
+  .env.example             keys: Anthropic, two Thredz, search, Slack
 ```
 
 ## Notes & limits
@@ -230,6 +259,10 @@ expert/
 - `/study` and heartbeat STUDY need a search provider to reach the live web;
   without one the expert still works from `sources/` and the wiki.
 - Knowledge-gap logging is backend-aware: gaps land as Thredz tasks
-  (`task_list`, tag `knowledge-gap`) on the hosted backend and as `[gap]`
-  goals in the plan store locally — either way the next study pass lists
-  them first.
+  (`task_list`, tag `knowledge-gap`) on the hosted backend both specs use,
+  and as `[gap]` goals in the plan store if you drop `thredz:` and fall back
+  to a local wiki — either way the next study pass lists them first.
+- Each agent's gaps and exam failures stay inside its own space, so the two
+  shapes learn separately. Point both `space:` values at one **shared**
+  space to make them one brain — at the cost of neither having memory the
+  other can't read.

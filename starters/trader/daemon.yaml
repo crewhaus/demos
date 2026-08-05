@@ -16,7 +16,8 @@
 #                               rating signal.
 #
 # Since 0.4.0 the `thredz:` backend is emit-wired on the channel shape, so
-# the daemon and the interactive cli share ONE hosted brain.
+# the daemon and the interactive cli share ONE hosted brain — and since 0.5.0
+# that sharing is stated outright: both specs name the same wiki `space:`.
 #
 # Run it (from inside this directory):
 #   bunx crewhaus compile daemon.yaml -o dist
@@ -30,7 +31,14 @@
 name: trader-advisor-daemon
 target: channel
 
-thredz: { api_key: $THREDZ_API_KEY, goals: true }
+# Same key, same space as crewhaus.yaml — deliberately. One advisor with two
+# faces gets one memory boundary: the playbooks this heartbeat studies into are
+# the playbooks the cli recalls, and the `watchlist` + `ops-config` this scan
+# reads are the ones you set there. Sharing the key is what lets both in — an
+# `individual` space is readable only by the key that owns it, and one such
+# space per key is a hard Thredz limit. (A key per agent, each with its own
+# private space, is the other pattern — see ../expert.)
+thredz: { api_key: $THREDZ_API_KEY, space: trader-advisor, goals: true }
 
 learning:
   domain: systematic retail trading of mainstream US markets (equities/ETFs and crypto) under realistic costs and constraints
@@ -173,6 +181,7 @@ permissions:
     - { type: alwaysAllow, pattern: wiki_list }
     - { type: alwaysAllow, pattern: wiki_related }
     - { type: alwaysAllow, pattern: wiki_stats }
+    - { type: alwaysAllow, pattern: wiki_space_list } # read-only; wiki_space_create stays gated (it spends plan quota)
     - { type: alwaysAllow, pattern: wiki_write }
     - { type: alwaysAllow, pattern: wiki_set_signals }
     - { type: alwaysAllow, pattern: log_knowledge_gap }

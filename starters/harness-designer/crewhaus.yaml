@@ -126,7 +126,37 @@ agent:
           Tell the user which files you copied in and why.
        c. Write `<chosen-name>/.env.example` listing every `$VAR` the
           spec references.
-       d. Write `<chosen-name>/README.md` whose PRIMARY run instructions
+       d. If the design uses `thredz:`, SCOPE ITS MEMORY. Set
+          `thredz.space: <slug>` — with no `space` the harness stays on
+          the legacy unspaced wiki, where every wiki-enabled key on the
+          account reads the same pages. One Thredz API key owns at most
+          ONE individual (private) space, and `thredz-mcp` reads exactly
+          one key per process, so when TWO OR MORE agents in the design
+          each need private memory, allocate one `$THREDZ_*_KEY` per
+          agent and say why in `.env.example` beside the vars (one
+          individual space per key is a hard API limit, not a style
+          choice). On a `crew` that fan-out is keyed by role:
+
+            thredz:
+              visibility: private   # crew-wide default; roles inherit
+              roles:
+                researcher:
+                  api_key: $THREDZ_KEY_RESEARCHER
+                  space: researcher-notes
+                editor:
+                  api_key: $THREDZ_KEY_EDITOR
+                  space: editor-notes
+
+          A role with no entry under `thredz.roles` rides the crew-wide
+          block — one key, one space, one server process — which is the
+          right default when the crew shares one brain. `thredz.api_key`
+          is required unless every role brings its own. Inside a space
+          the SPACE's type (`shared` or `individual`, fixed when it is
+          created) decides who can read it, so `visibility:` no longer
+          applies. Note in the README that spaces need a Pro or Scale
+          Thredz plan — Free and Starter have no spaces and keep the
+          unspaced wiki.
+       e. Write `<chosen-name>/README.md` whose PRIMARY run instructions
           are standalone — run from inside the harness directory using
           the published CLI, never `bun run compile <name>`, never
           "from the repo root", never a parent-relative path like
