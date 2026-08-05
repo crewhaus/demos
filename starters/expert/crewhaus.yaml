@@ -2,7 +2,8 @@
 #
 # Two knobs do all the work:
 #   thredz:    — the hosted wiki that is the expert's long-term memory
-#                (bare-name wiki_* tools, synthesized MCP server, one env var)
+#                (bare-name wiki_* tools, synthesized MCP server, one API key
+#                and one wiki space per agent)
 #   learning:  — the shipped `learning-loop` skill (ANSWER / STUDY / REFLECT /
 #                EXAM), the /study /reflect /exam commands, Sources-required
 #                wiki writes, and the first-class in-process exam
@@ -19,7 +20,21 @@
 name: hello-expert
 target: cli
 
-thredz: true # ≡ api_key: $THREDZ_API_KEY — THE one argument
+# `thredz: true` is shorthand for `{ api_key: $THREDZ_API_KEY }`. It is spelled
+# out here for the knob that matters in 0.5.0 — `space:`, the Thredz WIKI SPACE
+# every wiki_* call is scoped to. Spaces need a Pro or Scale plan; on Free or
+# Starter drop `space:` and the key uses the account's unspaced wiki.
+#
+# `coffee-expert` is created as an INDIVIDUAL space, readable only by the key
+# that owns it — this agent's memory, nobody else's. Thredz allows exactly ONE
+# individual space per API KEY, which is why the always-on daemon carries a
+# SECOND key with its own space instead of sharing this one (daemon.yaml).
+#
+# No `visibility:` here on purpose: inside a space the space's own TYPE decides
+# who can read, and `visibility:` stops applying.
+thredz:
+  api_key: $THREDZ_API_KEY
+  space: coffee-expert
 
 learning:
   domain: specialty coffee brewing & extraction science
@@ -84,6 +99,7 @@ permissions:
     - { type: alwaysAllow, pattern: wiki_list }
     - { type: alwaysAllow, pattern: wiki_related }
     - { type: alwaysAllow, pattern: wiki_stats }
+    - { type: alwaysAllow, pattern: wiki_space_list } # "which spaces can this key see?"
     - { type: alwaysAllow, pattern: wiki_write }
     - { type: alwaysAllow, pattern: wiki_set_signals }
     - { type: alwaysAllow, pattern: log_knowledge_gap }

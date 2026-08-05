@@ -29,7 +29,9 @@ Since CrewHaus v0.3.0 the whole mechanism **ships with the product**. The
 spec is two knobs plus domain content:
 
 ```yaml
-thredz: true                  # hosted wiki = long-term memory (one env var)
+thredz:                       # hosted wiki = long-term memory
+  api_key: $THREDZ_API_KEY
+  space: coffee-expert        # 0.5.0 — this agent's own memory boundary
 
 learning:
   domain: specialty coffee brewing & extraction science
@@ -82,13 +84,22 @@ mechanism is domain-agnostic and ships with CrewHaus.
 ## 1 — Long-term memory is one knob
 
 The expert's memory is a [Thredz](https://thredz.crewhaus.ai) wiki, and the
-entire integration is:
+entire integration is one knob:
 
 ```yaml
 thredz: true    # ≡ api_key: $THREDZ_API_KEY
 ```
 
-The compiler synthesizes the MCP server entry (`npx -y thredz-mcp@0.2.0`), delivers
+The starter spells that shorthand out, because 0.5.0 adds a second knob
+worth naming — the wiki **space** this expert's memory lives in:
+
+```yaml
+thredz:
+  api_key: $THREDZ_API_KEY
+  space: coffee-expert
+```
+
+The compiler synthesizes the MCP server entry (`npx -y thredz-mcp@0.3.0`), delivers
 `THREDZ_API_KEY` into the child process through the v0.3.0 secret machinery
 (fail-fast at boot with a clear message and exit 21 when it's missing — the
 key never lands in compiled artifacts), enforces `private` visibility by
@@ -107,6 +118,62 @@ and audit layers see them without any `tool_config` boilerplate.
 Failure semantics are honest: a lapsed subscription or a Thredz outage
 *degrades* the run (clear per-call errors, wiki temporarily unavailable)
 instead of killing a local-first harness.
+
+### Spaces, and why this starter needs two keys
+
+A Thredz **wiki space** is a named memory boundary inside one account. A
+`shared` space is readable by every wiki-enabled key on the account; an
+`individual` space is readable only by the key that owns it. `space:`
+lowers to the synthesized server's `THREDZ_DEFAULT_SPACE`, so every
+`wiki_*` call is scoped without the agent having to remember to scope it.
+
+A space's *type* is chosen when the space is created — over the API, or
+by the agent itself through the two tools new in `thredz-mcp@0.3.0`,
+`wiki_space_list` and `wiki_space_create` — not in the spec. The compiler
+therefore can't validate it, and doesn't cross-check `visibility:`
+against it: inside a space the space's own type decides who can read, and
+the `private` default named above stops applying. (Both specs allow
+`wiki_space_list` outright; neither allows `wiki_space_create`, which
+spends plan quota — it stays justification-gated, so creating a space is
+your call.)
+
+Then the limit that shapes any multi-agent setup: **one individual space
+per API key** — a hard Thredz limit, where a second one comes back `409
+individual_space_exists` — and `thredz-mcp` reads exactly one
+`THREDZ_API_KEY` per process. Chain those:
+
+```
+per-agent private memory  ⇒  one key per agent  ⇒  one server process per agent
+```
+
+That is why this starter's two specs carry two keys.
+[`crewhaus.yaml`](../starters/expert/crewhaus.yaml) studies into
+`coffee-expert` on `$THREDZ_API_KEY`;
+[`daemon.yaml`](../starters/expert/daemon.yaml) (§8) studies into
+`coffee-daemon` on `$THREDZ_DAEMON_KEY`, and neither key can read the
+other's space. Sharing one brain across both is the *other* choice, and
+it's equally deliberate: give both specs the same key and the same space
+(what [Recipe 73](73-trading-advisor.md) does), or point them at a
+**shared** space, which every wiki-enabled key on the account can read.
+
+On a **crew** the same arithmetic is one block instead of two files.
+`thredz.roles` (crew-only) gives a role its own key and space — and its
+own npx child — while every role without an entry rides the crew-wide
+block and shares one brain:
+
+```yaml
+thredz:
+  visibility: private            # the crew-wide default every role inherits
+  roles:
+    researcher: { api_key: $THREDZ_KEY_RESEARCHER, space: researcher-notes }
+    editor:     { api_key: $THREDZ_KEY_EDITOR,     space: editor-notes }
+```
+
+Spaces are a paid-plan capability: Pro allows 5 shared and 10 individual
+spaces across at most 10 keys, Scale 25 and 50 across 50. Free and
+Starter accounts have no spaces at all and keep the unspaced wiki — drop
+`space:` from both specs there and everything else in this recipe is
+unchanged.
 
 ## 2 — The `learning:` block
 
@@ -156,12 +223,13 @@ confidence score. Upsert, not duplicate.
 **"No source, no commit" — how hard the gate is depends on the backend.**
 On a **local** `memory.wiki` backend, `learning:` stamps the tool layer so
 `wiki_write` deterministically *rejects* any body without a `## Sources`
-section — a prompt-only plea turned into write-path governance (the
-`daemon.yaml` spec is local, so it's where you see this). On the **hosted
-`thredz:`** backend this cli spec uses, `wiki_write` is a thredz-mcp
-pass-through with no such gate, so the same discipline rides in the
-`learning-loop` skill's instructions instead. Either way the rule holds;
-only the enforcement layer differs.
+section — a prompt-only plea turned into write-path governance. On the
+**hosted `thredz:`** backend both specs in this starter use, `wiki_write`
+is a thredz-mcp pass-through with no such gate, so the same discipline
+rides in the `learning-loop` skill's instructions instead. Either way the
+rule holds; only the enforcement layer differs — and you can see the
+mechanical version live by deleting `daemon.yaml`'s `thredz:` block,
+which drops it back onto the `memory.wiki` block underneath.
 
 ## 5 — REFLECT: improve the knowledge, not just grow it
 
@@ -218,8 +286,9 @@ review the diff in the morning.
 
 ## 8 — On a schedule (the daemon)
 
-The interactive cli is the same brain you can also run as an always-on
-daemon. [`daemon.yaml`](../starters/expert/daemon.yaml) (`target: channel`)
+The same expert — same domain, same curriculum, same exam, its own wiki
+space — also runs as an always-on daemon.
+[`daemon.yaml`](../starters/expert/daemon.yaml) (`target: channel`)
 adds a **heartbeat** that fires every 6h — and because the spec declares
 `learning:`, the built-in **`learning.study.on_heartbeat` rotation** (default
 on) is baked ahead of the operator's tick instructions at compile time: gaps
@@ -240,20 +309,22 @@ answers in Slack, studies and reflects on a timer, and turns reactions into
 training signal — a domain expert that is awake, improving, and accountable
 to an exam even when nobody's asking.
 
-*Wiki backend note:* this starter's `daemon.yaml` uses the **local**
-`memory.wiki` backend (files under `.crewhaus/wiki/`) — same tools, same
-skill, and the backend where the `## Sources` gate is enforced in code (see
-§4). That's now a deliberate choice, not a limitation: as of CrewHaus 0.4.0
-`thredz:` is emit-wired on the channel shape too, so a daemon can share the
-cli's one hosted brain by swapping `memory.wiki` for `thredz: true`.
-[Recipe 73](73-trading-advisor.md) builds a channel daemon on `thredz:`
-directly.
+*Wiki backend note:* the daemon is on Thredz too — `thredz:` has been
+emit-wired on the channel shape since CrewHaus 0.4.0 — but on its **own**
+key (`$THREDZ_DAEMON_KEY`) and its own space (`coffee-daemon`), for the
+reason in §1: one individual space per key. What it studies unattended is
+its memory, and the interactive expert's key cannot read it. That's a
+choice, not a constraint — the two ways to make them one brain are in §1,
+and [Recipe 73](73-trading-advisor.md) takes the sharing branch. Deleting
+the `thredz:` block goes the other way entirely: the `memory.wiki` block
+underneath takes over and the daemon runs on local files under
+`.crewhaus/wiki/`, the backend where the `## Sources` gate is code (§4).
 
 ## Run it
 
 ```bash
 cd starters/expert
-cp .env.example .env       # THREDZ_API_KEY (+ wiki grant), ANTHROPIC_API_KEY, search keys
+cp .env.example .env       # THREDZ_API_KEY (+ wiki grant + its coffee-expert space), ANTHROPIC_API_KEY, search keys
 bunx crewhaus compile crewhaus.yaml -o dist
 bunx crewhaus run crewhaus.yaml
 #   > What grind and ratio for a balanced V60?     (recall + cite, or an honest gap)
@@ -273,9 +344,10 @@ exam-passing expertise — is the demo.
   allowlist; garbage sources produce a confidently wrong expert. Curate
   `curriculum.md`'s ladder and `learning.sources` first.
 - **You don't want a hosted backend.** That's not a blocker anymore — swap
-  `thredz: true` for `memory.wiki: { enabled: true, autoRecall: true }` and
-  the same skill, tools, and exam run against local files under
-  `.crewhaus/wiki/`. Use Thredz when you want the wiki hosted, shared across
+  the `thredz:` block for `memory.wiki: { enabled: true, autoRecall: true }`
+  and the same skill, tools, and exam run against local files under
+  `.crewhaus/wiki/`. (It's also the answer on Free and Starter plans, which
+  have no spaces.) Use Thredz when you want the wiki hosted, shared across
   machines, or visible to other agents you own.
 
 ## Pointers to source

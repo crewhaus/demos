@@ -68,12 +68,47 @@ Two shapes, one hosted brain (`thredz:` is emit-wired on both since 0.4.0):
   the gate passes — alerts you in Slack. Your 👍/👎 reactions and
   "filled …" replies feed straight back into its learning.
 
+### One brain is a choice
+
+Since 0.5.0 the sharing is explicit — both specs name the same key and the
+same wiki space:
+
+```yaml
+thredz: { api_key: $THREDZ_API_KEY, space: trader-advisor, goals: true }
+```
+
+A Thredz **space** is a memory boundary inside your account. Scoping both
+specs to `trader-advisor` is what makes "two faces of one advisor" literal:
+the playbooks the heartbeat studies into are the playbooks the REPL recalls,
+the `watchlist` and `ops-config` you set interactively are the ones the market
+scan reads, and both write the same `dashboard` article. (The trade journal
+isn't in the wiki — it's the broker's own `.paper-broker/` state, shared
+because both processes run from this directory.)
+
+The shared key is load-bearing, not laziness. An `individual` space is
+readable only by the key that owns it, and **one individual space per key is
+a hard Thredz limit** — so per-agent *private* memory means a key per agent,
+and a server process per agent, because `thredz-mcp` reads one
+`THREDZ_API_KEY` per process. That is the [expert starter](../expert)'s
+shape; this advisor deliberately wants the opposite.
+
+Two consequences worth knowing:
+
+- **Spaces are a Pro/Scale feature.** Free and Starter have none — there,
+  delete `space:` from both specs and the advisor uses the unspaced legacy
+  wiki exactly as it did before 0.5.0. Nothing else in this starter changes.
+- **Inside a space, the space's type decides visibility** (`shared` = every
+  wiki-enabled key on the account; `individual` = this key only), so the
+  `visibility:` knob no longer applies. The type is fixed when the space is
+  created — see `.env.example` for creating it.
+
 ## Prerequisites
 
 | Need | Why | Where |
 |---|---|---|
 | **Anthropic key** | run the agent | `ANTHROPIC_API_KEY` |
-| **Thredz API key with a wiki grant** | the brain + the dashboard | [thredz.crewhaus.ai](https://thredz.crewhaus.ai) — create a key, grant wiki `read-write` via `/api/wiki/access` |
+| **Thredz API key with a wiki grant** | the brain + the dashboard | [thredz.crewhaus.ai](https://thredz.crewhaus.ai) — create a key, grant wiki `read-write` via `/api/wiki/access`. One key serves both specs |
+| **A `trader-advisor` wiki space** | the memory boundary both specs share | Pro/Scale only — create it first (see `.env.example`), or drop `space:` from both specs to use the unspaced legacy wiki |
 | **Search provider** (`CREWHAUS_SEARCH_*`) | `/study` reads the live web | any provider CrewHaus supports (brave, tavily, …) |
 | **Slack app creds** (daemon only) | alerts + replies + reactions | `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET` |
 

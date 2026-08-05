@@ -145,7 +145,7 @@ The knowledge side is [Recipe 64](64-self-teaching-expert.md)'s fabric
 pointed at trading. From the cli spec:
 
 ```yaml
-thredz: { api_key: $THREDZ_API_KEY, goals: true }
+thredz: { api_key: $THREDZ_API_KEY, space: trader-advisor, goals: true }
 
 learning:
   domain: systematic retail trading of mainstream US markets (equities/ETFs and crypto) under realistic costs and constraints
@@ -175,6 +175,48 @@ this loop: a playbook is a hypothesis; the journal (tagged per playbook)
 is its evidence; `/reflect` reconciles playbooks against their own stats
 — tightening rules, demoting what decays, promoting what survives.
 
+### One key, one space, one brain — on purpose
+
+`space:` is 0.5.0's memory boundary: a **wiki space** is a named
+partition inside a Thredz account. A `shared` space is readable by every
+wiki-enabled key on the account; an `individual` space only by the key
+that owns it. The slug becomes the synthesized server's
+`THREDZ_DEFAULT_SPACE`, so every wiki call the harness makes is scoped
+whether or not the model remembers to scope it.
+
+[`daemon.yaml`](../starters/trader/daemon.yaml) names the **same key and
+the same space** as the cli spec, and that repetition is the design:
+these are two faces of one advisor, so the playbooks the heartbeat
+studies into are the playbooks the REPL recalls, and the `watchlist` and
+`ops-config` you set interactively are the ones the market scan reads.
+Split them and you split the brain — the daemon would go on trading
+playbooks your `/study` passes never wrote. (The trade journal is *not*
+part of this: it is the broker's own `.paper-broker/` state, shared
+because both processes run from the same directory.)
+
+Splitting is what you want for *different* agents, and it has a price
+worth knowing before you build a fleet: **one individual space per API
+key** is a hard Thredz limit (a second one comes back `409
+individual_space_exists`), and `thredz-mcp` reads exactly one key per
+process. So per-agent private memory means a key per agent and an npx
+child per agent — which is why [Recipe 64](64-self-teaching-expert.md)'s
+two specs carry two keys, and why on a crew the `thredz.roles` fan-out
+exists to do it declaratively. This advisor wants the opposite, and one
+shared key is what buys it.
+
+Two consequences to plan around:
+
+- **Spaces need Pro or Scale** (Pro: 5 shared / 10 individual across ≤10
+  keys; Scale: 25 / 50 across ≤50). Free and Starter have none — delete
+  `space:` from both specs there and the advisor runs on the unspaced
+  wiki exactly as it did before 0.5.0. Nothing else changes.
+- **Inside a space, the space's type decides visibility**, so the
+  `visibility:` knob stops applying. The type is fixed when the space is
+  created — over the API, or by asking the advisor once, since
+  `wiki_space_create` (new in `thredz-mcp@0.3.0`, alongside
+  `wiki_space_list`) is justification-gated and deliberately *not* in the
+  spec's allow rules: it spends plan quota, so approving it is your call.
+
 ## 3 — Day 0, interactively
 
 ```bash
@@ -182,6 +224,11 @@ cd starters/trader
 cp .env.example .env      # ANTHROPIC_API_KEY + THREDZ_API_KEY (+ search keys)
 bunx crewhaus run crewhaus.yaml
 ```
+
+(One setup step before that first run: the `trader-advisor` space has to
+exist. Create it over the Thredz API — `.env.example` has the recipe — or
+ask the advisor to, and approve the gated `wiki_space_create`. On Free or
+Starter, drop `space:` from both specs instead.)
 
 ```
 > What would a round trip on 50 shares of AAPL actually cost me?   # cost literacy, day one
@@ -286,8 +333,9 @@ interactive one races ahead.
 
 [`daemon.yaml`](../starters/trader/daemon.yaml) compiles the same brain
 to a Slack daemon (since 0.4.0 `thredz:` is emit-wired on the channel
-shape, so cli and daemon share one hosted wiki). Three temporal surfaces
-divide the labor:
+shape; since 0.5.0 the sharing is stated outright — same key, same
+`space: trader-advisor`, per §2). Three temporal surfaces divide the
+labor:
 
 ```yaml
 heartbeat:            # study/reflect rotation + the ops tick, every 6h
@@ -453,6 +501,7 @@ before the journal makes it *feel* it.
 | The gate is the product | lowering `CONFIDENCE_MIN_TRADES` to get alerts sooner re-creates the problem this recipe solves; and the *verdict* is code, but consulting it is instructions — hook `SendMessage` for structural enforcement |
 | Outcome ≠ process | one trade grades nothing; expectancy over ≥40 trades grades everything |
 | `## Sources` discipline | keep it on every wiki article (ops articles cite the broker journal); the local `memory.wiki` backend enforces it mechanically, the Thredz backend by skill instruction |
+| Wiki spaces are a paid-plan knob | `thredz.space:` scopes every wiki call (`THREDZ_DEFAULT_SPACE`) and needs Pro or Scale — on Free/Starter drop it from both specs. **One individual space per API key**, so per-agent private memory costs a key *and* a process per agent; both specs here name one key and `trader-advisor` deliberately |
 | Wash sales | re-entering within 30 days of a realized loss defers the tax loss — the broker warns, reality bills |
 | Paper flatters | even conservative sim fills hide queue position and fast markets — hence the live book and drift tracking; the upgrade path is a free Alpaca paper account with live-book fills |
 

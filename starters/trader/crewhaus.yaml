@@ -28,7 +28,18 @@ target: cli
 
 # Hosted brain: wiki articles (playbooks, journal reviews, the dashboard
 # article) + goals (the metric-tick primitive Thredz dashboards chart).
-thredz: { api_key: $THREDZ_API_KEY, goals: true }
+#
+# `space:` (0.5.0, Pro/Scale) scopes every wiki call to one memory boundary;
+# create the space before first run — see .env.example. daemon.yaml carries the
+# SAME key and the SAME space on purpose: these two specs are one advisor with
+# two faces, so the playbooks the daemon studies into are the playbooks you
+# exercise here, and its `dashboard` and `watchlist` articles are the ones you
+# read. The shared key is load-bearing, not laziness — an `individual` space is
+# readable only by the key that owns it, and ONE individual space per key is a
+# hard Thredz limit. (For the opposite pattern — a key per agent, each with its
+# own private space — see ../expert.) Inside a space the space's TYPE decides
+# visibility, so the `visibility:` knob no longer applies.
+thredz: { api_key: $THREDZ_API_KEY, space: trader-advisor, goals: true }
 
 learning:
   domain: systematic retail trading of mainstream US markets (equities/ETFs and crypto) under realistic costs and constraints
@@ -118,8 +129,11 @@ permissions:
     - { type: alwaysAllow, pattern: wiki_list }
     - { type: alwaysAllow, pattern: wiki_related }
     - { type: alwaysAllow, pattern: wiki_stats }
+    - { type: alwaysAllow, pattern: wiki_space_list } # read-only: which spaces this key can reach
     - { type: alwaysAllow, pattern: wiki_write }
     - { type: alwaysAllow, pattern: wiki_set_signals }
+    # No wiki_space_create rule on purpose: it spends plan quota and is
+    # justification-gated, so creating a space stays your call, not the agent's.
     - { type: alwaysAllow, pattern: log_knowledge_gap }
     - { type: alwaysAllow, pattern: task_list }
     - { type: alwaysAllow, pattern: run_exam }
