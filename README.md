@@ -24,11 +24,10 @@ This repo deliberately keeps no `@crewhaus/*` runtime in its own `package.json` 
 
 **Default path for users following the docs:** install the `crewhaus` CLI (the bare, unscoped npm package — the old `@crewhaus/cli` name is deprecated and now just points at it), then `bun run compile <demo>` shells out to the installed binary.
 
-The recommended installer is [chvm](https://github.com/crewhaus/chvm), the CrewHaus version manager — it needs [Bun](https://bun.sh) and runs on macOS, Linux, and Windows:
+The recommended installer is [chvm](https://github.com/crewhaus/chvm), the CrewHaus version manager — one command, on macOS, Linux, and Windows:
 
 ```sh
-git clone https://github.com/crewhaus/chvm
-cd chvm && bun install && bun src/index.ts setup
+npm install -g @crewhaus/chvm
 chvm use latest
 ```
 
@@ -53,7 +52,7 @@ echo "deb [signed-by=/usr/share/keyrings/crewhaus.gpg] https://crewhaus.github.i
 sudo apt update && sudo apt install crewhaus
 ```
 
-The Homebrew / Scoop / winget / apt binaries are self-contained — no Bun or Node runtime needed. Only the npm package needs Bun, as does chvm, which runs those npm releases. Confirm any of them with `crewhaus --version`.
+The Homebrew / Scoop / winget / apt binaries are self-contained — no Bun or Node runtime needed. Only the npm package needs Bun — as do the releases chvm installs, since chvm runs them with it. Confirm any of them with `crewhaus --version`.
 
 **Contributor / dual-checkout path:** clone [crewhaus/factory](https://github.com/crewhaus/factory) as a sibling — no extra install needed, the scripts and `tsconfig.json` `paths` block pick it up.
 
