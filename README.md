@@ -22,7 +22,17 @@ This repo deliberately keeps no `@crewhaus/*` runtime in its own `package.json` 
 2. `node_modules/crewhaus` — if you ran `bun add -d crewhaus` yourself in this repo.
 3. `bun x crewhaus` — falls back to a globally installed binary.
 
-**Default path for users following the docs:** install the `crewhaus` CLI (the bare, unscoped npm package — the old `@crewhaus/cli` name is deprecated and now just points at it), then `bun run compile <demo>` shells out to the installed binary. The CLI is available from five channels:
+**Default path for users following the docs:** install the `crewhaus` CLI (the bare, unscoped npm package — the old `@crewhaus/cli` name is deprecated and now just points at it), then `bun run compile <demo>` shells out to the installed binary.
+
+The recommended installer is [chvm](https://github.com/crewhaus/chvm), the CrewHaus version manager — it needs [Bun](https://bun.sh) and runs on macOS, Linux, and Windows:
+
+```sh
+git clone https://github.com/crewhaus/chvm
+cd chvm && bun install && bun src/index.ts setup
+chvm use latest
+```
+
+chvm installs published npm releases and switches between them with a PATH shim, so `chvm use 0.5.4` pins a demo to the release it was built against. The CLI also ships through five package channels:
 
 ```bash
 # npm / Bun (requires Bun >= 1.2)
@@ -43,7 +53,7 @@ echo "deb [signed-by=/usr/share/keyrings/crewhaus.gpg] https://crewhaus.github.i
 sudo apt update && sudo apt install crewhaus
 ```
 
-The Homebrew / Scoop / winget / apt binaries are self-contained — no Bun or Node runtime needed. Only the npm package needs Bun. After install, `crewhaus --version` prints e.g. `0.1.3`.
+The Homebrew / Scoop / winget / apt binaries are self-contained — no Bun or Node runtime needed. Only the npm package needs Bun, as does chvm, which runs those npm releases. Confirm any of them with `crewhaus --version`.
 
 **Contributor / dual-checkout path:** clone [crewhaus/factory](https://github.com/crewhaus/factory) as a sibling — no extra install needed, the scripts and `tsconfig.json` `paths` block pick it up.
 
