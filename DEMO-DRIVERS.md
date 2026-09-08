@@ -186,14 +186,16 @@ result with
 `CREWHAUS_BIN=<shim that runs factory/apps/cli/src/index.ts> bun run drivers:verify`.
 
 This is live right now for the **0.6.0 model surface**, while the published CLI
-is still 0.5.8. Every beat that types a `models:` block or calls
-`crewhaus models …` / `route status --by profile` / `eval leaderboard` is green
-against factory `main` and reports an unknown command (or a spec-validation
-failure) against an installed 0.5.8 — `starters/hybrid-support` and
+is still 0.5.8. Every beat that types or validates a 0.6.0 spec (`lint`,
+`compile`, `compile … --check`) or calls `crewhaus models …` /
+`route status --by profile` / `eval leaderboard` is green against factory `main`
+and reports an unknown command (or a spec-validation failure) against an
+installed 0.5.8 — `starters/hybrid-support` and
 `walkthroughs/drivers/75-hybrid-models` are entirely in that set, and each such
-beat's `verify.note` names it. Two earlier examples of the same rule have since
-shipped and are noted in the `expert`/`trader` `--check` beats (factory PR #345,
-released in 0.4.x).
+beat's `verify.note` names the requirement, including the `lint` beats whose
+own output is otherwise unremarkable. Two earlier examples of the same rule
+have since shipped and are noted in the `expert`/`trader` `--check` beats
+(factory PR #345, released in 0.4.x).
 
 One 0.6.0 consequence is worth knowing before you write a beat: a spec that
 declares `strategy.model_directed`, `policy: classifier`, or the
