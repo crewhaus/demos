@@ -1,14 +1,15 @@
 # Walkthroughs
 
 > Task-oriented walkthroughs for every major feature of factory.
-> All 74 recipes are **complete** (56 through the v0.1 line, recipes
+> All 75 recipes are **complete** (56 through the v0.1 line, recipes
 > 56–61 for the v0.2.0 automation release, recipe 62 for response
 > ratings, recipe 63 for the session-knowledge commands, recipe 64 for
 > the self-teaching expert, recipes 65–71 for the v0.4.0 loop
 > contract, recipes 72–73 for the zero-to-improving bootstrap
 > narratives, and recipe 74 for the 0.4.x eval-practice surfaces —
 > suite tiering, tool cassettes, red-team probes, and the review
-> queue). Every recipe is
+> queue, and recipe 75 for the 0.6.0 per-model settings and hybrid
+> setups). Every recipe is
 > statically validated by `bun run walkthroughs:test` and every recipe with
 > a `compile:*` script in its frontmatter is also compile-smoke
 > validated by `bun run walkthroughs:smoke`. Every recipe also ships a
@@ -55,7 +56,7 @@ for `run`).
 
 ## Pick a recipe — diagnostic decision tree
 
-The 74 recipes cover a lot of ground. Most readers don't need to scan
+The 75 recipes cover a lot of ground. Most readers don't need to scan
 the table of contents; they need to find the shape that matches the
 problem they brought. Walk this tree from the top:
 
@@ -129,6 +130,13 @@ problem they brought. Walk this tree from the top:
    agent's runs deterministic with cassettes, generate an adversarial
    corpus you never wrote, and route the verdicts nobody could decide
    into a human review queue.
+7.8. **Paying your strongest model's rate on turns that never needed
+   it?** → [Recipe 75 — Hybrid models](75-hybrid-models.md): a `models:`
+   registry so each model's settings are declared once, a cheap lane
+   narrowed to read-only tools, a stronger checker grading the draft,
+   and `evaluation.on_fail: escalate` handing the failures up. Read
+   [Recipe 59](59-model-resilience-and-cost.md) first for the pool
+   itself.
 8. **Are you running long-horizon autonomous work (research, batch
    jobs)?** → [Recipe 07 — Autonomous Research](07-autonomous-research.md)
    or [Recipe 08 — Batch Worker](08-batch-worker.md). Both lean on
@@ -402,6 +410,18 @@ user-facing companion of the 0.4.x evals campaign — see
 | -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
 | 74 | [Eval suites, tool cassettes, red teams, and the review queue](74-eval-suites-and-cassettes.md) | Pillar 2 — `eval suite` / `--record-tools` / `redteam` / `review` ([`starters/eval`](../starters/eval)) | complete |
 
+## Part P — Per-model settings and hybrid setups (0.6.0)
+
+Recipe 59 gives you a pool and a policy; this one gives every candidate in
+it a **profile** — its own tools, permissions, request params and spend cap
+— and composes the lanes into a cascade a judge can escalate through. It is
+the user-facing companion of the 0.6.0 release: see the
+[factory CHANGELOG](https://github.com/crewhaus/factory/blob/main/CHANGELOG.md).
+
+| #  | Recipe                                                          | Theme                                  | Status   |
+| -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
+| 75 | [Hybrid models: cheap worker, strong judge](75-hybrid-models.md) | Pillar 1 — `models:` / per-candidate narrowing / `strategy.cascade` / `on_fail: escalate` ([`starters/hybrid-support`](../starters/hybrid-support)) | complete |
+
 ---
 
 ## Quick paths (for readers who already know the shape they want)
@@ -426,6 +446,7 @@ a known scenario:
 - **Bounding & governing the loop (0.4.0 loop contract).** 65 → 66 → 67 → 68.
 - **Making a loop consumable / deployable (0.4.0).** 69 → 70 → 71.
 - **Model resilience, cost, and teams.** 59 → 60 → 21 → 58.
+- **Spending less without getting worse (0.6.0 hybrids).** 59 → 75 → 66 → 42.
 - **Pillar 3 hardening (defense-in-depth).** 29 → 41 → 53 → 55.
 - **Forking a tier-1 harness.** 49 (procode) or 50 (prochat) or 51 (multichat) → fork the matching showcase.
 - **Designing a new harness from intent.** 48 → (the recipe for the shape it picks) → 12 → 42.
@@ -462,7 +483,7 @@ thing to check when asking "is module X covered anywhere?".
 | Layer | What it is | Covered by |
 | ----- | ---------- | ---------- |
 | **R1** | Runtime Core (agent loop) | GS (run-time, one turn) · 01 · 31 |
-| **R2** | Model Layer | GS · 18 · 32 · 33 |
+| **R2** | Model Layer | GS · 18 · 32 · 33 · 59 · 75 |
 | **R3** | Tool Layer (core) | GS · 01 · 28 |
 | **R4** | Built-in Tools | 01 · 09 · 10 · 30 · 50 · 54 |
 | **R5** | MCP & Protocol Hosts | 13 · 27 · 43–47 |
@@ -524,8 +545,8 @@ catalog name:
 
 | Total recipes | Status                  |
 | ------------- | ----------------------- |
-| 75            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62 + session-knowledge 63 + self-teaching expert 64 + 0.4.0 loop contract 65-71 + zero-to-improving narratives 72-73 + eval practice at scale 74) |
-| 75            | Walkthrough complete    |
+| 76            | Total (00 prerequisite + 01-40 core + Pillars 41, 42 + §47 recipes 43-47 + meta 48 + showcases 49-51 + Pillar extensions & corpus 52-55 + 0.2.0 automation 56-61 + response ratings 62 + session-knowledge 63 + self-teaching expert 64 + 0.4.0 loop contract 65-71 + zero-to-improving narratives 72-73 + eval practice at scale 74 + 0.6.0 hybrid models 75) |
+| 76            | Walkthrough complete    |
 | 0             | Stub                    |
 
 Each recipe walks from "I have an empty workspace" to "I have a

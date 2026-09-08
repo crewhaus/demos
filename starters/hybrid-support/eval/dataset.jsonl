@@ -1,0 +1,6 @@
+{"id":"easy-1","input":"Has order A-1041 arrived yet?","expected_output":"Delivered 2026-09-02"}
+{"id":"easy-2","input":"What is happening with order A-1042?","expected_output":"Awaiting stock on SKU 88-114"}
+{"id":"easy-3","input":"Where is order A-1041's tracking number?","expected_output":"QX8837120"}
+{"id":"hard-1","input":"Order A-1043 was delivered on 2026-08-14 and the customer wants a refund today, 2026-09-07. Are they still inside the window?","expected_output":"OPEN"}
+{"id":"hard-2","input":"Order A-1044 shipped in two boxes and one has not moved in four days. What should we tell the customer, and what should we do about the stalled box?","expected_output":"box 2 label created, not moved"}
+{"id":"hard-3","input":"A customer says order A-1042 was promised for Friday. Was it? Answer only from the notes.","expected_output":"No ship date promised"}

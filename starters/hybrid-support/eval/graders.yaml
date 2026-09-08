@@ -1,0 +1,15 @@
+# Six samples, split on purpose: three the cheap lane should settle from
+# notes/orders.md alone, and three that need either the refund script or a
+# judgement the fast lane is not asked to make. Run it per arm to see the
+# split as a number:
+#
+#   crewhaus eval crewhaus.yaml --dataset eval/dataset.jsonl \
+#     --graders eval/graders.yaml --models '$fast,$strong' --record
+#   crewhaus eval leaderboard .crewhaus/evals/<matrix-dir>
+#
+# `expected_contains` uses THIS sample's own expected_output as the needle,
+# so one grader covers all six without a per-sample rule.
+graders:
+  - name: cites-the-fact
+    type: expected_contains
+    case_insensitive: true
