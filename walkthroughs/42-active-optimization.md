@@ -3,6 +3,7 @@
 **Pillar:** Pillar 2 — eval is active, not passive.
 **Catalog modules:** `prompt-optimizer` (114), `prompt-optimizer-claude` (280), `spec-patch` (278), `eval-optimizer-orchestrator` (279), `eval-runner` (109), `dataset-registry` (110), `grader-registry` (111).
 **Build-roadmap sections:** §16 (measurement), §29 (eval depth), §46 (active IR-patch optimizer — the section this recipe is the user-facing companion of).
+**Shipped:** crewhaus 0.2.0 (`crewhaus optimize`, `--write-back`, `--from-advice`); `--few-shot` / `--ratings` in later 0.2.x; the wildcard whitelist segment, the `model_pool` structural rule and the per-profile dials in 0.6.0 (below).
 
 ## What this recipe shows
 
@@ -187,6 +188,52 @@ The full `OPTIMIZABLE_PATHS` whitelist (in [`packages/spec-patch/src/index.ts`](
 
 Adding a new field to the whitelist is the explicit signal that "this field is safe to autotune." Security-critical fields (`permissions.mode`, `model_router` rules, MCP server configs) are deliberately excluded — the optimizer can't accidentally rewrite the production safety floor.
 
+### The 0.6.0 delta — dials under dynamic keys
+
+0.6.0 put a lot of new surface under keys whose *names you choose* (a `models:`
+profile, a pool candidate, a routing rule). Two mechanisms keep the whitelist
+honest about that surface instead of quietly widening it.
+
+**The wildcard segment.** Inside a whitelist entry, `*` matches **exactly one**
+key segment — a profile name, a step index, a node or role name, a rule index.
+Never zero segments, never more than one, and never a literal `"*"` key. Two
+placement rules are CI-guarded: a wildcard is never the last segment (so
+`["models","*"]` can never admit a whole profile by prefix), and a wildcard
+never sits above a human-owned key — the concrete tail must end in a dial, not
+in `model`, `tags`, `tools`, `permissions`, `instructions`, `criteria`,
+`on_fail`, `use`, or any of the other identity/security leaves.
+
+That gives four **per-profile dials**, tunable on every shape (`models:` is
+attached to all fourteen schemas):
+
+```
+models.*.max_tokens
+models.*.temperature
+models.*.thinking.budget_tokens        # the budget is a dial; effort stays yours
+models.*.limits.model_call_timeout_ms
+```
+
+**The structural rule.** A path that passes through `model_pool`, `judge`,
+`sub_agents`, `temperature`, `model_tiers`, `model_fallbacks` or
+`circuit_breaker` is optimizable **only by exact match** against a listed
+entry, never by prefix. Before 0.6.0 a whole-block `["steps"]` / `["nodes"]` /
+`["roles"]` entry reached everything hanging off a routed block; now the
+candidate roster, `rules[*].{when,use,id}`, every `strategy.*` role slot,
+`model_directed`, `reward.*`, `directives`, `classifier.{model,labels}` and
+`scope` are all out of reach by construction.
+
+What is left inside the pool is a short list of genuine dials, each with its
+own exact entry: `policy`, `routing`, `learning` (wholesale — `advise` mines
+the scoreboard into them), `rules[*].enabled` (a switch, not a target),
+`strategy.max_escalations`, `strategy.cascade.clean_prompt`,
+`strategy.guide.max_tokens`, `strategy.shadow.sample_rate` and
+`classifier.max_tokens`.
+
+The reading to take away: **the optimizer may tune how hard a lane thinks and
+how often it fires. It may never choose which models are in the roster, what
+they are allowed to touch, or who judges them.** [Recipe 75](75-hybrid-models.md)
+is the setup those dials belong to.
+
 ### Numeric-knob search — library-only
 
 `@crewhaus/prompt-optimizer` gained a **`knob-step`** mutation: bounded coordinate-ascent steps over declared `OPTIMIZABLE_PATHS` numeric dials, alternating with instruction rewrites, every proposal gated by the same fitness accept loop. The orchestrator threads `knobs` through, validates each dial against the whitelist **before** anything is spent, and emits one whitelist-validated `SpecPatch` per moved dial (`patches.json` beside `patch.json`).
@@ -341,5 +388,6 @@ A registry record with populated train **and** dev splits is used as-is; otherwi
 - **Scheduling the loop and gating it nightly.** [Recipe 56 — The self-improvement flywheel](56-self-improvement-flywheel.md).
 - **Bringing a non-cli shape into the loop.** [Recipe 61 — Self-building evals](61-self-building-evals.md).
 - **Tiering the gate in CI.** [Recipe 74 — Eval suites, cassettes, red teams](74-eval-suites-and-cassettes.md).
+- **The hybrid setup whose dials the 0.6.0 delta whitelists.** [Recipe 75 — Hybrid models: cheap worker, strong judge](75-hybrid-models.md).
 
 See [/CLAUDE.md §Pillar-2](https://github.com/crewhaus/factory/blob/main/CLAUDE.md) for the contributor invariants this recipe is the user-facing companion of.

@@ -180,8 +180,27 @@ skips execution. `CREWHAUS_BIN=/path/to/cli` verifies against a specific build.
 Which CLI a beat reaches matters: locally an installed `crewhaus` on PATH wins,
 while CI (which has none) falls through to the sibling `factory` checkout's
 source. When factory `main` carries an unreleased behaviour change, the two
-disagree and only CI is authoritative — beats track factory `main`. This is live
-right now for the `expert`/`trader` `--check` beats (PR #345, unreleased): they
-are `expectedExit: 0` for factory `main`, and report `exit 1 (want 0)` against an
-installed `crewhaus` ≤ 0.4.0 until 0.4.x ships. Reproduce the CI result with
+disagree and only CI is authoritative — **beats track factory `main`**, and a
+beat that needs an unreleased CLI says so in its `verify.note`. Reproduce the CI
+result with
 `CREWHAUS_BIN=<shim that runs factory/apps/cli/src/index.ts> bun run drivers:verify`.
+
+This is live right now for the **0.6.0 model surface**, while the published CLI
+is still 0.5.8. Every beat that types or validates a 0.6.0 spec (`lint`,
+`compile`, `compile … --check`) or calls `crewhaus models …` /
+`route status --by profile` / `eval leaderboard` is green against factory `main`
+and reports an unknown command (or a spec-validation failure) against an
+installed 0.5.8 — `starters/hybrid-support` and
+`walkthroughs/drivers/75-hybrid-models` are entirely in that set, and each such
+beat's `verify.note` names the requirement, including the `lint` beats whose
+own output is otherwise unremarkable. Two earlier examples of the same rule
+have since shipped and are noted in the `expert`/`trader` `--check` beats
+(factory PR #345, released in 0.4.x).
+
+One 0.6.0 consequence is worth knowing before you write a beat: a spec that
+declares `strategy.model_directed`, `policy: classifier`, or the
+`guide` / `shadow` / `committee` side calls emits an `@crewhaus/model-service`
+import, and `compile … --check` installs the bundle's dependencies from the
+registry — which cannot resolve that package until the 0.6.0 release publishes
+it. A cascade wires no closure and stays `--check`-green; anything above needs a
+plain `compile -o` beat with a `note` saying why.

@@ -1,7 +1,7 @@
 # Recipe 59 — Model resilience & cost
 
 **Catalog modules:** `model-router`, `routing-store`, `circuit-breaker`, `model-market-scan`, `model-right-size`, `pricing-feed`, `cost-tracker`.
-**Shipped:** crewhaus 0.2.0 (`agent.model_fallbacks` + `circuit_breaker`, `budget:`, `model_tiers`, `crewhaus model-scan`, `crewhaus model right-size`); `agent.model_pool` + `crewhaus route` in 0.2.1; online exploration (`learning.bandit` — ε-greedy / Thompson), `crewhaus route explain`, the pipeline/research/batch/browser rollout, and advise scoreboard-mining in 0.2.2.
+**Shipped:** crewhaus 0.2.0 (`agent.model_fallbacks` + `circuit_breaker`, `budget:`, `model_tiers`, `crewhaus model-scan`, `crewhaus model right-size`); `agent.model_pool` + `crewhaus route` in 0.2.1; online exploration (`learning.bandit` — ε-greedy / Thompson), `crewhaus route explain`, the pipeline/research/batch/browser rollout, and advise scoreboard-mining in 0.2.2; per-model settings, per-candidate narrowing, hybrid strategies and the `models` verb family in 0.6.0 ([Recipe 75](75-hybrid-models.md) is the hybrid recipe).
 
 [Recipe 18 — Multi-Provider Fallback](18-multi-provider-fallback.md)
 originally opened with a caveat: "fallback is a TypeScript-level
@@ -210,10 +210,18 @@ Every pick is a `model_route` trace event. Inspect what the pool has
 learned, replay one run's decisions, or wipe the scoreboard, from the CLI:
 
 ```bash
-crewhaus route status              # per-band arms, best-per-band starred
-crewhaus route explain <session>   # replay one run's per-turn decisions (v0.2.2)
-crewhaus route reset               # kill switch
+crewhaus route status                 # per-band arms, best-per-band starred
+crewhaus route status --by profile    # regroup by the models: profile that served (0.6.0)
+crewhaus route status --shadow        # include the observe-only lanes (0.6.0)
+crewhaus route explain <session>      # replay one run's per-turn decisions (v0.2.2)
+crewhaus route freeze <policyVersion> # pin the policy; --clear lifts it (0.6.0)
+crewhaus route propose                # mine the scoreboard into a review bundle (0.6.0)
+crewhaus route reset                  # kill switch
 ```
+
+From 0.6.0 `route explain` is a **timeline** rather than a route table: each
+turn's decision, the `/model` directives it accepted or refused, and every
+draft → grade → escalate transition with the model and cost of each.
 
 You don't have to tune the pool by hand: **`crewhaus advise` mines the
 scoreboard** and proposes policy tweaks — flip `policy` to `learned` once a
@@ -223,8 +231,52 @@ never edits the candidate roster; that stays yours.)
 
 > The candidate roster is yours — learning only tunes selection *within*
 > the set you declare, never the set itself (model fields stay outside the
-> optimizer's reach). Per-candidate fallback chains are a planned
-> follow-up; today a pool candidate is a single model.
+> optimizer's reach). Since 0.6.0 a candidate is no longer just a model
+> string: it carries its own `fallbacks`, `circuit_breaker`, request params,
+> tools, permissions and spend cap — see the next section.
+
+## Per-model settings and hybrid lanes (0.6.0)
+
+Everything above treats a candidate as a model id with tags. 0.6.0 makes it a
+full **profile**: declare each model once in a top-level `models:` block, and
+reference it as `$<name>` from any model slot.
+
+```yaml
+models:
+  fast:
+    model: claude-haiku-4-5
+    tags: [cheap]
+    max_tokens: 2048
+    temperature: 0.2
+  strong:
+    model: claude-opus-5
+    tags: [strong]
+    thinking: { effort: high }
+```
+
+A pool candidate may then carry the same fields **inline**, which is where
+per-model narrowing lives — `tools` (subset-only), `permissions` (`deny` and
+`ask` only, never `alwaysAllow`), `rate_limits`, `limits`, `caching` and a
+per-lane `cost.max_usd` that makes the lane ineligible when spent rather than
+ending the run. That is what makes a cheap lane structurally cheap instead of
+cheap by hope, and it is why a pool now beats `model_tiers` on more than
+policy.
+
+The lanes can also be composed into a **strategy** — a cascade that drafts on
+the cheap arm and hands a failed draft to a stronger one, a guide, a shadow
+lane, a committee — and `evaluation.on_fail: escalate` turns an in-loop
+judge's verdict into that hand-off. Three offline verbs read the result
+before you spend anything:
+
+```bash
+crewhaus models list        # the resolved profile registry
+crewhaus models explain     # every slot, the strategy, the per-shape verdict
+crewhaus models audit       # pricing coverage, requires:, parameter acceptance
+```
+
+[Recipe 75 — Hybrid models](75-hybrid-models.md) builds the whole
+cheap-worker / strong-judge setup end to end; this recipe stays the
+reference for the availability and cost knobs underneath it.
 
 ## Right-size: is a cheaper model good enough?
 
@@ -278,6 +330,16 @@ crewhaus pricing sync --file pricing.json   # load a versioned pricing feed
 crewhaus doctor --models                    # flag unpriced models + known sunsets
 ```
 
+Since 0.6.0 `doctor --models` walks **every** model slot — pool candidates,
+judges, per-step models, the degrade target — instead of `agent.model` and
+`compaction.model` alone, so an unpriced arm can no longer report as "checks
+passed". Its contract is otherwise unchanged: a **warning never fails it**, so
+a sunset that passes on a calendar day cannot redden a pinned `doctor` check.
+The gate lives in the new verb — `crewhaus models audit` walks the same slots
+and **exits 1** on a model already past its retirement date (`--fail-on none`
+reports without failing, `--fail-on sunset` also fails on an announced future
+one). `doctor` prints a line saying exactly that.
+
 ## Benchmark several models at once
 
 `eval --models` runs the same dataset + graders once per model — one
@@ -295,6 +357,25 @@ Each cell writes to `<out>/<model-slug>/` and the run emits a
 `matrix.json` + `index.html`. Use it to pick the `default` tier, the
 `fast` tier, and a fallback candidate from evidence rather than a hunch.
 
+0.6.0 adds the two things that make the table decidable. `--record` runs each
+cell through the run-history flow so every arm keeps its **own** baseline
+lineage, and `crewhaus eval leaderboard <matrix-dir>` ranks the arms with a
+paired sign-flip permutation test, Holm-corrected — refusing to name a winner
+it cannot support (`UNDERPOWERED` below the comparable-pair floor, `TIE` when
+the intervals overlap):
+
+```bash
+crewhaus eval crewhaus.yaml \
+  --dataset registry:support-agent-ratings \
+  --graders eval/graders.yaml \
+  --models 'claude-sonnet-5,claude-haiku-4-5' --record --seed 42
+crewhaus eval leaderboard .crewhaus/evals/<matrix-dir>
+```
+
+To evaluate the way production actually routes instead of pinning one arm per
+cell, use `--routing as-declared` — mutually exclusive with `--models`, since
+a matrix already pins one arm per cell.
+
 ## Choosing between the knobs
 
 | You want…                                              | Reach for                                  |
@@ -305,7 +386,9 @@ Each cell writes to `<out>/<model-slug>/` and the run emits a
 | The harness to learn which of N models wins each turn.  | `agent.model_pool` (`policy: learned`)     |
 | To know if a cheaper model still passes.                | `crewhaus model right-size`                |
 | To know if a better model shipped.                      | `crewhaus model-scan`                      |
-| A side-by-side model comparison.                        | `crewhaus eval --models`                   |
+| A side-by-side model comparison.                        | `crewhaus eval --models` + `eval leaderboard` |
+| Each model's own settings, tools and permissions.       | `models:` + per-candidate fields ([Recipe 75](75-hybrid-models.md)) |
+| A cheap draft a stronger model checks and redoes.       | `model_pool.strategy.cascade` + `evaluation.on_fail: escalate` |
 | Per-call breaker control the spec can't express.        | the TypeScript seam — [Recipe 18](18-multi-provider-fallback.md) |
 
 ## What to read next
@@ -314,11 +397,13 @@ Each cell writes to `<out>/<model-slug>/` and the run emits a
 - **Per-tenant budgets and rate limits.** [Recipe 19 — Rate Limiting and Budgets](19-rate-limiting-and-budgets.md).
 - **Local models as a zero-cost fallback tier.** [Recipe 32 — Local Models](32-local-models.md).
 - **Rolling a model swap out safely.** [Recipe 58 — Safe production ops](58-safe-production-ops.md).
+- **The hybrid setup these knobs compose into.** [Recipe 75 — Hybrid models: cheap worker, strong judge](75-hybrid-models.md).
 
 ## Pointers to source
 
 - **Model router:** [`packages/model-router`](https://github.com/crewhaus/factory/blob/main/packages/model-router) (failover / tier / pool routers).
 - **Routing store:** [`packages/routing-store`](https://github.com/crewhaus/factory/blob/main/packages/routing-store) (the `learned` reward scoreboard).
+- **Per-model plan + hybrid wiring:** [`packages/model-plan`](https://github.com/crewhaus/factory/blob/main/packages/model-plan), [`packages/model-service`](https://github.com/crewhaus/factory/blob/main/packages/model-service).
 - **Circuit breaker:** [`packages/circuit-breaker`](https://github.com/crewhaus/factory/blob/main/packages/circuit-breaker).
 - **Cost tracker + pricing:** [`packages/cost-tracker`](https://github.com/crewhaus/factory/blob/main/packages/cost-tracker).
 - **Module catalog reference:** §17, §27 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

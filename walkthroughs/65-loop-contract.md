@@ -188,15 +188,17 @@ const __specHooks = [
   { event: "pre-tool", command: "./hooks/scan-url.sh", matcher: "webFetch", timeoutMs: 5000 },
   { event: "stop", command: "./hooks/save-summary.sh" },
 ] as const;
-// ... inside runChatLoop({ ... }):
-    thinking: { effort: "medium" },
-    streaming: true,
-    rateLimits: { webSearch: { rpm: 20, burst: 5 }, "*": { rpm: 120 } },
-    maxToolIterations: 25,
-    deadlineMs: 600000,
-    turnTimeoutMs: 120000,
-    loopDetection: { window: 10, threshold: 3, escalation: "justify" },
-    hooks: [...__specHooks, ...__hooks],
+// ... and the options fragment threaded into runChatLoop({ ... }):
+const __loopOptions = {
+  thinking: { effort: "medium" },
+  streaming: true,
+  rateLimits: { webSearch: { rpm: 20, burst: 5 }, "*": { rpm: 120 } },
+  maxToolIterations: 25,
+  deadlineMs: 600000,
+  turnTimeoutMs: 120000,
+  loopDetection: { window: 10, threshold: 3, escalation: "justify" },
+  hooks: [...__specHooks, ...__hooks],
+};
 ```
 
 An omitted key spreads *nothing* into `runChatLoop`, so the runtime default

@@ -21,6 +21,7 @@ starters/
 ├── federation/         cross-deployment role-call protocol (smoke is the demo)
 ├── harness-designer/   meta-agent that designs other harnesses from intent
 ├── optimize/           Pillar 2 active eval-driven prompt optimization
+├── hybrid-support/     cheap worker + strong judge: models: registry, per-candidate narrowing, cascade
 ├── expert/             self-teaching domain expert (Thredz wiki + curriculum + living exam)
 ├── ghostwriter/        drafting double that bootstraps evals from your own edits
 ├── trader/             self-improving trading research advisor (paper broker + confidence gate)

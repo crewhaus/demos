@@ -2,7 +2,7 @@
 
 **Pillar:** Pillar 2 — eval is active, not passive.
 **Catalog modules:** `advisor` (session-mining rule library), `spec-patch`, `eval-optimizer-orchestrator`, `session-persistence`.
-**Shipped:** crewhaus 0.2.0 (`crewhaus advise`, `optimize --from-advice`, `doctor --context-pressure`).
+**Shipped:** crewhaus 0.2.0 (`crewhaus advise`, `optimize --from-advice`, `doctor --context-pressure`); the four hybrid-routing rules and `optimize --from-advice --routing` in 0.6.0.
 
 The flywheel in [Recipe 56](56-self-improvement-flywheel.md) tunes one
 thing: `agent.instructions`. But most of what goes wrong with a real
@@ -53,6 +53,21 @@ What it looks for:
 - **stop-reason anomalies** and **learned `failure_taxonomy` / loop-break rules**
 - **sub-agent splits** under chronic context pressure
 
+Since 0.6.0 it also mines the routing timeline — the `model_route`,
+`model_directive` and `model_stage` lines a hybrid setup
+([Recipe 75](75-hybrid-models.md)) writes — with four more rules:
+
+| Finding | What it means | What it proposes |
+| --- | --- | --- |
+| `escalation-precision` | the cascade is rescuing the cheap draft so often that the decision to *draft* was wrong | text — unless one enabled routing rule accounts for most escalated turns, and then a patch flipping that rule's `enabled` off |
+| `escalation-recall` | the loop **wanted** to escalate and could not — a `max_escalations` cap, the run budget, or `budget.judge_share` refused the rescue, so the turn shipped a draft the judge had already failed | text: naming which of the three caused it is the value |
+| `audition-ready` | a `strategy.shadow` arm cleared the power floor and its lower bound beats the arm it shadowed | text — the roster is human-owned, so the next step is `crewhaus models propose --source audition` |
+| `policy-flip-ready` | every candidate cleared its sample floor in some band **and** that band's leader is separated from its runner-up | text: the flip is not merely allowed but provable — `route propose` emits the patch, `optimize --from-advice` gates it |
+
+Three of the four are deliberately **text-only**. A rule's `when` and `use`
+are identity, a roster is identity, and a budget is a spend decision — the
+advisor names the cause and stops at the door.
+
 By default it writes `suggestions.json` + an HTML evidence report into
 `.crewhaus/advice/`. Add `--json` to print machine-readable findings to
 stdout, or `-o <dir>` to redirect the artifacts:
@@ -80,7 +95,9 @@ The patches only ever target fields in `OPTIMIZABLE_PATHS` —
 `agent.max_tokens`, `agent.thinking.budget_tokens`, `compaction.curate`,
 `compaction.threshold`, `failure_taxonomy`, `limits.max_tool_iterations`,
 retrieval knobs, `security.justification`, the model-pool policy fields,
-and the per-stage instruction paths on multi-stage shapes. It is a
+the 0.6.0 per-profile dials (`models.*.max_tokens`, `.temperature`,
+`.thinking.budget_tokens`, `.limits.model_call_timeout_ms`), and the
+per-stage instruction paths on multi-stage shapes. It is a
 broader surface than "the prompt" — the full list lives in
 [`packages/spec-patch/src/index.ts`](https://github.com/crewhaus/factory/blob/main/packages/spec-patch/src/index.ts)
 and is summarized in
@@ -108,6 +125,21 @@ crewhaus optimize crewhaus.yaml \
 > up front instead. `--mutator` and `--iterations` are refused for the
 > same reason. And a bare `--dataset registry:<name>` resolves
 > **train+dev only** here, like everywhere else.
+
+On a routed harness, gate the patches the way production actually serves:
+
+```bash
+crewhaus optimize crewhaus.yaml \
+  --from-advice .crewhaus/advice/suggestions.json \
+  --dataset registry:support-agent-ratings \
+  --routing as-declared --warm-arms \
+  --write-back
+```
+
+`--routing as-declared` runs the gating eval through the spec's own
+`model_pool` instead of pinning the primary, and `--warm-arms` seeds the
+frozen arm snapshot that routed eval reads — it is refused without a
+`--routing` that is not `static`, rather than silently doing nothing.
 
 `--from-advice` is mutually exclusive with `--mutator` / `--iterations`
 (it's applying known patches, not searching for new ones), but
@@ -181,9 +213,10 @@ the security floor stays a person's call.
 - **The prompt-tuning half of the loop.** [Recipe 56 — The self-improvement flywheel](56-self-improvement-flywheel.md).
 - **The permission grammar `permissions suggest` writes into.** [Recipe 29 — Permissions Deep Dive](29-permissions-deep-dive.md).
 - **Context curation the advisor's compaction suggestions lean on.** [Recipe 52 — Active Context Curation](52-context-curation.md).
+- **The hybrid setup the four routing rules mine.** [Recipe 75 — Hybrid models: cheap worker, strong judge](75-hybrid-models.md).
 
 ## Pointers to source
 
-- **Advisor rule library:** [`packages/eval-optimizer-orchestrator`](https://github.com/crewhaus/factory/blob/main/packages/eval-optimizer-orchestrator).
+- **Advisor rule library:** [`packages/eval-optimizer-orchestrator`](https://github.com/crewhaus/factory/blob/main/packages/eval-optimizer-orchestrator) and the CLI's own rule set at [`apps/cli/src/advise-rules.ts`](https://github.com/crewhaus/factory/blob/main/apps/cli/src/advise-rules.ts).
 - **Patch validation / whitelist:** [`packages/spec-patch`](https://github.com/crewhaus/factory/blob/main/packages/spec-patch).
 - **Module catalog reference:** §29, §46 in [MODULE-CATALOG.md](https://github.com/crewhaus/docs/blob/main/MODULE-CATALOG.md).

@@ -2,7 +2,7 @@
 
 **Pillar:** Pillar 2 — eval is active, not passive.
 **Catalog modules:** `evaluation` (spec block), `eval-judge` (judge steps/nodes), `eval-grader` (grader registry), `runtime-core` (the in-loop scorer).
-**Shipped:** crewhaus 0.4.0 (Batch B — `evaluation:` on cli/channel/managed, `kind: "judge"` workflow steps + graph nodes, `eval --repeats` for pass^k); extended in 0.4.x (judge abstention in-loop, `eval_graded`/`judge_verdict` OTel spans, the `eval-fail` mining signal in `dataset mine`, `feedback:` on `target: managed`).
+**Shipped:** crewhaus 0.4.0 (Batch B — `evaluation:` on cli/channel/managed, `kind: "judge"` workflow steps + graph nodes, `eval --repeats` for pass^k); extended in 0.4.x (judge abstention in-loop, `eval_graded`/`judge_verdict` OTel spans, the `eval-fail` mining signal in `dataset mine`, `feedback:` on `target: managed`); `on_fail: escalate` and the judge gate's `escalate_to` in 0.6.0.
 
 Every other eval recipe in this series scores the agent **offline** — after a
 run, over a dataset, on your machine or in CI ([Recipe 12 — Eval
@@ -64,7 +64,7 @@ evaluation:
       refund promise. A vague or hedging answer fails.
     model: cheapest          # optional; defaults to the shape's primary model
   threshold: 0.75            # llm_judge only; default 0.7
-  on_fail: retry             # retry (default) | halt | note
+  on_fail: retry             # retry | halt | note | escalate (0.6.0)
   max_retries: 2             # default 1, capped at 5
 ```
 
@@ -85,6 +85,12 @@ happens next is `on_fail`:
   than shipping nothing.
 - **`note`** — score and emit a trace event only; never blocks the reply.
   Instrument first, enforce later.
+- **`escalate`** (0.6.0) — re-run the turn on a **different, stronger model**
+  instead of re-prompting the one that just missed: the pool's
+  `strategy.cascade.escalate_to` candidate, else the strongest one. It
+  requires an `agent.model_pool` — declaring it without one is a spec error,
+  because there would be nothing to escalate to.
+  [Recipe 75](75-hybrid-models.md) builds that setup end to end.
 
 Every scoring pass publishes an `eval_graded` trace event, so the retry loop is
 visible in the structured event stream:
@@ -207,6 +213,11 @@ The judge step's `on_fail` mirrors the in-loop block, tuned for a pipeline:
   exit 35), same as the cli block.
 - **`continue`** — record the verdict and proceed anyway.
 
+From 0.6.0 the judge gate also takes an `escalate_to:`, which forces the
+`retry_previous` re-run onto a named pool candidate rather than the same
+model — the workflow/graph twin of `on_fail: escalate`. It is rejected at
+compile time when the gated block declares no `model_pool`.
+
 Each scoring pass publishes a `judge_verdict` trace event (both `eval_graded`
 and `judge_verdict` ship pretty renderers in the structured event printer):
 
@@ -294,6 +305,7 @@ Two adjacent offline knobs pair naturally with in-loop evaluation:
 - **The offline scoring this mirrors.** [Recipe 12 — Eval Harness](12-eval-harness.md).
 - **Graders beyond the three in-loop kinds.** [Recipe 34 — Building custom graders](34-building-custom-graders.md).
 - **The classified-failure + exit-code machinery `halt` reuses.** [Recipe 53 — Justification gates](53-justification-gates.md).
+- **Where a failed grade goes when it escalates.** [Recipe 75 — Hybrid models: cheap worker, strong judge](75-hybrid-models.md).
 - **Where the in-loop failures you mine end up.** [Recipe 61 — Self-building evals](61-self-building-evals.md) and [Recipe 74 — Eval suites, cassettes, red teams](74-eval-suites-and-cassettes.md).
 
 ## Pointers to source

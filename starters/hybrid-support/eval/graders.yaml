@@ -1,0 +1,20 @@
+# Six samples, split on purpose: three the cheap lane should settle from
+# notes/orders.md alone, and three that need either the refund script or a
+# judgement the fast lane is not asked to make. Run it per arm to see the
+# split as a number:
+#
+#   crewhaus eval crewhaus.yaml --dataset eval/dataset.jsonl \
+#     --graders eval/graders.yaml --models '$fast,$strong' --record
+#   crewhaus eval leaderboard .crewhaus/evals/<matrix-dir>
+#
+# `expected_contains` uses THIS sample's own expected_output as the needle:
+# it passes when the gold appears in the answer as a contiguous substring.
+# So every gold here is the shortest distinctive token the right answer has
+# to carry — a tracking number, a SKU, a date — never a sentence a correct
+# answer might phrase differently. hard-1's gold is the literal prefix
+# `bin/refund-window.sh` prints, which is only reachable by running the
+# script: that is the lane split this dataset exists to measure.
+graders:
+  - name: cites-the-fact
+    type: expected_contains
+    case_insensitive: true
