@@ -67,16 +67,18 @@ This means a permission rule `alwaysAllow: usdc__balanceOf` allows reads but not
 The gateway tools return raw hex by default. To produce proof artifacts (e.g., "Wallet 0x123 held at least 100 USDC at block 20123456"), wrap a read tool's result with a citation:
 
 ```ts
-const balance = await usdc__balanceOf({ owner: "0x123" });
-return JSON.stringify({
-  claim: `Wallet 0x123 held at least ${minBalance} USDC at block ${block}`,
-  proof_type: "on_chain_balance",
-  chain: "base-mainnet",
-  contract: "usdc",
-  method: "balanceOf",
-  result: balance,
-  verifier: "evm_call",
-});
+export async function usdcBalanceProof(minBalance: number, block: number) {
+  const balance = await usdc__balanceOf({ owner: "0x123" });
+  return JSON.stringify({
+    claim: `Wallet 0x123 held at least ${minBalance} USDC at block ${block}`,
+    proof_type: "on_chain_balance",
+    chain: "base-mainnet",
+    contract: "usdc",
+    method: "balanceOf",
+    result: balance,
+    verifier: "evm_call",
+  });
+}
 ```
 
 The §23 `citation-tracker` integration treats this envelope as a citation; the §47 `tool-evm` read path already classifies the chain payload, so the resulting artifact is provenance-tagged.
