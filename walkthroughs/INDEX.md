@@ -401,6 +401,7 @@ user-facing companion of the 0.4.x evals campaign — see
 | #  | Recipe                                                          | Theme                                  | Status   |
 | -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
 | 74 | [Eval suites, tool cassettes, red teams, and the review queue](74-eval-suites-and-cassettes.md) | Pillar 2 — `eval suite` / `--record-tools` / `redteam` / `review` ([`starters/eval`](../starters/eval)) | complete |
+| 75 | [One command for the Slack app, the tunnel, and the wiki space](75-service-setup.md) | Pillar 1 — `services setup` provisions from the spec ([`starters/channel`](../starters/channel)) | complete |
 
 ---
 
