@@ -422,6 +422,17 @@ the user-facing companion of the 0.6.0 release: see the
 | -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
 | 75 | [Hybrid models: cheap worker, strong judge](75-hybrid-models.md) | Pillar 1 — `models:` / per-candidate narrowing / `strategy.cascade` / `on_fail: escalate` ([`starters/hybrid-support`](../starters/hybrid-support)) | complete |
 
+## Part Q — Provisioning the services a harness needs
+
+A spec declares *that* it wants a Slack channel, a public URL and a hosted
+wiki. Creating them has meant a click-path through three consoles, repeated
+per harness — which is where drift comes from. This recipe drives
+`crewhaus services setup`, which reads the spec and creates all three.
+
+| #  | Recipe                                                          | Theme                                  | Status   |
+| -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
+| 76 | [One command for the Slack app, the tunnel, and the wiki space](76-service-setup.md) | Pillar 1 — `services setup` provisions from the spec ([`starters/channel`](../starters/channel)) | complete |
+
 ---
 
 ## Quick paths (for readers who already know the shape they want)
