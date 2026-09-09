@@ -431,7 +431,7 @@ per harness — which is where drift comes from. This recipe drives
 
 | #  | Recipe                                                          | Theme                                  | Status   |
 | -- | --------------------------------------------------------------- | -------------------------------------- | -------- |
-| 76 | [One command for the Slack app, the tunnel, and the wiki space](76-service-setup.md) | Pillar 1 — `services setup` provisions from the spec ([`starters/channel`](../starters/channel)) | complete |
+| 76 | [One command for the Slack app, the tunnel, the wiki space and the inbox](76-service-setup.md) | Pillar 1 — `services setup` provisions from the spec ([`starters/channel`](../starters/channel)) | complete |
 
 ---
 

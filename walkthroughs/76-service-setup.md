@@ -8,7 +8,7 @@ test:
     - packages/target-channel-bot
 ---
 
-# Recipe 76 — One command for the Slack app, the tunnel, and the wiki space
+# Recipe 76 — One command for the Slack app, the tunnel, the wiki space and the inbox
 
 **Pillar:** Pillar 1 — the compiler is the protagonist. The spec already says
 what the harness needs; provisioning should read it, not repeat it.
@@ -178,6 +178,65 @@ crewhaus services setup crewhaus.yaml --zone example.com --port 3000 \
 crewhaus services setup crewhaus.yaml --zone example.com --port 3002 \
   --hostname foreman.example.com --env-file ../.env
 ```
+
+## The mail inbox, and why it has its own two flags
+
+An agent that mails anyone needs an inbox, and the inbox *is* the sender
+identity — sends go to `POST /inboxes/{inbox_id}/messages/send`. Setup
+creates it:
+
+```bash
+crewhaus services setup crewhaus.yaml --services agentmail
+```
+
+AgentMail is declared unlike the others. There is no `agentmail:` block; a
+harness reaches it through an MCP stdio child, so all the spec says is which
+variables that child gets:
+
+```yaml
+mcp_servers:
+  sendmail:
+    env:
+      AGENTMAIL_API_KEY: $AGENTMAIL_API_KEY
+      SUPPORT_INBOX_ID: $SUPPORT_INBOX_ID
+```
+
+Setup matches those key names and writes the inbox id into the variable the
+spec named. Creation is idempotent on a derived `client_id` — the API stores
+the resource against that id and replays it, so a second run adopts the same
+inbox instead of making another.
+
+Two flags exist because of that shape:
+
+**`--inbox-var`** — a harness whose mail tier is not live yet keeps those refs
+commented out, on purpose: a live `$VAR` ref there is a hard boot gate that
+treats empty as unset, so uncommenting one before its value exists stops the
+daemon. A comment is invisible to a parser, so you name the variable:
+
+```bash
+crewhaus services setup crewhaus.yaml --services agentmail   --inbox-var SUPPORT_INBOX_ID
+```
+
+Setup writes the value and then tells you to uncomment the ref. It does not
+make that edit itself — same reason it prints the `cloudflared` command
+rather than running it: the edit's failure mode is "the daemon no longer
+starts", and it is only safe once the value is there.
+
+**`--scoped-key`** — the org key can read and send from *every* inbox on the
+account. A fleet that pasted it into every harness would let each one mail as
+any of the others, so setup never writes it. Ask for a key scoped to this
+inbox alone:
+
+```bash
+crewhaus services setup crewhaus.yaml --services agentmail   --scoped-key SUPPORT_AGENTMAIL_KEY
+```
+
+It takes a variable *name*, not a boolean, and that is deliberate: writing a
+scoped key into a variable several harnesses share would silently narrow it
+and break all of them. Naming the variable makes that impossible by accident.
+
+Minting is not idempotent — there is no `client_id` on that endpoint — so
+setup mints only when the named variable is empty, and says so when it skips.
 
 ## Then verify
 
