@@ -24,6 +24,21 @@ on:
       - "scripts/verify-drivers.ts"
       - "DEMO-DRIVERS.md"
       - ".github/workflows/drivers.yml"
+  # On demand, and every night through factory-main.yml: the path filters
+  # above never fire on a crewhaus/factory change, so these runs check this
+  # repository against factory's main, or the branch, tag or commit given.
+  workflow_dispatch:
+    inputs:
+      factory_ref:
+        description: crewhaus/factory branch, tag or full commit SHA to test against
+        type: string
+        default: main
+  workflow_call:
+    inputs:
+      factory_ref:
+        description: crewhaus/factory branch, tag or full commit SHA to test against
+        type: string
+        default: main
 
 permissions:
   contents: read
@@ -45,6 +60,7 @@ jobs:
         with:
           repository: crewhaus/factory
           path: factory
+          ref: ${{ inputs.factory_ref }}
       # Mirrors walkthroughs.yml: a demos PR branch that also exists in factory
       # gets tested against it, so a spec field added in factory and consumed by
       # a driver land together. The ref reaches the shell only as a quoted env
@@ -63,6 +79,13 @@ jobs:
           else
             echo "[drivers-ci] no matching factory branch; staying on default"
           fi
+      - name: Record the factory commit under test
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          echo "[drivers-ci] factory commit under test: $sha"
+          printf 'factory commit under test: `%s`\n' "$sha" >> "$GITHUB_STEP_SUMMARY"
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: ">=1.2.0"

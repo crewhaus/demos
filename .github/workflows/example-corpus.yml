@@ -28,6 +28,21 @@ on:
       - "package.json"
       - "bun.lock"
       - ".github/workflows/example-corpus.yml"
+  # On demand, and every night through factory-main.yml: the path filters
+  # above never fire on a crewhaus/factory change, so these runs check this
+  # repository against factory's main, or the branch, tag or commit given.
+  workflow_dispatch:
+    inputs:
+      factory_ref:
+        description: crewhaus/factory branch, tag or full commit SHA to test against
+        type: string
+        default: main
+  workflow_call:
+    inputs:
+      factory_ref:
+        description: crewhaus/factory branch, tag or full commit SHA to test against
+        type: string
+        default: main
 
 permissions:
   contents: read
@@ -77,6 +92,7 @@ jobs:
         with:
           repository: crewhaus/factory
           path: factory
+          ref: ${{ inputs.factory_ref }}
       # If the demos PR's branch name also exists in factory, check that
       # out — lets cross-repo PRs (e.g. a spec field added to factory
       # consumed by a new demo) test together. Falls back silently to
@@ -95,6 +111,13 @@ jobs:
           else
             echo "[example-corpus] no factory branch named $BRANCH; staying on default"
           fi
+      - name: Record the factory commit under test
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          echo "[example-corpus] factory commit under test: $sha"
+          printf 'factory commit under test: `%s`\n' "$sha" >> "$GITHUB_STEP_SUMMARY"
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: ">=1.2.0"
