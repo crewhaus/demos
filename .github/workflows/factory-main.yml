@@ -1,0 +1,60 @@
+name: Checks against factory main
+
+# Runs this repository's three checks (the example corpus, the walkthrough
+# checks and the demo drivers) against crewhaus/factory's main branch, every
+# night and on demand. Those workflows are path-filtered, so on their own
+# they never notice a factory change that breaks a starter, a recipe or a
+# driver.
+#
+# Run it now, against any factory branch, tag or full commit SHA:
+#   gh workflow run factory-main.yml -R crewhaus/demos -f factory_ref=main
+# Every job that checks out factory logs "factory commit under test: <sha>".
+# The jobs of a nightly run resolve main separately, so a factory merge
+# mid-run can split them across two commits; pass a commit to pin one.
+#
+# The schedule lives here, not in the three workflows, because GitHub
+# disables a public repository's scheduled workflow after 60 days without
+# repository activity, and a disabled workflow runs on no event. If this one
+# is disabled, re-enable it with:
+#   gh workflow enable factory-main.yml -R crewhaus/demos
+#
+# A workflow added later joins this run once it declares `workflow_call` with
+# a `factory_ref` input and gets a job below.
+
+on:
+  schedule:
+    # 08:17 UTC daily: off the hour, when GitHub delays scheduled runs.
+    - cron: "17 8 * * *"
+  workflow_dispatch:
+    inputs:
+      factory_ref:
+        description: crewhaus/factory branch, tag or full commit SHA to test against
+        type: string
+        default: main
+  # A change to any of the four workflows is also tested through this path.
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/factory-main.yml"
+      - ".github/workflows/example-corpus.yml"
+      - ".github/workflows/walkthroughs.yml"
+      - ".github/workflows/drivers.yml"
+
+run-name: ${{ github.event_name != 'pull_request' && format('Checks against factory {0}', inputs.factory_ref || 'main') || '' }}
+
+permissions:
+  contents: read
+
+jobs:
+  corpus:
+    uses: ./.github/workflows/example-corpus.yml
+    with:
+      factory_ref: ${{ inputs.factory_ref || 'main' }}
+  walkthroughs:
+    uses: ./.github/workflows/walkthroughs.yml
+    with:
+      factory_ref: ${{ inputs.factory_ref || 'main' }}
+  drivers:
+    uses: ./.github/workflows/drivers.yml
+    with:
+      factory_ref: ${{ inputs.factory_ref || 'main' }}
