@@ -217,6 +217,9 @@ Catalog modules touched (per factory's
   `sudo`) are denied even if the model is jailbroken — and a `pre-tool`
   hook in [`.crewhaus/settings.json`](.crewhaus/settings.json) backstops
   the rules in a separate process the model can't talk its way past.
+  The spec allows edits across the project (`Write(**)`, `Edit(**)`); for
+  an agent that reads untrusted content, allow the paths it works on, such
+  as `Write(src/**)`, not the whole tree.
 - **Skills, slash commands, and fleet workers on disk** — drop a `.md`
   file into `.crewhaus/commands/`, a `SKILL.md` into
   `.crewhaus/skills/<name>/`, or a worker into

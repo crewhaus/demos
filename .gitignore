@@ -32,6 +32,9 @@ walkthroughs/drivers/*/.crewhaus/
 **/.crewhaus/audit/
 **/.crewhaus/graphs/
 **/.crewhaus/research/
+# A harness's run files: a managed daemon's generated signing secret, the
+# bearer token `serve --mcp --sse` saves at each start, the control token.
+**/.crewhaus/run/
 # Written by a live demo-driver take (continuity state, durable steps,
 # flywheel runs). state/ is the continuity store: continuity is ON BY DEFAULT
 # in 0.4.0, so EVERY run of EVERY starter writes .crewhaus/state/<agent>/

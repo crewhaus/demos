@@ -102,12 +102,9 @@ agent:
       # Sub-agent tool lists use the REGISTERED (PascalCase) tool name —
       # the child catalog is filtered by tool .name, not the spec key.
       tools: [Read, WebSearch, WebFetch]
-      permissions:
-        allow:
-          - Read
-          - WebSearch
-          - WebFetch
-        deny: []
+      # `scoped` keeps the daemon's own rules for these three tools, so
+      # the planner reads under the same rules as the main agent.
+      permissions: scoped
 
 # The daemon acks each inbound message with a status reaction where the
 # platform has one — 👀 on receipt, ✅ on reply, ⚠️ if the turn errors or
@@ -173,6 +170,12 @@ permissions:
                                  # default for a channel daemon where
                                  # there's no interactive prompt).
   rules:
+    # The showcase's reads stay out of its own configuration. The first
+    # matching rule wins, so these sit above the Read allow; long tool
+    # results come back in parts the agent reads from tool-results/.
+    - { type: alwaysAllow, pattern: "Read(.crewhaus/tool-results/**)" }
+    - { type: alwaysDeny, pattern: "Read(.env*)" }
+    - { type: alwaysDeny, pattern: "Read(.crewhaus/**)" }
     - { type: alwaysAllow, pattern: Read }
     - { type: alwaysAllow, pattern: WebSearch }
     - { type: alwaysAllow, pattern: WebFetch }
