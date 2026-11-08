@@ -56,12 +56,29 @@ MCP server and the agent shows up as a `chat` tool whose one argument is
 `message`, returning the agent's final assistant text. `--model`,
 `--permission-mode`, and `--plugins` thread through exactly as on `crewhaus run`.
 
-To serve it over the network instead of stdio, pass `--sse` — a Web-Standard
+To serve it over HTTP instead of stdio, pass `--sse` — a Web-Standard
 Streamable-HTTP endpoint on `--port` (default `8000`, or `CREWHAUS_MCP_PORT`):
 
 ```bash
 crewhaus serve --mcp starters/cli/crewhaus.yaml --sse --port 8000
 ```
+
+The `--sse` server listens on this computer only, and answers a request that
+carries `Authorization: Bearer <token>`. The token is `CREWHAUS_MCP_TOKEN` when
+you set it; otherwise each start saves a new one to `.crewhaus/run/mcp-token`
+(mode 0600) in the directory you start from, and the start banner names which,
+never the value. A client sends it on each request:
+
+```bash
+curl -s http://127.0.0.1:8000/ \
+  -H "Authorization: Bearer $(cat .crewhaus/run/mcp-token)" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'
+```
+
+To reach it from another machine, use an SSH tunnel, or a channel bundle's
+`/mcp`, which takes a bearer too.
 
 > **Only `target: cli` projects through `serve`.** It reuses the cli
 > interpreter turn function. A `channel` or `managed` daemon carries the same
@@ -201,6 +218,9 @@ as above.
 - **`--sse` overrides `expose.mcp.transport`.** The explicit flag wins, so you
   can force SSE over a `stdio` spec — but not the reverse silently; be
   deliberate about which one you're relying on.
+- **One saved token per directory.** A second `--sse` start in the same
+  directory replaces `.crewhaus/run/mcp-token`; set `CREWHAUS_MCP_TOKEN` to run
+  two.
 - **`per-subagent` without sub-agents fails to compile**, by design — it's a
   spec error, not a runtime surprise.
 - **An empty `CREWHAUS_FEDERATION_ALLOWED_PEERS` denies everything.** Federation

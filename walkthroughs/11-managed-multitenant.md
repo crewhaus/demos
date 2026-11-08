@@ -118,20 +118,24 @@ bun run compile starters/managed
 bun run run starters/managed
 ```
 
-The daemon binds to `:3000` (override with `PORT=...`). The first
-output line prints the auto-generated JWT secret — copy it. (For
+The daemon binds to `:3000` (override with `PORT=...`). With no
+`CREWHAUS_GATEWAY_JWT_SECRET` set, it generates a signing secret for
+this boot and saves it to `.crewhaus/run/gateway-jwt-secret` (mode
+0600) in the directory it runs from, and its log names that path. (For
 production, set `CREWHAUS_GATEWAY_JWT_SECRET=<at least 16 chars>`
-explicitly.)
+explicitly, which also keeps tokens valid across restarts.)
 
 ## Drive one request end-to-end
 
-In a second terminal, mint a JWT for `tenant-a` against the secret the
-daemon printed, then call `runs.create`:
+In a second terminal, from the same directory, mint a JWT for
+`tenant-a` with the daemon's signing secret, then call `runs.create`:
 
 ```bash
-# Mint a 1-hour JWT for tenant-a.
-SECRET="paste-the-secret-here"
-TENANT_A_JWT=$(node -e 'console.log(require("jsonwebtoken").sign({ tenant: "tenant-a" }, process.env.SECRET, { expiresIn: "1h" }))' SECRET="$SECRET")
+# The secret this boot saved (or the CREWHAUS_GATEWAY_JWT_SECRET you set).
+SECRET="$(cat .crewhaus/run/gateway-jwt-secret)"
+
+# Mint a 1-hour JWT for tenant-a. The gateway reads the tenant from `tenant_id`.
+TENANT_A_JWT=$(SECRET="$SECRET" bun --cwd starters/managed/dist -e 'import { signJwt } from "@crewhaus/gateway-server"; console.log(signJwt({ tenant_id: "tenant-a" }, process.env.SECRET))')
 
 # Start a run.
 curl -X POST http://localhost:3000/rpc \
@@ -157,11 +161,13 @@ curl -N http://localhost:3000/rpc \
 ```
 
 Each JSON-RPC call lands in a tenant-scoped, hash-chained audit log
-under `.crewhaus/hello-managed/<tenant-id>/audit/`:
+under `$CREWHAUS_TENANTS_ROOT/<tenant-id>/audit/` (default root
+`/tmp/crewhaus-tenants`):
 
 ```bash
-ls .crewhaus/hello-managed/tenant-a/audit/
-tail -f .crewhaus/hello-managed/tenant-a/audit/$(date -u +%Y-%m-%d).jsonl
+TENANTS="${CREWHAUS_TENANTS_ROOT:-/tmp/crewhaus-tenants}"
+ls "$TENANTS/tenant-a/audit/"
+tail -f "$TENANTS/tenant-a/audit/$(date -u +%Y-%m-%d).jsonl"
 ```
 
 A second tenant has an isolated audit dir (`.../tenant-b/audit/`) —
@@ -195,11 +201,11 @@ as shown above. Subsequent `runs.subscribe(runId)` streams events
 ## JWT authentication
 
 Every request must carry `Authorization: Bearer <jwt>` where the JWT
-is HS256-signed with the gateway secret and has a `tenant` claim:
+is HS256-signed with the gateway secret and has a `tenant_id` claim:
 
 ```json
 {
-  "tenant": "tenant-a",
+  "tenant_id": "tenant-a",
   "iat": 1715472000,
   "exp": 1715558400
 }
@@ -209,15 +215,16 @@ The gateway:
 
 1. Verifies the signature against `CREWHAUS_GATEWAY_JWT_SECRET`.
 2. Rejects expired tokens (`exp` < now).
-3. Checks the `tenant` claim is in the spec's `tenants:` list.
+3. Checks the `tenant_id` claim is in the spec's `tenants:` list.
 4. Stores the tenant id in `AsyncLocalStorage` for the duration of
    the call.
 
 JWT issuance is **out of scope** for the gateway — your auth service
-issues them, the gateway only verifies. For development, a helper:
+issues them, the gateway only verifies. For development, the bundle's
+own helper signs a 1-hour token:
 
 ```bash
-node -e 'console.log(require("jsonwebtoken").sign({ tenant: "tenant-a" }, "your-secret-here", { expiresIn: "1h" }))'
+SECRET="your-secret-here" bun --cwd starters/managed/dist -e 'import { signJwt } from "@crewhaus/gateway-server"; console.log(signJwt({ tenant_id: "tenant-a" }, process.env.SECRET))'
 ```
 
 ## Per-tenant storage rebase
@@ -226,22 +233,25 @@ Every storage operation in the call (`runChatLoop`, the JSONL writer,
 the tool-result store) reads its base path from the tenant's
 `AsyncLocalStorage` slot. So:
 
-- `tenant-a`'s sessions live in `.crewhaus/<base>/tenant-a/sessions/`.
-- `tenant-a`'s tool results live in `.crewhaus/<base>/tenant-a/tool-results/`.
-- `tenant-a`'s audit log lives in `.crewhaus/<base>/tenant-a/audit/`.
+- `tenant-a`'s sessions live in `<root>/tenant-a/sessions/`.
+- `tenant-a`'s tool results live in `<root>/tenant-a/tool-results/`.
+- `tenant-a`'s audit log lives in `<root>/tenant-a/audit/`.
+
+`<root>` is `CREWHAUS_TENANTS_ROOT`, default `/tmp/crewhaus-tenants`.
 
 Cross-tenant reads are **impossible** because every storage layer
 resolves paths relative to the AsyncLocalStorage tenant base. There's
 no code path that bypasses the rebase — the [`tenancy`](https://github.com/crewhaus/factory/blob/main/packages/tenancy)
 module is the single source of truth.
 
-`CREWHAUS_TENANT_BASE_DIR=/var/lib/crewhaus` overrides the default
-for production deployments. Volume-mount this for persistence across
-restarts.
+For a production deployment, set `CREWHAUS_TENANTS_ROOT` to an
+absolute path outside the harness directory, such as
+`~/.crewhaus/tenants/<harness>` or a mounted volume, so tenant data
+stays apart from the harness's own files and survives restarts.
 
 ## Hash-chained audit log
 
-Each tenant gets one JSONL file per day under `<base>/audit/`. Every
+Each tenant gets one JSONL file per day under `<root>/<tenant-id>/audit/`. Every
 event includes the SHA-256 of the prior event, forming an immutable
 chain:
 

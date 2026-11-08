@@ -11,12 +11,15 @@ cd starters/managed          # if copied elsewhere, cd into that copy
 bunx crewhaus compile crewhaus.yaml -o dist
 
 # 2. Start the daemon. Binds to :3000 (override with PORT=...).
-#    First stdout line prints the auto-generated JWT secret — copy it.
+#    With no CREWHAUS_GATEWAY_JWT_SECRET set, it generates a signing secret
+#    for this boot and saves it to .crewhaus/run/gateway-jwt-secret (0600).
 bun install --cwd dist   # first run only — installs the bundle's @crewhaus deps
 bun dist/daemon.ts
 ```
 
-Set `CREWHAUS_GATEWAY_JWT_SECRET=<at least 16 chars>` ahead of time to pin the secret across restarts. A Claude credential (`ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY`) is required for the model to actually run.
+Set `CREWHAUS_GATEWAY_JWT_SECRET=<at least 16 chars>` ahead of time to keep tokens valid across restarts. A Claude credential (`ANTHROPIC_AUTH_TOKEN` or `ANTHROPIC_API_KEY`) is required for the model to actually run.
+
+Tenant data goes under `CREWHAUS_TENANTS_ROOT` (default `/tmp/crewhaus-tenants`). For a deployment, set it to an absolute path outside the harness directory, such as `~/.crewhaus/tenants/hello-managed`, so tenant data stays apart from the harness's own files.
 
 <details><summary><strong>Contributors</strong> — in-tree dev loop</summary>
 
@@ -31,12 +34,14 @@ bun run run managed
 
 ## Drive traffic
 
-In a second terminal, mint a JWT for `tenant-a` against the secret the daemon printed and call `runs.create`:
+In a second terminal, from the same directory, mint a JWT for `tenant-a` with the daemon's signing secret and call `runs.create`:
 
 ```bash
-# Mint a 1-hour JWT for tenant-a.
-SECRET="paste-the-secret-here"
-TENANT_A_JWT=$(node -e 'console.log(require("jsonwebtoken").sign({ tenant: "tenant-a" }, process.env.SECRET, { expiresIn: "1h" }))' SECRET="$SECRET")
+# The secret this boot saved (or the CREWHAUS_GATEWAY_JWT_SECRET you set).
+SECRET="$(cat .crewhaus/run/gateway-jwt-secret)"
+
+# Mint a 1-hour JWT for tenant-a. The gateway reads the tenant from `tenant_id`.
+TENANT_A_JWT=$(SECRET="$SECRET" bun --cwd dist -e 'import { signJwt } from "@crewhaus/gateway-server"; console.log(signJwt({ tenant_id: "tenant-a" }, process.env.SECRET))')
 
 # Start a run.
 curl -X POST http://localhost:3000/rpc \
@@ -62,11 +67,12 @@ curl -N http://localhost:3000/rpc \
 
 ## Inspect the audit log
 
-Every JSON-RPC call lands in a tenant-scoped, hash-chained audit log under `.crewhaus/hello-managed/<tenant-id>/audit/`:
+Every JSON-RPC call lands in a tenant-scoped, hash-chained audit log under `$CREWHAUS_TENANTS_ROOT/<tenant-id>/audit/`:
 
 ```bash
-ls .crewhaus/hello-managed/tenant-a/audit/
-tail -f .crewhaus/hello-managed/tenant-a/audit/$(date -u +%Y-%m-%d).jsonl
+TENANTS="${CREWHAUS_TENANTS_ROOT:-/tmp/crewhaus-tenants}"
+ls "$TENANTS/tenant-a/audit/"
+tail -f "$TENANTS/tenant-a/audit/$(date -u +%Y-%m-%d).jsonl"
 ```
 
 A second tenant has an isolated audit dir (`.../tenant-b/audit/`) — cross-tenant reads are impossible by construction, which is the multi-tenant invariant `target: managed` exists to enforce.

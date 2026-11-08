@@ -172,10 +172,11 @@ sub_agents:
       Do NOT execute any tool yourself. Your job is purely to plan;
       the main agent executes.
     tools: [read, webSearch, webFetch]
-    permissions:
-      allow: [Read, WebSearch, WebFetch]
-      deny: []
+    permissions: scoped
 ```
+
+`permissions: scoped` keeps the daemon's own rules for the planner's three
+tools, so the planner reads under the same rules as the main agent.
 
 This mirrors OpenClaw's "tool planner" — a deliberate plan-then-act
 separation that surfaces multi-step intent before the agent burns
@@ -189,6 +190,9 @@ This is the most important section to understand.
 permissions:
   mode: default
   rules:
+    - { type: alwaysAllow, pattern: "Read(.crewhaus/tool-results/**)" }
+    - { type: alwaysDeny, pattern: "Read(.env*)" }
+    - { type: alwaysDeny, pattern: "Read(.crewhaus/**)" }
     - { type: alwaysAllow, pattern: Read }
     - { type: alwaysAllow, pattern: WebSearch }
     - { type: alwaysAllow, pattern: WebFetch }
@@ -198,6 +202,11 @@ permissions:
     - { type: alwaysDeny, pattern: Write(**) }
     - { type: alwaysDeny, pattern: Edit(**) }
 ```
+
+The first three rules keep the showcase's reads out of its own
+configuration. The first matching rule wins, so they sit above the `Read`
+allow, and the allow for `.crewhaus/tool-results/` comes first because long
+tool results come back in parts the agent reads from there.
 
 **Critical invariant**: a `channel` target is non-interactive. The
 permission engine converts `alwaysAsk` to `alwaysDeny` because there's
