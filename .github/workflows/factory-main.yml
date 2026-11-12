@@ -1,7 +1,7 @@
 name: Checks against factory main
 
-# Runs this repository's three checks (the example corpus, the walkthrough
-# checks and the demo drivers) against crewhaus/factory's main branch, every
+# Runs this repository's four checks (the example corpus, the walkthrough
+# checks, the demo drivers and the spec round trip) against crewhaus/factory's main branch, every
 # night and on demand. Those workflows are path-filtered, so on their own
 # they never notice a factory change that breaks a starter, a recipe or a
 # driver.
@@ -12,7 +12,7 @@ name: Checks against factory main
 # The jobs of a nightly run resolve main separately, so a factory merge
 # mid-run can split them across two commits; pass a commit to pin one.
 #
-# The schedule lives here, not in the three workflows, because GitHub
+# The schedule lives here, not in the four workflows, because GitHub
 # disables a public repository's scheduled workflow after 60 days without
 # repository activity, and a disabled workflow runs on no event. If this one
 # is disabled, re-enable it with:
@@ -31,7 +31,7 @@ on:
         description: crewhaus/factory branch, tag or full commit SHA to test against
         type: string
         default: main
-  # A change to any of the four workflows is also tested through this path.
+  # A change to any of the five workflows is also tested through this path.
   pull_request:
     branches: [main]
     paths:
@@ -39,6 +39,7 @@ on:
       - ".github/workflows/example-corpus.yml"
       - ".github/workflows/walkthroughs.yml"
       - ".github/workflows/drivers.yml"
+      - ".github/workflows/spec-roundtrip.yml"
 
 run-name: ${{ github.event_name != 'pull_request' && format('Checks against factory {0}', inputs.factory_ref || 'main') || '' }}
 
@@ -56,5 +57,9 @@ jobs:
       factory_ref: ${{ inputs.factory_ref || 'main' }}
   drivers:
     uses: ./.github/workflows/drivers.yml
+    with:
+      factory_ref: ${{ inputs.factory_ref || 'main' }}
+  roundtrip:
+    uses: ./.github/workflows/spec-roundtrip.yml
     with:
       factory_ref: ${{ inputs.factory_ref || 'main' }}

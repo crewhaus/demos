@@ -94,6 +94,7 @@ bun run compile starters/channels/discord          # nested channel adapter
 bun run compile starters/showcases/procode         # nested showcase
 bun run compile:procode                            # showcase alias (↔ compile starters/showcases/procode)
 bun run walkthroughs:test                          # validate every recipe
+bun run specs:roundtrip                            # every spec survives a guarded edit byte-for-byte
 ```
 
 Adding a new starter: drop a directory under `starters/` with a `crewhaus.yaml`; the standalone `cd starters/<path> && bunx crewhaus compile crewhaus.yaml` works immediately, and so does `bun run compile starters/<path>` from the repo root — no package.json edit required.
@@ -169,6 +170,7 @@ demos/
     test-walkthroughs.ts       static walkthrough validator (links, scripts, specs)
     smoke-walkthroughs.ts      runtime walkthrough smoke (compile + optional run)
     verify-drivers.ts          replays every demo.beats.json (bun run drivers:verify)
+    spec-roundtrip.ts          every spec round-trips through the guarded spec writer
   DEMO-DRIVERS.md              the screencast-driver convention
   .github/workflows/
   package.json
