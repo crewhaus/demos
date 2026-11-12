@@ -1,0 +1,120 @@
+name: Spec round trip
+
+# Commits every spec in this repository (each spec file, and each whole spec
+# in a walkthrough's yaml fences) through crewhaus/factory's guarded spec
+# writer, `commitSpec` from `@crewhaus/spec-patch/commit`, on temporary
+# copies. Fails when a commit that changes nothing writes, when an edit
+# changes bytes it did not touch or restyles the file, or when a commit from
+# a stale revision writes. See scripts/spec-roundtrip.ts.
+#
+# Requires a sibling crewhaus/factory checkout to supply the writer.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "starters/**"
+      - "smoke/**"
+      - "benchmarks/**"
+      - "walkthroughs/**"
+      - "scripts/spec-roundtrip.ts"
+      - "package.json"
+      - ".github/workflows/spec-roundtrip.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "starters/**"
+      - "smoke/**"
+      - "benchmarks/**"
+      - "walkthroughs/**"
+      - "scripts/spec-roundtrip.ts"
+      - "package.json"
+      - ".github/workflows/spec-roundtrip.yml"
+  # On demand, and every night through factory-main.yml: the path filters
+  # above never fire on a crewhaus/factory change, so these runs check this
+  # repository against factory's main, or the branch, tag or commit given.
+  workflow_dispatch:
+    inputs:
+      factory_ref:
+        description: crewhaus/factory branch, tag or full commit SHA to test against
+        type: string
+        default: main
+  workflow_call:
+    inputs:
+      factory_ref:
+        description: crewhaus/factory branch, tag or full commit SHA to test against
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  roundtrip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout demos
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          path: demos
+      - name: Checkout factory (sibling — required for the guarded spec writer)
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: crewhaus/factory
+          path: factory
+          ref: ${{ inputs.factory_ref }}
+      # If the demos PR's branch name also exists in factory, check that
+      # out — lets a writer change and the specs it affects test together.
+      # Falls back silently to factory's default branch when no matching
+      # branch exists.
+      - name: Match factory branch to demos PR branch when present
+        if: github.head_ref != ''
+        working-directory: factory
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+            echo "[spec-roundtrip] factory has matching branch $BRANCH — checking out"
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+          else
+            echo "[spec-roundtrip] no factory branch named $BRANCH; staying on default"
+          fi
+      - name: Record the factory commit under test
+        working-directory: factory
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          echo "[spec-roundtrip] factory commit under test: $sha"
+          printf 'factory commit under test: `%s`\n' "$sha" >> "$GITHUB_STEP_SUMMARY"
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ">=1.2.0"
+
+      - name: Install factory deps (workspace setup)
+        working-directory: factory
+        run: bun install --frozen-lockfile
+
+      - name: Round-trip every spec through the guarded spec writer
+        working-directory: demos
+        run: bun run specs:roundtrip
+
+      - name: Nothing was written into the checkout
+        working-directory: demos
+        run: |
+          set -euo pipefail
+          changed="$(git status --porcelain --ignored)"
+          if [ -n "$changed" ]; then
+            echo "::error::the round trip left files in the checkout"
+            echo "$changed"
+            exit 1
+          fi
+          state="$(find . -path '*/.crewhaus/run/spec' -not -path '*/node_modules/*')"
+          if [ -n "$state" ]; then
+            echo "::error::the round trip left commit state in the checkout"
+            echo "$state"
+            exit 1
+          fi
+          echo "[spec-roundtrip] the checkout is unchanged"
