@@ -12,6 +12,8 @@ on:
       - "walkthroughs/drivers/**/demo.beats.json"
       - "walkthroughs/*.md"
       - "scripts/verify-drivers.ts"
+      - "scripts/in-tree-bundle-install.ts"
+      - "scripts/in-tree-bundle-install.test.ts"
       - "DEMO-DRIVERS.md"
       - ".github/workflows/drivers.yml"
   pull_request:
@@ -22,6 +24,8 @@ on:
       - "walkthroughs/drivers/**/demo.beats.json"
       - "walkthroughs/*.md"
       - "scripts/verify-drivers.ts"
+      - "scripts/in-tree-bundle-install.ts"
+      - "scripts/in-tree-bundle-install.test.ts"
       - "DEMO-DRIVERS.md"
       - ".github/workflows/drivers.yml"
   # On demand, and every night through factory-main.yml: the path filters
@@ -92,11 +96,21 @@ jobs:
       - name: Install factory deps (workspace setup)
         working-directory: factory
         run: bun install --frozen-lockfile
+      # A compiled bundle's @crewhaus packages are linked from this checkout, and
+      # a published package is its dist/ build, which some beats read directly.
+      - name: Build factory packages
+        working-directory: factory
+        run: bun run build
       - name: Install demos deps
         working-directory: demos
         run: bun install --frozen-lockfile
+      # Before, never beside, the verify step: both rewrite verify-drivers' shims.
+      - name: Test the in-tree bundle install
+        working-directory: demos
+        run: bun test ./scripts/in-tree-bundle-install.test.ts
       # No `crewhaus` on PATH here, so verify-drivers resolves the sibling
-      # factory source CLI. Only `offline` beats run — no API key is needed.
+      # factory source CLI, and a compiled bundle's @crewhaus packages are
+      # linked from that checkout. Only `offline` beats run — no API key is needed.
       - name: Verify every demo driver
         working-directory: demos
         run: bun run drivers:verify

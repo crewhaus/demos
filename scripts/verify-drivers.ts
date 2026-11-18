@@ -37,7 +37,10 @@
  *
  * Env:
  *   CREWHAUS_BIN   an explicit CLI to exercise; wins over every other candidate
- *   FACTORY_PATH   a factory checkout to resolve the source CLI from
+ *   FACTORY_PATH   a factory checkout to resolve the source CLI from; with the
+ *                  source CLI, a compiled bundle's @crewhaus packages come from
+ *                  that checkout too, once it is installed and built
+ *                  (scripts/in-tree-bundle-install.ts)
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -45,6 +48,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   renameSync,
   rmSync,
   statSync,
@@ -69,16 +73,19 @@ const REPO = resolve(import.meta.dir, "..");
  *   4. node_modules/crewhaus   after `bun add -d crewhaus` in this repo
  *   5. `bun x crewhaus`        last resort
  */
-function resolveCli(): { argv: string[]; label: string } {
+function resolveCli(): { argv: string[]; label: string; factoryRoot?: string } {
   const bin = process.env.CREWHAUS_BIN;
   if (bin) return { argv: [bin], label: `CREWHAUS_BIN=${bin}` };
   const onPath = spawnSync("command", ["-v", "crewhaus"], { shell: true, encoding: "utf8" });
   if ((onPath.status ?? 1) === 0 && onPath.stdout.trim()) {
     return { argv: [onPath.stdout.trim()], label: onPath.stdout.trim() };
   }
-  const factoryRoot = process.env.FACTORY_PATH ?? join(REPO, "..", "factory");
+  const factoryRoot = resolve(process.env.FACTORY_PATH ?? join(REPO, "..", "factory"));
   const sourceCli = join(factoryRoot, "apps", "cli", "src", "index.ts");
-  if (existsSync(sourceCli)) return { argv: ["bun", sourceCli], label: `factory source ${sourceCli}` };
+  if (existsSync(sourceCli)) {
+    // The real bun, never a bare `bun`: the `bun` shim below sits on the same PATH.
+    return { argv: [process.execPath, sourceCli], label: `factory source ${sourceCli}`, factoryRoot };
+  }
   const installed = join(REPO, "node_modules", "crewhaus", "src", "index.ts");
   if (existsSync(installed)) return { argv: ["bun", installed], label: "node_modules/crewhaus" };
   return { argv: ["bun", "x", "crewhaus"], label: "bun x crewhaus" };
@@ -86,18 +93,37 @@ function resolveCli(): { argv: string[]; label: string } {
 
 const CLI = resolveCli();
 
-/** A `crewhaus` shim first on PATH, so every beat command runs verbatim. */
+/**
+ * A `crewhaus` shim first on PATH, so every beat command runs verbatim. With
+ * the factory source CLI, a `bun` shim beside it sends a bare `bun install`
+ * (the one `crewhaus compile --check` runs in a bundle) to
+ * scripts/in-tree-bundle-install.ts, and execs the real bun for everything
+ * else; any other CLI gets no `bun` shim, so its bundles install from npm.
+ */
 function shimPath(): string {
   const dir = join(REPO, "node_modules", ".cache", "crewhaus-driver-shim");
   mkdirSync(dir, { recursive: true });
-  const shim = join(dir, "crewhaus");
-  const quoted = CLI.argv.map((a) => `'${a.replace(/'/g, "'\\''")}'`).join(" ");
+  const q = (a: string) => `'${a.replace(/'/g, "'\\''")}'`;
   // Written atomically: concurrent verify runs (one per starter, say) must never
   // observe a half-written shim.
-  const tmp = `${shim}.${process.pid}.tmp`;
-  writeFileSync(tmp, `#!/bin/sh\nexec ${quoted} "$@"\n`);
-  chmodSync(tmp, 0o755);
-  renameSync(tmp, shim);
+  const write = (name: string, body: string) => {
+    const shim = join(dir, name);
+    const tmp = `${shim}.${process.pid}.tmp`;
+    writeFileSync(tmp, body);
+    chmodSync(tmp, 0o755);
+    renameSync(tmp, shim);
+  };
+  write("crewhaus", `#!/bin/sh\nexec ${CLI.argv.map(q).join(" ")} "$@"\n`);
+  if (CLI.factoryRoot !== undefined) {
+    const bun = q(process.execPath);
+    const install = [bun, q(join(REPO, "scripts", "in-tree-bundle-install.ts")), q(CLI.factoryRoot), bun];
+    write(
+      "bun",
+      `#!/bin/sh\nif [ "$#" -eq 1 ] && [ "$1" = install ]; then\n  exec ${install.join(" ")} "$@"\nfi\nexec ${bun} "$@"\n`,
+    );
+  } else {
+    rmSync(join(dir, "bun"), { force: true });
+  }
   return dir;
 }
 
@@ -579,8 +605,19 @@ const cliVersion =
   "unknown";
 console.log(
   `verify-drivers — ${targets.length} driver(s) · CLI ${cliVersion} (${CLI.label})` +
+    ` · bundle deps: ${CLI.factoryRoot !== undefined ? `in-tree (${CLI.factoryRoot})` : "npm"}` +
     `${SCHEMA_ONLY ? " · schema only" : ""}`,
 );
+// Bare `@crewhaus` imports in a bundle resolve through tsconfig.json `paths` to
+// ../factory whatever FACTORY_PATH says, so another checkout mixes the two.
+if (CLI.factoryRoot !== undefined && existsSync(join(REPO, "..", "factory"))) {
+  if (realpathSync(join(REPO, "..", "factory")) !== realpathSync(CLI.factoryRoot)) {
+    console.log(
+      "  warning: bare @crewhaus imports in a bundle resolve through tsconfig.json paths to ../factory, " +
+        "not FACTORY_PATH; this run mixes two checkouts",
+    );
+  }
+}
 
 for (const t of targets) {
   process.stdout.write(`  ${t} … `);

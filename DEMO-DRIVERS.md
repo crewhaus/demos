@@ -182,8 +182,12 @@ while CI (which has none) falls through to the sibling `factory` checkout's
 source. When factory `main` carries an unreleased behaviour change, the two
 disagree and only CI is authoritative — **beats track factory `main`**, and a
 beat that needs an unreleased CLI says so in its `verify.note`. Reproduce the CI
-result with
-`CREWHAUS_BIN=<shim that runs factory/apps/cli/src/index.ts> bun run drivers:verify`.
+result with `FACTORY_PATH` naming the sibling `../factory` checkout (after its own
+`bun install` and `bun run build`), `CREWHAUS_BIN` unset and no `crewhaus` on PATH:
+`FACTORY_PATH=../factory bun run drivers:verify`. In that mode a compiled
+bundle's `@crewhaus` packages are linked from the same checkout after its usual
+install, so a driver tests the code it compiled with; with `CREWHAUS_BIN` or an
+installed CLI they come from npm.
 
 This is live right now for the **0.6.0 model surface**, while the published CLI
 is still 0.5.8. Every beat that types or validates a 0.6.0 spec (`lint`,
