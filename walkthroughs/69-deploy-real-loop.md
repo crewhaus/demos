@@ -7,6 +7,8 @@
 **CLI:** `crewhaus dev`, `crewhaus compile --emit-as cf-worker`,
 `crewhaus deploy <fly|render|railway|heroku>`.
 **Shipped in:** crewhaus 0.4.0 ([CHANGELOG](https://github.com/crewhaus/factory/blob/main/CHANGELOG.md)).
+The `/chat` bearer token, the permission decision before every edge tool call
+and the edge safety-settings check are in crewhaus 0.8.3.
 
 ## What this recipe shows
 
@@ -15,9 +17,11 @@ model reply, but the compiler flatly rejected `tools:` — "cf-worker does not
 support tools." That's gone. In 0.4 the agent loop itself was extracted into a
 platform-neutral core, `@crewhaus/worker-runtime`, that imports no `node:*`
 builtin and calls neither `Date.now()` nor `Math.random()` — so the *same* loop
-(turn FSM, model-stream orchestration, tool dispatch + validation + permission
-gating, budget/limit enforcement, loop detection, trace emission) runs on a
-Cloudflare Worker.
+(turn FSM, model-stream orchestration, tool dispatch and validation, a
+permission decision before every tool call, limit enforcement, loop detection,
+trace emission) runs on a Cloudflare Worker. The worker answers `/chat` only
+with its `CHAT_TOKEN` bearer, and runs a tool only when an `alwaysAllow` rule
+covers the call.
 
 This recipe walks the edge-deploy path end to end:
 
@@ -98,19 +102,45 @@ The bundle is a ready-to-deploy Worker:
 managed, crew, …) have no cf-worker emitter; use `crewhaus deploy <paas>`
 (Step 4) for those.
 
-Deploy is the ordinary wrangler flow:
+Deploy is the ordinary wrangler flow, with two secrets:
 
 ```sh
 cd dist/edge
 npm install                              # resolve the crewhaus runtime + edge tools
 wrangler secret put ANTHROPIC_API_KEY    # one-time Worker secret
+wrangler secret put CHAT_TOKEN           # the bearer token POST /chat requires
 wrangler deploy                          # bundles worker.js + its imports
 ```
 
-The deployed Worker exposes a `/chat` endpoint that streams the *same* SSE trace
-vocabulary the Node loop emits — `turn_start`, `model_request`,
-`model_response`, `cost_accrual`, `tool_call_start`, `tool_call_end`,
-`turn_end` — so your existing trace consumers work unchanged against the edge.
+Pick a long random `CHAT_TOKEN` (for example `openssl rand -base64 32`) and give
+it only to the clients that call the worker; for `wrangler dev`, put it in
+`.dev.vars`. Every `POST /chat` sends it:
+
+```sh
+curl -N https://<your-worker>.workers.dev/chat \
+  -H "Authorization: Bearer $CHAT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"Hello"}]}'
+```
+
+A missing or wrong token is answered with 401, and while `CHAT_TOKEN` is unset
+every `/chat` request is answered with 503 and the code `NO_CHAT_TOKEN`.
+`GET /health` answers `{"ok":true}` without a token. A token written into a web
+page can be read by everyone who opens it: call the worker from a backend, or
+put Cloudflare Access in front of it. A worker meant to answer anyone sets
+`cf_worker: { public_chat: true }` in its spec; the compile warns
+(`edge-public-chat`), and the worker belongs behind Cloudflare Access or a
+rate-limiting rule.
+
+`/chat` streams the *same* SSE trace vocabulary the Node loop emits —
+`turn_start`, `model_request`, `model_response`, `cost_accrual`,
+`permission_decision`, `tool_call_start`, `tool_call_end`, `turn_end` — so
+your existing trace consumers work unchanged against the edge.
+
+**Upgrading a deployed worker to 0.8.3.** Upgrade `crewhaus`, add an
+`alwaysAllow` rule for each tool the worker should run (Step 3), recompile
+with `--emit-as cf-worker`, run `wrangler secret put CHAT_TOKEN`, send the
+bearer from every client, and `wrangler deploy`.
 
 ## Step 3 — the edge-safety gate
 
@@ -121,22 +151,39 @@ sandbox, no attached device. So the old blanket rejection is replaced by a
 source of truth the compiler imports). Every tool in your `tools:` list is
 classified at compile time into one of three verdicts:
 
-**Edge-safe builtins — compiled and wired.** Their side effect is an outbound
-`fetch` or a KV read/write:
+**Edge-safe builtins — compiled and wired; each runs when an `alwaysAllow` rule
+covers the call.** Their side effect is an outbound `fetch` or a KV read/write:
 
 | Tool            | Edge side effect            |
 | --------------- | --------------------------- |
 | `fetch`         | pure `fetch`                |
 | `webFetch`      | pure `fetch`                |
 | `webSearch`     | pure `fetch`                |
-| `sendMessage`   | outbound API via `fetch`    |
 | `imageGenerate` | outbound API via `fetch`    |
 | `todoWrite`     | working memory via KV       |
 
-Plus any `mcp__<server>__<tool>` — remote MCP over SSE/HTTP is just an outbound
-request, so it's edge-native. (Durable memory's `Remember`/`Recall` are also
-edge-safe via KV, but they're wired from the `memory:` block, not `tools:`, so
-they never reach this gate.)
+An `mcp__<server>__<tool>` name is not wired on a worker: it is left out of the
+worker's tool set. (Durable memory's `Remember`/`Recall` are edge-safe via KV,
+but they're wired from the `memory:` block, not `tools:`, so they never reach
+this gate.)
+
+**A tool runs only when an `alwaysAllow` rule covers the call.** A worker has
+nobody to approve a call, so before every tool call it decides with the spec's
+`permissions.rules` and `permissions.mode`. A matching `alwaysDeny` or
+`alwaysAsk` rule wins over any `alwaysAllow`, wherever each is listed;
+`mode: auto` reads as `default`; `mode: plan` runs only read-only tools. Any
+other call returns an error tool result saying it needs approval and the worker
+has nobody to give it, and the tool does not run. Give each edge tool its own
+rule; the compile names each wired tool no `alwaysAllow` rule covers
+(`edge-tool-needs-allow`):
+
+```yaml
+tools: [webFetch, todoWrite]
+permissions:
+  rules:
+    - { type: alwaysAllow, pattern: "WebFetch(https://api.example.com/**)" }
+    - { type: alwaysAllow, pattern: TodoWrite }
+```
 
 **Host tools — the compile hard-fails**, with a category-specific reason:
 
@@ -153,14 +200,14 @@ code execution (`python`/`javascript`), filesystem
 code index (`codegraph*`), and computer-use/browser perception
 (`navigate`/`screenshot`/`mouseKeyboard`/…).
 
-**Unrecognised custom tools — permitted, but warned.** The compiler can't verify
-a user-registered tool only touches `fetch`/KV, so it emits an *edge-unsafe-tool*
-warning and wires it anyway rather than silently shipping a host-reaching tool.
-Read the warning and confirm the tool does no process/filesystem/device I/O.
+**Unrecognised custom tools — compiled, warned and left out.** The compiler
+can't verify a user-registered tool only touches `fetch`/KV, so it emits an
+*edge-unsafe-tool* warning and leaves the tool out of the worker's tool set.
 
 ## v1 scope — the edge caveats
 
-The edge loop's v1 scope is deliberately **tools + budget + limits + trace**.
+The edge loop's v1 scope is deliberately **tools, permission rules, limits and
+trace**.
 Two things stay Node-only, so know them before you push:
 
 - **No compaction or recovery on the edge.** Those services are Node-coupled
@@ -177,9 +224,19 @@ Two things stay Node-only, so know them before you push:
   currently support claude-* models only — use the cli target for other providers
   ```
 
-Everything else — `budget:`, the `limits:` ceilings ([Recipe 58 — Safe
-Production Ops](58-safe-production-ops.md)), loop detection, the full trace
-vocabulary — is enforced on the edge exactly as it is under Node.
+A worker is built only from settings it enforces. It enforces `permissions` as
+Step 3 describes; `limits.max_tool_iterations`, `limits.context_limit`,
+`limits.deadline_ms` (checked before each model call; on a workflow it bounds
+the whole run), `limits.max_concurrent_tools` (it runs one tool call at a time)
+and `limits.loop_detection` with `warn` or `abort` ([Recipe 58 — Safe
+Production Ops](58-safe-production-ops.md)); and it streams the full trace
+vocabulary. `--emit-as cf-worker` stops, naming each path and why, when the
+spec declares `hooks`, `budget`, `security`, `agent.rate_limits`, a
+`model_pool`, `limits.turn_timeout_ms`, `limits.model_call_timeout_ms`,
+`limits.loop_detection.escalation: justify`, a workflow step or graph node of
+`kind: judge`, or a graph edge with `when`: keep those in a spec you compile
+without `--emit-as cf-worker`. A worker keeps no spend meter, so cap spend
+with a spending limit on the Anthropic account its key belongs to.
 
 ## Step 4 — `crewhaus deploy <paas>` for the daemon shapes
 
@@ -222,8 +279,11 @@ overrides the per-shape CrewHaus image the manifest references.
 
 | Gotcha | Rule |
 | ------ | ---- |
+| `/chat` without the bearer | 401; with `CHAT_TOKEN` unset, every `/chat` request gets 503 `NO_CHAT_TOKEN` — run `wrangler secret put CHAT_TOKEN` and send `Authorization: Bearer <token>` |
+| A tool no `alwaysAllow` rule covers | the worker refuses every call to it with an error tool result; the compile says `edge-tool-needs-allow` — add `{ type: alwaysAllow, pattern: <Tool> }` |
+| `hooks` / `budget` / `security` / timeouts on an edge build | the cf-worker compile stops and names each path — keep them in a spec compiled without `--emit-as cf-worker` |
 | Host tools on the edge | `bash`/`read`/`python`/filesystem/`codegraph*`/browser-perception hard-fail the cf-worker compile — use the `cli` target |
-| Custom tool on the edge | permitted but *edge-unsafe-tool* warned; the compiler can't prove it's fetch/KV-only — verify it yourself |
+| Custom tool on the edge | compiles with an *edge-unsafe-tool* warning and is left out of the worker's tool set; an `mcp__*` tool is left out too |
 | Non-Anthropic model | cf-worker speaks only the Anthropic API; `openai/`/`gemini/`/`bedrock/`/`local/` models are rejected at compile |
 | Context overflow at the edge | no compaction on a Worker — a run ends with a classified `context_overflow` frame; cap it with `limits.context_limit` |
 | `--emit-as cf-worker` shape | only `cli`/`workflow`/`graph`; daemon shapes have no edge emitter — use `deploy <paas>` |
@@ -234,7 +294,8 @@ overrides the per-shape CrewHaus image the manifest references.
 ## Where to go next
 
 - [Recipe 58 — Safe Production Ops](58-safe-production-ops.md) — the `limits:`
-  ceilings and `budget:` cap the edge loop enforces.
+  ceilings; the edge loop enforces `max_tool_iterations`, `context_limit`,
+  `deadline_ms`, `max_concurrent_tools` and `loop_detection`.
 - [Recipe 36 — Cloud Deploy](36-cloud-deploy.md) — the managed/Terraform/Helm
   path for a full cloud deployment.
 - [Recipe 21 — Deployment and Canary](21-deployment-and-canary.md) — versioning
