@@ -13,8 +13,8 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
+  readdirSync,
   realpathSync,
   rmSync,
   writeFileSync,
@@ -41,19 +41,41 @@ function writeJson(path: string, value: unknown): void {
 
 beforeAll(() => {
   root = realpathSync(mkdtempSync(join(tmpdir(), "in-tree-bundle-install-")));
-  // A fixture checkout: two built packages (one with a subpath export), an
-  // app, and its own (empty) install.
+  // A fixture checkout: built packages (`a` with a subpath export and every
+  // kind of install edge, `b` reached only through `a`, `t` reached by no
+  // edge), an app, and its own (empty) install.
   factory = join(root, "factory");
   writeJson(join(factory, "packages", "a", "package.json"), {
     name: "@crewhaus/a",
     type: "module",
     exports: { ".": "./index.ts", "./sub": "./sub.ts" },
+    dependencies: { "@crewhaus/b": "workspace:*", "left-pad": "^1.3.0" },
+    optionalDependencies: { "opt-x": "^1.0.0" },
+    peerDependencies: { "peer-req": "*", "peer-opt": "*" },
+    peerDependenciesMeta: { "peer-opt": { optional: true } },
+    devDependencies: { "@crewhaus/zz-dev-only": "workspace:*", "dev-only": "^1.0.0" },
   });
   writeFileSync(join(factory, "packages", "a", "index.ts"), 'export const main = "a-main";\n');
-  writeFileSync(join(factory, "packages", "a", "sub.ts"), 'export const sub = "a-sub-from-checkout";\n');
-  writeJson(join(factory, "packages", "b", "package.json"), { name: "@crewhaus/b", type: "module" });
-  mkdirSync(join(factory, "packages", "a", "dist"));
-  mkdirSync(join(factory, "packages", "b", "dist"));
+  writeFileSync(
+    join(factory, "packages", "a", "sub.ts"),
+    'export const sub = "a-sub-from-checkout";\n',
+  );
+  // `b` asks for another left-pad range: the first one reached wins.
+  writeJson(join(factory, "packages", "b", "package.json"), {
+    name: "@crewhaus/b",
+    type: "module",
+    dependencies: { "left-pad": "^9.0.0", zod: "^3.0.0" },
+  });
+  writeJson(join(factory, "packages", "t", "package.json"), {
+    name: "@crewhaus/t",
+    type: "module",
+  });
+  // `c` needs a package the checkout does not have.
+  writeJson(join(factory, "packages", "c", "package.json"), {
+    name: "@crewhaus/c",
+    dependencies: { "@crewhaus/zz-gone": "workspace:*" },
+  });
+  for (const pkg of ["a", "b", "t", "c"]) mkdirSync(join(factory, "packages", pkg, "dist"));
   // A package the checkout has not built.
   writeJson(join(factory, "packages", "unbuilt", "package.json"), { name: "@crewhaus/unbuilt" });
   writeJson(join(factory, "apps", "cli", "package.json"), { name: "crewhaus", type: "module" });
@@ -90,46 +112,113 @@ function run(
   cwd: string,
   env: Record<string, string> = {},
 ): { code: number; stdout: string; stderr: string } {
-  const r = Bun.spawnSync([BUN, ...argv], { cwd, env: { ...BASE_ENV, ...env }, stdout: "pipe", stderr: "pipe" });
+  const r = Bun.spawnSync([BUN, ...argv], {
+    cwd,
+    env: { ...BASE_ENV, ...env },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   return { code: r.exitCode ?? -1, stdout: r.stdout.toString(), stderr: r.stderr.toString() };
 }
 
 const lastLine = (s: string) => s.trim().split("\n").at(-1) ?? "";
 
 /**
- * A stand-in for the real bun: records its argv, then exits `code`. With
- * `npm`, it first does what an npm install of `@crewhaus/a` would: a bun.lock
- * and a real `node_modules/@crewhaus/a` directory.
+ * A stand-in for the real bun: records its argv and the package.json it was
+ * given, then exits `code`. It exits 9 first if any `@crewhaus` name reaches
+ * that argv or manifest. With `npm`, it also does what a registry install
+ * would: a bun.lock, a third-party package, and real directories under
+ * `node_modules/@crewhaus/` that a third-party package pulled in (`t`, which
+ * the checkout has, and `npm-only`, which it does not). `extra` adds lines.
  */
-function stubBun(code = 7, npm = false): { bin: string; out: string } {
+function stubBun(
+  code = 7,
+  npm = false,
+  extra = "",
+): { bin: string; out: string; manifest: string } {
   const bin = join(root, `stub-bun-${++counter}.sh`);
   const out = join(root, `stub-argv-${counter}.txt`);
+  const manifest = join(root, `stub-manifest-${counter}.json`);
+  const guard = [
+    'case "$*" in *@crewhaus*) exit 9 ;; esac',
+    `if [ -f package.json ]; then cp package.json '${manifest}'; fi`,
+    "if [ -f package.json ] && grep -q @crewhaus package.json; then exit 9; fi",
+    "",
+  ].join("\n");
   const fakeNpm = npm
-    ? "printf 'lock\\n' > bun.lock\nmkdir -p node_modules/@crewhaus/a/dist\n" +
-      "printf 'export const sub = \"npm\";\\n' > node_modules/@crewhaus/a/sub.ts\n"
+    ? "printf 'lock\\n' > bun.lock\nmkdir -p node_modules/left-pad node_modules/@crewhaus/t/dist " +
+      "node_modules/@crewhaus/npm-only\n"
     : "";
-  writeFileSync(bin, `#!/bin/sh\nprintf '%s\\n' "$@" > '${out}'\n${fakeNpm}exit ${code}\n`, { mode: 0o755 });
-  return { bin, out };
+  writeFileSync(
+    bin,
+    `#!/bin/sh\nprintf '%s\\n' "$@" > '${out}'\n${guard}${fakeNpm}${extra}exit ${code}\n`,
+    {
+      mode: 0o755,
+    },
+  );
+  return { bin, out, manifest };
 }
 
-describe("an in-tree install runs the real install, then links the checkout's packages", () => {
-  test("every dependency becomes a link, after the real install, and the manifest is untouched", () => {
-    const b = bundle(compiled({ "@crewhaus/a": "0.8.3", "@crewhaus/b": "0.8.3" }));
+const scratchLeft = (dir: string) =>
+  readdirSync(dir).filter((f) => f.startsWith(".in-tree-install-"));
+const isLinkTo = (at: string, pkg: string) =>
+  lstatSync(at).isSymbolicLink() &&
+  realpathSync(at) === realpathSync(join(factory, "packages", pkg));
+
+describe("an in-tree install fetches only third-party packages, then links the checkout's packages", () => {
+  test("the real install gets the closure's third-party packages and no @crewhaus name", () => {
+    // @crewhaus/a is at a version npm never had: nothing may try to fetch it.
+    const b = bundle(compiled({ "@crewhaus/a": "0.0.0-unreleased" }));
     const stub = stubBun(0, true);
     const r = run([SCRIPT, factory, stub.bin, "install"], b.dir);
     expect(r.stderr).toBe("");
     expect(r.code).toBe(0);
-    expect(lastLine(r.stdout)).toBe(`[in-tree] linked 2 @crewhaus package(s) from ${factory}`);
-    // The real install ran once, with the same argv, and its bun.lock stays.
     expect(readFileSync(stub.out, "utf8")).toBe("install\n");
+    // Required peers count, optional peers and devDependencies do not, and
+    // a range reached first wins over a later one.
+    expect(JSON.parse(readFileSync(stub.manifest, "utf8"))).toEqual({
+      name: "crewhaus-compiled-bundle-deps",
+      private: true,
+      dependencies: { "left-pad": "^1.3.0", "peer-req": "*", zod: "^3.0.0" },
+      optionalDependencies: { "opt-x": "^1.0.0" },
+    });
+    // Its node_modules and bun.lock moved into the bundle; the scratch dir is gone.
     expect(readFileSync(join(b.dir, "bun.lock"), "utf8")).toBe("lock\n");
-    // Its npm copy of @crewhaus/a (a real directory) was replaced by the link.
-    for (const name of ["a", "b"]) {
-      const at = join(b.dir, "node_modules", "@crewhaus", name);
-      expect(lstatSync(at).isSymbolicLink()).toBe(true);
-      expect(realpathSync(at)).toBe(realpathSync(join(factory, "packages", name)));
-    }
+    expect(existsSync(join(b.dir, "node_modules", "left-pad"))).toBe(true);
+    expect(scratchLeft(b.dir)).toEqual([]);
     expect(readFileSync(join(b.dir, "package.json"), "utf8")).toBe(b.text);
+  });
+
+  test("every package of the closure, and every entry the checkout has, becomes a link", () => {
+    const b = bundle(compiled({ "@crewhaus/a": "0.8.3" }));
+    const r = run([SCRIPT, factory, stubBun(0, true).bin, "install"], b.dir);
+    expect(r.code).toBe(0);
+    const scope = join(b.dir, "node_modules", "@crewhaus");
+    // a (a dependency), b (reached through a), and t (a real directory the
+    // install left, which the checkout has).
+    for (const name of ["a", "b", "t"]) expect(isLinkTo(join(scope, name), name)).toBe(true);
+    // One the checkout does not have stays, and the run names it.
+    expect(lstatSync(join(scope, "npm-only")).isDirectory()).toBe(true);
+    expect(r.stdout).toContain("[in-tree] not in the checkout, so from npm: @crewhaus/npm-only\n");
+    expect(lastLine(r.stdout)).toBe(`[in-tree] linked 3 @crewhaus package(s) from ${factory}`);
+    expect(readdirSync(scope).sort()).toEqual(["a", "b", "npm-only", "t"]);
+  });
+
+  test("the bundle's earlier node_modules is replaced, npm copies included", () => {
+    const b = bundle(compiled({ "@crewhaus/a": "0.8.3" }));
+    mkdirSync(join(b.dir, "node_modules", "@crewhaus", "a", "dist"), { recursive: true });
+    mkdirSync(join(b.dir, "node_modules", "stale-pkg"));
+    expect(run([SCRIPT, factory, stubBun(0, true).bin, "install"], b.dir).code).toBe(0);
+    expect(isLinkTo(join(b.dir, "node_modules", "@crewhaus", "a"), "a")).toBe(true);
+    expect(existsSync(join(b.dir, "node_modules", "stale-pkg"))).toBe(false);
+  });
+
+  test("an install that writes no bun.lock leaves none behind", () => {
+    const b = bundle(compiled({ "@crewhaus/a": "0.8.3" }));
+    writeFileSync(join(b.dir, "bun.lock"), "stale\n");
+    expect(run([SCRIPT, factory, stubBun(0).bin, "install"], b.dir).code).toBe(0);
+    expect(existsSync(join(b.dir, "bun.lock"))).toBe(false);
+    expect(isLinkTo(join(b.dir, "node_modules", "@crewhaus", "a"), "a")).toBe(true);
   });
 
   test("a subpath export resolves from the checkout, not the npm copy", () => {
@@ -149,22 +238,46 @@ describe("an in-tree install runs the real install, then links the checkout's pa
     );
   });
 
-  test("a failed real install fails with its code, and links nothing", () => {
+  test("a failed real install fails with its code, and leaves the bundle as it was", () => {
     const b = bundle(compiled({ "@crewhaus/a": "0.8.3" }));
+    writeFileSync(join(b.dir, "bun.lock"), "earlier\n");
     const r = run([SCRIPT, factory, stubBun(5, true).bin, "install"], b.dir);
     expect(r.code).toBe(5);
     expect(r.stdout).not.toContain("[in-tree]");
-    expect(lstatSync(join(b.dir, "node_modules", "@crewhaus", "a")).isSymbolicLink()).toBe(false);
+    expect(existsSync(join(b.dir, "node_modules"))).toBe(false);
+    expect(readFileSync(join(b.dir, "bun.lock"), "utf8")).toBe("earlier\n");
+    expect(scratchLeft(b.dir)).toEqual([]);
+  });
+
+  test("an entry the checkout has but has not built is refused", () => {
+    const b = bundle(compiled({ "@crewhaus/a": "0.8.3" }));
+    const stub = stubBun(0, false, "mkdir -p node_modules/@crewhaus/unbuilt\n");
+    const r = run([SCRIPT, factory, stub.bin, "install"], b.dir);
+    expect(r.code).toBe(1);
+    expect(lastLine(r.stderr)).toBe(
+      `in-tree-bundle-install: @crewhaus/unbuilt has no dist/ in ${factory}: run \`bun run build\` in the factory checkout first`,
+    );
   });
 });
 
 describe("anything else runs the real bun unchanged", () => {
   const cases: [string, unknown, string[]][] = [
-    ["a manifest with another name (a cf-worker bundle)", { name: "my-worker", dependencies: {} }, ["install"]],
-    ["install with more arguments", compiled({ "@crewhaus/a": "0.8.3" }), ["install", "--frozen-lockfile"]],
-    ["another command", compiled({ "@crewhaus/a": "0.8.3" }), ["--env-file=/dev/null", "daemon.ts"]],
+    [
+      "a manifest with another name (a cf-worker bundle)",
+      { name: "my-worker", dependencies: {} },
+      ["install"],
+    ],
+    // No dependencies, so the stub's guard (exit 9) stays quiet.
+    ["install with more arguments", compiled({}), ["install", "--frozen-lockfile"]],
+    ["another command", compiled({}), ["--env-file=/dev/null", "daemon.ts"]],
     ["a manifest that is not JSON", "{not json", ["install"]],
   ];
+  // The stub's guard can fire: a cf-worker manifest that names a @crewhaus
+  // package goes to the real bun as it is, and the stub refuses it.
+  test("the stub refuses a manifest that names a @crewhaus package", () => {
+    const b = bundle({ name: "my-worker", dependencies: { "@crewhaus/a": "0.8.3" } });
+    expect(run([SCRIPT, factory, stubBun().bin, "install"], b.dir).code).toBe(9);
+  });
   for (const [label, manifest, args] of cases) {
     test(label, () => {
       const b = typeof manifest === "string" ? bundle(null) : bundle(manifest);
@@ -232,6 +345,16 @@ describe("refusals change nothing on disk and never run the real install", () =>
     expect(existsSync(join(b.dir, "node_modules"))).toBe(false);
   });
 
+  test("a @crewhaus package another one needs, which the checkout does not have", () => {
+    const b = bundle(compiled({ "@crewhaus/a": "0.8.3", "@crewhaus/c": "0.8.3" }));
+    const r = run([SCRIPT, factory, neverRun, "install"], b.dir);
+    expect(r.code).toBe(1);
+    expect(lastLine(r.stderr)).toBe(
+      `in-tree-bundle-install: @crewhaus/zz-gone (needed by @crewhaus/c) is not in the factory checkout at ${factory}`,
+    );
+    expect(existsSync(join(b.dir, "node_modules"))).toBe(false);
+  });
+
   test("a package the checkout has not built", () => {
     const b = bundle(compiled({ "@crewhaus/a": "0.8.3", "@crewhaus/unbuilt": "0.8.3" }));
     const r = run([SCRIPT, factory, neverRun, "install"], b.dir);
@@ -267,10 +390,14 @@ describe("verify-drivers picks in-tree installs only for the factory source CLI"
     expect(header(r.stdout)).toContain("CLI 0.0.0-fixture");
     expect(header(r.stdout)).toContain(`bundle deps: in-tree (${factory})`);
     // ../factory, when present, is another checkout than the fixture.
-    expect(r.stdout.includes("this run mixes two checkouts")).toBe(existsSync(join(REPO, "..", "factory")));
+    expect(r.stdout.includes("this run mixes two checkouts")).toBe(
+      existsSync(join(REPO, "..", "factory")),
+    );
 
     const crewhausShim = readFileSync(join(SHIM_DIR, "crewhaus"), "utf8");
-    expect(crewhausShim).toContain(`exec '${BUN}' '${join(factory, "apps", "cli", "src", "index.ts")}'`);
+    expect(crewhausShim).toContain(
+      `exec '${BUN}' '${join(factory, "apps", "cli", "src", "index.ts")}'`,
+    );
     const bunShim = readFileSync(join(SHIM_DIR, "bun"), "utf8");
     expect(bunShim).toContain(`'${SCRIPT}' '${factory}' '${BUN}'`);
 
@@ -279,12 +406,19 @@ describe("verify-drivers picks in-tree installs only for the factory source CLI"
     const b = bundle(compiled({}));
     const shimEnv = { ...BASE_ENV, PATH: `${SHIM_DIR}:${BASE_ENV.PATH}` };
     const sh = (args: string[]) => {
-      const r = Bun.spawnSync(["bun", ...args], { cwd: b.dir, env: shimEnv, stdout: "pipe", stderr: "pipe" });
+      const r = Bun.spawnSync(["bun", ...args], {
+        cwd: b.dir,
+        env: shimEnv,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
       return { code: r.exitCode, stdout: r.stdout.toString() };
     };
     const install = sh(["install"]);
     expect(install.code).toBe(0);
-    expect(lastLine(install.stdout)).toBe(`[in-tree] linked 0 @crewhaus package(s) from ${factory}`);
+    expect(lastLine(install.stdout)).toBe(
+      `[in-tree] linked 0 @crewhaus package(s) from ${factory}`,
+    );
     const other = sh(["-e", "console.log(process.execPath)"]);
     expect(other.code).toBe(0);
     expect(other.stdout.trim()).toBe(BUN);

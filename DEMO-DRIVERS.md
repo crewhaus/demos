@@ -185,9 +185,10 @@ beat that needs an unreleased CLI says so in its `verify.note`. Reproduce the CI
 result with `FACTORY_PATH` naming the sibling `../factory` checkout (after its own
 `bun install` and `bun run build`), `CREWHAUS_BIN` unset and no `crewhaus` on PATH:
 `FACTORY_PATH=../factory bun run drivers:verify`. In that mode a compiled
-bundle's `@crewhaus` packages are linked from the same checkout after its usual
-install, so a driver tests the code it compiled with; with `CREWHAUS_BIN` or an
-installed CLI they come from npm.
+bundle's `@crewhaus` packages, and the `@crewhaus` packages they depend on, are
+linked from the same checkout and never fetched (the install brings in only
+their third-party packages), so a driver tests the code it compiled with; with
+`CREWHAUS_BIN` or an installed CLI they come from npm.
 
 This is live right now for the **0.6.0 model surface**, while the published CLI
 is still 0.5.8. Every beat that types or validates a 0.6.0 spec (`lint`,
